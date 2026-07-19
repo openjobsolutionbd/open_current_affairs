@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JobArchive — কারেন্ট অ্যাফেয়ার্স রেজিস্টার</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#0e2620">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<script src="./vendor/marked.min.js"></script>
+<script src="./vendor/purify.min.js"></script>
+<style>
+  @font-face{
+    font-family:'Tiro Bangla';
+    src:url('./fonts/TiroBangla-Regular.ttf') format('truetype');
+    font-weight:400;
+    font-style:normal;
+    font-display:swap;
+  }
+  @font-face{
+    font-family:'Tiro Bangla';
+    src:url('./fonts/TiroBangla-Italic.ttf') format('truetype');
+    font-weight:400;
+    font-style:italic;
+    font-display:swap;
+  }
+  :root{
+    --ink:#1c231e;
+    --paper:#eeebe1;
+    --paper-raised:#f6f3ea;
+    --green:#16362b;
+    --green-deep:#0e2620;
+    --seal:#a23b2e;
+    --seal-text:#a23b2e;
+    --brass:#8c691f;
+    --line:#c9c2ac;
+    --on-dark:#f6f3ea;
+    --on-brass:#f6f3ea;
+    --heading:#0e2620;
+    --muted:#6e6754;
+    --pill-bg: rgba(22,54,43,0.08);
+    --success-bg:#dcefe0;
+    --success-border:#2f7245;
+    --success-text:#1f4a2c;
+    --error-bg:#f6dcd8;
+    --error-text:#7a2a20;
+    --shadow: 0 8px 24px rgba(14,38,32,0.18);
+  }
+  /* ডার্ক মোড: নিরপেক্ষ (paper/ink/border) রঙ বদলায়, এবং ব্র্যান্ড-রঙগুলোও
+     (green/seal/brass) ডার্ক ব্যাকগ্রাউন্ডে পড়ার-যোগ্য মানে সমন্বয় করা।
+     প্রতিটা টেক্সট/ব্যাকগ্রাউন্ড জোড়া প্রকৃত hex মান দিয়ে হিসাব করে
+     (WCAG AA, ≥4.5:1) যাচাই করা হয়েছে — আগে এই যাচাইয়ে কয়েকটা জোড়ায়
+     (সাদা-টেক্সট-অন-green, --brass-এর ওপর/নিচে টেক্সট, seal-অন-paper-raised)
+     ভুল ছিল, সেগুলো ঠিক করা হয়েছে। */
+  [data-theme="dark"]{
+    --ink:#e9e5d9;
+    --paper:#121814;
+    --paper-raised:#1c2620;
+    --green:#2d6b4f;
+    --green-deep:#0e2620;
+    --seal:#c74d38;
+    --seal-text:#e28569;
+    --brass:#d1a63f;
+    --line:#3f4c42;
+    --on-brass:#0e2620;
+    --heading:#8fd6b4;
+    --muted:#a89f8c;
+    --pill-bg: rgba(143,214,180,0.12);
+    --success-bg:#173322;
+    --success-border:#4caf6e;
+    --success-text:#a9e6bf;
+    --error-bg:#3a201d;
+    --error-text:#f0a99c;
+    --shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Tiro Bangla', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    transition:background-color 0.2s ease, color 0.2s ease;
+  }
+  .masthead{
+    background:var(--green-deep);
+    color:var(--on-dark);
+    padding:28px 24px 22px;
+    text-align:center;
+    border-bottom:6px double var(--brass);
+  }
+  .masthead h1{
+    font-family:'Tiro Bangla', serif;
+    font-weight:700;
+    font-size:clamp(26px,4vw,40px);
+    margin:0;
+  }
+  .masthead .sub{
+    font-size:13px;
+    opacity:0.7;
+    margin-top:6px;
+    font-family:'Tiro Bangla',sans-serif;
+  }
+
+  .search-bar-wrap{
+    max-width:720px;
+    margin:22px auto 0;
+    padding:0 20px;
+  }
+  .search-slot{
+    position:relative;
+    background:var(--paper-raised);
+    border:2px solid var(--heading);
+    border-radius:4px;
+    box-shadow:var(--shadow);
+  }
+  .search-slot::before{
+    content:"সার্চ";
+    position:absolute;
+    top:-11px;
+    left:14px;
+    background:var(--brass);
+    color:var(--on-brass);
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:11px;
+    font-weight:600;
+    padding:2px 10px;
+    border-radius:2px;
+    letter-spacing:0.05em;
+  }
+  #search{
+    width:100%;
+    border:none;
+    background:transparent;
+    outline:none;
+    padding:20px 16px 14px;
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:18px;
+    color:var(--ink);
+  }
+  #search::placeholder{color:var(--muted);}
+
+  .layout{
+    max-width:1080px;
+    margin:28px auto 60px;
+    padding:0 20px;
+    display:grid;
+    grid-template-columns:280px 1fr;
+    gap:22px;
+  }
+  @media (max-width:760px){
+    .layout{grid-template-columns:1fr;}
+    #browse-layout.showing-article .drawer{ display:none; }
+    #browse-layout:not(.showing-article) .card{ display:none; }
+    .mobile-back-btn{ display:inline-block; }
+    .card{ padding:20px 16px 24px; }
+    .card h2{ margin-left:66px; font-size:21px; }
+    .card .tags-row{ margin-left:66px; }
+    .seal{ width:48px; height:48px; font-size:9px; top:18px; left:16px; }
+  }
+
+  .drawer{
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:4px;
+    overflow:hidden;
+    box-shadow:var(--shadow);
+    align-self:start;
+  }
+  .drawer-label{
+    background:var(--green);
+    color:var(--on-dark);
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:12px;
+    letter-spacing:0.08em;
+    padding:10px 14px;
+  }
+  #topic-count{color:var(--on-dark);}
+  .tab{
+    display:block;
+    width:100%;
+    text-align:right;
+    padding:12px 16px;
+    border:none;
+    background:none;
+    border-bottom:1px solid var(--line);
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:15px;
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .tab:last-child{border-bottom:none;}
+  .tab:hover{background:rgba(169,130,46,0.12);}
+  .tab.active{
+    background:var(--green);
+    color:#fff;
+    font-weight:600;
+  }
+  .tab .tab-tags{
+    display:block;
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:11px;
+    opacity:0.65;
+    margin-top:2px;
+  }
+  .tab mark{
+    background:rgba(162,59,46,0.18);
+    color:var(--heading);
+    font-weight:600;
+    border-radius:2px;
+    padding:0 1px;
+  }
+  .empty-note{
+    padding:16px;
+    font-size:13px;
+    color:var(--muted);
+    text-align:center;
+  }
+
+  .card{
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:4px;
+    box-shadow:var(--shadow);
+    padding:30px 34px 34px;
+    min-height:300px;
+    position:relative;
+  }
+  .card-placeholder{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    height:100%;
+    min-height:300px;
+    color:var(--muted);
+    text-align:center;
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:14px;
+  }
+  .card-placeholder .big{
+    font-family:'Tiro Bangla',serif;
+    font-size:22px;
+    color:var(--heading);
+    margin-bottom:8px;
+  }
+
+  .seal{
+    position:absolute;
+    top:22px;
+    left:28px;
+    width:60px;
+    height:60px;
+    border-radius:50%;
+    background:var(--seal);
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:10px;
+    line-height:1.2;
+    font-weight:600;
+    border:2px dashed rgba(255,255,255,0.6);
+    box-shadow:0 3px 8px rgba(0,0,0,0.25);
+    transform:rotate(-8deg);
+  }
+
+  .card-actions{
+    position:absolute;
+    top:22px;
+    right:28px;
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+    max-width:calc(100% - 110px);
+  }
+  .mobile-back-btn{
+    display:none;
+    background:none;
+    border:none;
+    color:var(--heading);
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:14px;
+    font-weight:600;
+    padding:8px 4px 14px;
+    margin:0;
+    cursor:pointer;
+  }
+  .months-back-btn{
+    display:inline-block;
+    background:none;
+    border:none;
+    color:var(--heading);
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:14px;
+    font-weight:600;
+    padding:8px 4px 14px;
+    margin:0;
+    cursor:pointer;
+  }
+  .copy-link{
+    background:var(--paper);
+    border:1px solid var(--heading);
+    color:var(--heading);
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:12px;
+    font-weight:600;
+    padding:7px 14px;
+    border-radius:16px;
+    cursor:pointer;
+    transition:background 0.15s ease;
+  }
+  .copy-link:hover{background:rgba(169,130,46,0.15);}
+  @media (max-width:700px){
+    .card-actions{
+      position:static;
+      max-width:100%;
+      margin:0 0 14px 8px;
+      justify-content:flex-start;
+    }
+  }
+
+  .card h2{
+    font-family:'Tiro Bangla',serif;
+    color:var(--heading);
+    font-size:26px;
+    margin:0 0 4px 90px;
+    border-bottom:2px solid var(--brass);
+    padding-bottom:10px;
+  }
+  .card .tags-row{
+    margin:8px 0 20px 90px;
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+  }
+  .pill{
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:11px;
+    background:var(--pill-bg);
+    color:var(--heading);
+    padding:3px 10px;
+    border-radius:12px;
+    border:1px solid var(--line);
+    cursor:pointer;
+  }
+  .pill:hover{background:var(--brass); color:var(--on-brass);}
+  .card-body{margin-top:6px;}
+  .card-body h2{font-size:19px;margin:22px 0 10px;padding-bottom:6px;}
+  .card-body h1{display:none;}
+  .card-body p{line-height:1.75;margin:0 0 12px;}
+  .card-body strong{color:var(--heading);}
+  .table-scroll{
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    margin:14px 0 20px;
+  }
+  .table-scroll table{ margin:0; }
+  .card-body table{
+    width:100%;
+    min-width:420px;
+    border-collapse:collapse;
+    font-size:14px;
+  }
+  .card-body th, .card-body td{
+    border:1px solid var(--line);
+    padding:8px 10px;
+    text-align:right;
+  }
+  .card-body th{
+    background:var(--green);
+    color:#fff;
+    font-family:'Tiro Bangla',sans-serif;
+    font-weight:500;
+    font-size:12.5px;
+  }
+  .card-body tr:nth-child(even) td{background:rgba(169,130,46,0.06);}
+  .card-body ul{padding-right:20px;line-height:1.8;}
+
+  .history-heading{
+    font-family:'Tiro Bangla',serif;
+    color:var(--seal-text);
+    font-size:18px;
+    border-top:3px double var(--line);
+    padding-top:18px;
+    margin-top:26px !important;
+  }
+
+  .related-topics{
+    margin-top:26px;
+    padding-top:18px;
+    border-top:1px solid var(--line);
+  }
+  .related-title{
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:12px;
+    color:var(--brass);
+    font-weight:600;
+    margin-bottom:10px;
+  }
+  .related-chip{
+    display:inline-block;
+    background:var(--paper);
+    border:1px dashed var(--heading);
+    color:var(--heading);
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:13px;
+    padding:6px 13px;
+    border-radius:14px;
+    margin:0 6px 6px 0;
+    cursor:pointer;
+  }
+  .related-chip:hover{background:rgba(169,130,46,0.15);}
+
+  footer{
+    text-align:center;
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:12px;
+    color:var(--muted);
+    padding:0 20px 40px;
+  }
+  .cache-refresh-btn{
+    background:none;
+    border:none;
+    color:var(--muted);
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:12px;
+    text-decoration:underline;
+    text-underline-offset:2px;
+    cursor:pointer;
+    padding:0;
+  }
+  .cache-refresh-btn:hover{ color:var(--brass); }
+  .cache-refresh-btn:disabled{ opacity:0.6; cursor:default; text-decoration:none; }
+
+  .toolbar{
+    max-width:720px;
+    margin:14px auto 0;
+    padding:0 20px;
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+  .mode-toggle, .theme-toggle{
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    padding:8px 16px;
+    border-radius:16px;
+    border:1px solid var(--heading);
+    background:var(--paper-raised);
+    color:var(--heading);
+    cursor:pointer;
+    text-decoration:none;
+    display:inline-block;
+  }
+  .mode-toggle:hover, .theme-toggle:hover{background:rgba(169,130,46,0.15);}
+  .mode-toggle.active{background:var(--seal);color:#fff;border-color:var(--seal);}
+
+  .changes-item{
+    border-bottom:1px solid var(--line);
+    padding:14px 0;
+  }
+  .changes-item:last-child{border-bottom:none;}
+  .changes-top-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .changes-month-badge{
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:10.5px;
+    font-weight:600;
+    color:#fff;
+    background:var(--seal);
+    padding:2px 9px;
+    border-radius:10px;
+    white-space:nowrap;
+  }
+  .changes-topic-link{
+    font-family:'Tiro Bangla',serif;
+    font-size:15px;
+    color:var(--heading);
+    cursor:pointer;
+    text-decoration:underline;
+    text-underline-offset:2px;
+  }
+  .changes-text{
+    margin-top:6px;
+    font-size:13.5px;
+    line-height:1.6;
+  }
+  .changes-reason{
+    margin-top:3px;
+    font-size:11.5px;
+    color:var(--muted);
+  }
+
+  .dash-stats-row{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+    margin:0 0 24px;
+  }
+  .dash-stat{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:14px 22px;
+    text-align:center;
+    flex:1 1 100px;
+  }
+  .dash-stat-num{
+    font-family:'Tiro Bangla',serif;
+    font-size:26px;
+    color:var(--heading);
+    font-weight:700;
+  }
+  .dash-stat-label{
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:11px;
+    color:var(--muted);
+    margin-top:2px;
+  }
+  .dash-section-title{
+    font-family:'Tiro Bangla',serif;
+    font-size:16px;
+    color:var(--heading);
+    border-top:1px solid var(--line);
+    padding-top:16px;
+    margin:22px 0 12px;
+  }
+  .dash-bar-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:8px;
+    font-size:13px;
+  }
+  .dash-bar-label{
+    flex:0 0 120px;
+    font-family:'Tiro Bangla',sans-serif;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .dash-bar-track{
+    flex:1 1 auto;
+    background:var(--line);
+    border-radius:6px;
+    height:10px;
+    overflow:hidden;
+  }
+  .dash-bar-fill{
+    height:100%;
+    background:var(--brass);
+    border-radius:6px;
+  }
+  .dash-bar-fill.success{background:var(--success-border);}
+  .dash-bar-count{
+    flex:0 0 auto;
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:11.5px;
+    color:var(--muted);
+    white-space:nowrap;
+  }
+  .dash-list{ display:flex; flex-direction:column; gap:6px; }
+  .dash-list-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:9px 14px;
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:13.5px;
+    color:var(--ink);
+    cursor:pointer;
+    text-align:right;
+  }
+  .dash-list-item:hover{background:rgba(169,130,46,0.1);}
+  .dash-list-meta{
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:11px;
+    color:var(--seal-text);
+    white-space:nowrap;
+    margin-right:10px;
+  }
+
+  .ghotonaprobaho-month-block{
+    margin-bottom:28px;
+    padding-bottom:8px;
+  }
+  .ghotonaprobaho-month-block:not(:first-of-type){
+    margin-top:28px;
+    padding-top:22px;
+    border-top:1px dashed var(--line);
+  }
+  .ghotonaprobaho-month-heading{
+    font-family:'Tiro Bangla',serif;
+    font-size:19px;
+    font-weight:700;
+    color:var(--brass);
+    margin-bottom:14px;
+  }
+  .ghotonaprobaho-pager{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+    margin-top:24px;
+    padding-top:18px;
+    border-top:1px solid var(--line);
+  }
+  .ghotonaprobaho-page-btn{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--ink);
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:13px;
+    padding:8px 16px;
+    border-radius:4px;
+    cursor:pointer;
+  }
+  .ghotonaprobaho-page-btn:hover:not(:disabled){background:rgba(169,130,46,0.1);}
+  .ghotonaprobaho-page-btn:disabled{opacity:0.4;cursor:default;}
+  .ghotonaprobaho-page-info{
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:12px;
+    color:var(--muted);
+    white-space:nowrap;
+  }
+  .ghotonaprobaho-day{
+    margin-bottom:22px;
+    padding-bottom:18px;
+    border-bottom:1px solid var(--line);
+  }
+  .ghotonaprobaho-day:last-child{ border-bottom:none; }
+  .ghotonaprobaho-date{
+    font-family:'Tiro Bangla',serif;
+    font-size:17px;
+    font-weight:700;
+    color:var(--heading);
+    margin-bottom:10px;
+  }
+  .ghotonaprobaho-category{
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    color:var(--brass);
+    margin:10px 0 6px;
+  }
+  .ghotonaprobaho-items{
+    margin:0;
+    padding-right:18px;
+    list-style-position:outside;
+  }
+  .ghotonaprobaho-items li{
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:14.5px;
+    line-height:1.65;
+    color:var(--ink);
+    margin-bottom:6px;
+  }
+  .dash-weak-title{
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:12.5px;
+    color:var(--seal-text);
+    margin:14px 0 8px;
+  }
+
+  .progress-summary{
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:11px;
+    color:var(--brass);
+  }
+  .tab.read-topic:not(.active){opacity:0.6;}
+  .tab .read-badge{color:var(--success-border); margin-left:4px;}
+  .tab .months-item-index{
+    display:inline-block;
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:11px;
+    color:var(--muted);
+    margin-left:8px;
+  }
+  .mark-read-btn{
+    background:var(--paper);
+    border:1px solid var(--heading);
+    color:var(--heading);
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:12px;
+    font-weight:600;
+    padding:7px 14px;
+    border-radius:16px;
+    cursor:pointer;
+  }
+  .mark-read-btn.done{background:var(--success-bg);border-color:var(--success-border);color:var(--success-text);}
+  .print-topic-btn{
+    background:var(--paper);
+    border:1px solid var(--heading);
+    color:var(--heading);
+    font-family:'Tiro Bangla',sans-serif;
+    font-size:12px;
+    font-weight:600;
+    padding:7px 14px;
+    border-radius:16px;
+    cursor:pointer;
+  }
+
+  @media print{
+    .masthead, .search-bar-wrap, .toolbar, .drawer, footer,
+    .card-actions, .seal, .related-topics, .mobile-back-btn{
+      display:none !important;
+    }
+    body{ background:#fff; }
+    #browse-layout{ display:block !important; max-width:100%; margin:0; padding:0; }
+    .card{
+      box-shadow:none;
+      border:none;
+      padding:0;
+      min-height:0;
+    }
+    .card h2{ margin-left:0; color:#000; }
+    .card .tags-row{ margin-left:0; }
+    .card-body{ color:#000; }
+    .card-body strong{ color:#000; }
+    .pill{ border:1px solid #999; background:none; color:#333; }
+    a[href]::after{ content:""; }
+  }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <h1>কারেন্ট অ্যাফেয়ার্স রেজিস্টার</h1>
+  <div class="sub">টপিক অনুযায়ী সাজানো, প্রতি মাসে হালনাগাদ</div>
+</div>
+
+<div class="search-bar-wrap">
+  <div class="search-slot">
+    <input id="search" type="text" placeholder="যে বিষয়ে জানতে চাও লেখো... যেমন GDP, সংসদ, ইরান" autocomplete="off">
+  </div>
+</div>
+
+<div class="toolbar">
+  <button id="ghotonaprobaho-toggle-btn" class="mode-toggle">🗓️ দৈনিক ঘটনাপ্রবাহ</button>
+  <button id="theme-toggle-btn" class="theme-toggle">🌙 ডার্ক মোড</button>
+</div>
+
+<div class="layout" id="browse-layout">
+  <div class="drawer">
+    <div class="drawer-label">টপিক তালিকা — <span id="topic-count">0</span></div>
+    <div id="tab-list"></div>
+  </div>
+
+  <div class="card" id="card">
+    <div class="card-placeholder">
+      <div class="big">একটি টপিক খুলুন</div>
+      বাম পাশের তালিকা থেকে বেছে নিন, বা উপরে সার্চ করুন
+    </div>
+  </div>
+</div>
+
+<div class="layout" id="ghotonaprobaho-layout" style="display:none;">
+  <div class="card" id="ghotonaprobaho-card"></div>
+</div>
+
+<footer>প্রতিটি এন্ট্রির শেষে "পরিবর্তনের ইতিহাস" থেকে যাচাই করা যাবে কবে ও কেন তথ্য বদলেছে। <span id="app-version"></span> · <button id="cache-refresh-btn" class="cache-refresh-btn" type="button" title="পুরনো ক্যাশ মুছে সর্বশেষ ভার্সন লোড করবে">🧹 সর্বশেষ ভার্সন লোড করুন</button></footer>
+
+<script>
+let ALL_TOPICS = [];
+let ACTIVE_SLUG = null;
+let CURRENT_MODE = 'browse';
+let GHOTONAPROBAHO_MONTHS = null;
+let GHOTONAPROBAHO_PAGE = 0; // ০ = সবচেয়ে সাম্প্রতিক ৩ মাস; বাড়লে আরও পুরনোর দিকে
+const GHOTONAPROBAHO_PAGE_SIZE = 3; // প্রতি পেজে কয় মাস একসাথে দেখানো হয়
+
+function loadProgress(){
+  try{ return JSON.parse(localStorage.getItem('jobarchive_progress') || '{}'); }
+  catch(e){ return {}; }
+}
+function saveProgress(p){
+  try{ localStorage.setItem('jobarchive_progress', JSON.stringify(p)); }catch(e){}
+}
+function isRead(slug){
+  return !!loadProgress()[slug];
+}
+function toggleRead(slug){
+  const p = loadProgress();
+  p[slug] = !p[slug];
+  saveProgress(p);
+  return p[slug];
+}
+
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = document.getElementById('theme-toggle-btn');
+  if(btn) btn.textContent = theme === 'dark' ? '☀️ লাইট মোড' : '🌙 ডার্ক মোড';
+  try{ localStorage.setItem('jobarchive_theme', theme); }catch(e){}
+}
+function initTheme(){
+  let saved = null;
+  try{ saved = localStorage.getItem('jobarchive_theme'); }catch(e){}
+  applyTheme(saved || 'light');
+}
+
+async function loadIndex(){
+  initTheme();
+  try{
+    const res = await fetch('./topics-index.json');
+    const data = await res.json();
+    ALL_TOPICS = data.topics || [];
+  }catch(e){
+    document.getElementById('tab-list').innerHTML =
+      '<div class="empty-note">topics-index.json লোড করা যাচ্ছে না। GitHub Pages ঠিকভাবে সেটআপ হয়েছে কিনা দেখুন।</div>';
+  }
+  renderList(ALL_TOPICS);
+  try{
+    const versionRes = await fetch('./version.json');
+    const versionData = await versionRes.json();
+    if(versionData.version){
+      document.getElementById('app-version').textContent = `· সংস্করণ ${versionData.version}`;
+    }
+  }catch(e){
+    // ভার্সন না দেখাতে পারলে চুপচাপ বাদ দেওয়া হয় — এটা কোনো ক্রিটিক্যাল ফিচার না,
+    // ফুটারে টেক্সট না থাকলে কিছু ভাঙে না।
+  }
+}
+
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+async function ensureGhotonaprobahoLoaded(){
+  if(GHOTONAPROBAHO_MONTHS !== null) return;
+  try{
+    const res = await fetch('./ghotonaprobaho-index.json');
+    const data = await res.json();
+    GHOTONAPROBAHO_MONTHS = data.months || [];
+  }catch(e){
+    GHOTONAPROBAHO_MONTHS = [];
+  }
+}
+
+// TASK: মাস-তালিকা থেকে ক্লিক করে একটা মাস দেখার বদলে, প্রতি ৩ মাসের ডেটা
+// একসাথে টানা (সব দিন পরপর, মাস অনুযায়ী ভাগ করা হেডিং সহ) একটা "পেজ"-এ
+// দেখানো হয়। GHOTONAPROBAHO_MONTHS আগে থেকেই নতুন→পুরনো সাজানো (build_index.py-তে),
+// তাই পেজ ০ মানে সবচেয়ে সাম্প্রতিক ৩ মাস। পেজ নম্বর বাড়া মানে আরও পুরনোর
+// দিকে যাওয়া ("আগের ৩ মাস"), কমা মানে নতুনের দিকে ("পরের ৩ মাস")।
+function renderGhotonaprobahoView(){
+  const card = document.getElementById('ghotonaprobaho-card');
+  if(!GHOTONAPROBAHO_MONTHS || GHOTONAPROBAHO_MONTHS.length === 0){
+    card.innerHTML = `
+      <div class="card-placeholder">
+        <div class="big">এখনো কোনো ঘটনাপ্রবাহ যোগ হয়নি</div>
+        নতুন মাসের তথ্য যোগ হলে এখানে দেখা যাবে
+      </div>`;
+    return;
+  }
+
+  const totalPages = Math.ceil(GHOTONAPROBAHO_MONTHS.length / GHOTONAPROBAHO_PAGE_SIZE);
+  if(GHOTONAPROBAHO_PAGE < 0) GHOTONAPROBAHO_PAGE = 0;
+  if(GHOTONAPROBAHO_PAGE > totalPages - 1) GHOTONAPROBAHO_PAGE = totalPages - 1;
+
+  const start = GHOTONAPROBAHO_PAGE * GHOTONAPROBAHO_PAGE_SIZE;
+  const pageMonths = GHOTONAPROBAHO_MONTHS.slice(start, start + GHOTONAPROBAHO_PAGE_SIZE);
+
+  let html = `<h2 style="margin-left:0;">🗓️ দৈনিক ঘটনাপ্রবাহ</h2>`;
+  html += pageMonths.map(month => `
+    <div class="ghotonaprobaho-month-block">
+      <div class="ghotonaprobaho-month-heading">${escapeHtml(month.month_label)}</div>
+      ${month.days.map(day => `
+        <div class="ghotonaprobaho-day">
+          <div class="ghotonaprobaho-date">${escapeHtml(day.date)}</div>
+          ${day.categories.map(cat => `
+            <div class="ghotonaprobaho-category">${escapeHtml(cat.category)}</div>
+            <ul class="ghotonaprobaho-items">
+              ${cat.items.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
+            </ul>
+          `).join('')}
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+
+  html += `
+    <div class="ghotonaprobaho-pager">
+      <button class="ghotonaprobaho-page-btn" id="ghotonaprobaho-next-btn" type="button" ${GHOTONAPROBAHO_PAGE <= 0 ? 'disabled' : ''}>পরের ৩ মাস →</button>
+      <span class="ghotonaprobaho-page-info">পেজ ${GHOTONAPROBAHO_PAGE + 1} / ${totalPages}</span>
+      <button class="ghotonaprobaho-page-btn" id="ghotonaprobaho-prev-btn" type="button" ${GHOTONAPROBAHO_PAGE >= totalPages - 1 ? 'disabled' : ''}>← আগের ৩ মাস</button>
+    </div>
+  `;
+
+  card.innerHTML = html;
+
+  document.getElementById('ghotonaprobaho-next-btn').addEventListener('click', () => {
+    GHOTONAPROBAHO_PAGE--;
+    renderGhotonaprobahoView();
+  });
+  document.getElementById('ghotonaprobaho-prev-btn').addEventListener('click', () => {
+    GHOTONAPROBAHO_PAGE++;
+    renderGhotonaprobahoView();
+  });
+}
+
+async function setGhotonaprobahoMode(showGhotonaprobaho){
+  CURRENT_MODE = showGhotonaprobaho ? 'ghotonaprobaho' : 'browse';
+  document.getElementById('browse-layout').style.display = showGhotonaprobaho ? 'none' : '';
+  document.getElementById('ghotonaprobaho-layout').style.display = showGhotonaprobaho ? '' : 'none';
+  const btn = document.getElementById('ghotonaprobaho-toggle-btn');
+  btn.classList.toggle('active', showGhotonaprobaho);
+  btn.textContent = showGhotonaprobaho ? '📚 আর্কাইভে ফিরুন' : '🗓️ দৈনিক ঘটনাপ্রবাহ';
+  if(showGhotonaprobaho){
+    await ensureGhotonaprobahoLoaded();
+    GHOTONAPROBAHO_PAGE = 0; // প্রতিবার মোডে ঢুকলে সবচেয়ে সাম্প্রতিক ৩ মাস থেকে শুরু
+    renderGhotonaprobahoView();
+  }
+}
+
+
+function matchTopic(t, q){
+  if(!q) return { match:true, context:null };
+  const title = (t.title||'').toLowerCase();
+  const tags = (t.tags||[]).join(' ').toLowerCase();
+  if(title.includes(q) || tags.includes(q)){
+    return { match:true, context:null };
+  }
+  const body = (t.body||'').toLowerCase();
+  const idx = body.includes(q) ? body.indexOf(q) : -1;
+  if(idx === -1) return { match:false };
+  const raw = t.body || '';
+  const start = Math.max(0, idx - 60);
+  const end = Math.min(raw.length, idx + q.length + 60);
+  let excerpt = raw.slice(start, end).replace(/\s+/g,' ').trim();
+  if(start > 0) excerpt = '…' + excerpt;
+  if(end < raw.length) excerpt = excerpt + '…';
+  return { match:true, context:excerpt };
+}
+
+function highlight(text, q){
+  if(!q) return escapeHtml(text);
+  const idx = text.toLowerCase().indexOf(q.toLowerCase());
+  if(idx === -1) return escapeHtml(text);
+  return escapeHtml(text.slice(0,idx)) + '<mark>' + escapeHtml(text.slice(idx, idx+q.length)) + '</mark>' + escapeHtml(text.slice(idx+q.length));
+}
+
+function renderList(list, q){
+  q = (q||'').trim().toLowerCase();
+  const wrap = document.getElementById('tab-list');
+  const progress = loadProgress();
+  const readCount = ALL_TOPICS.filter(t => progress[t.slug]).length;
+  document.getElementById('topic-count').textContent =
+    `${list.length} টি${ALL_TOPICS.length ? ` · ${readCount} পড়া হয়েছে` : ''}`;
+  if(list.length === 0){
+    wrap.innerHTML = '<div class="empty-note">কোনো টপিক পাওয়া যায়নি</div>';
+    return;
+  }
+  wrap.innerHTML = list.map(t => {
+    const info = q ? matchTopic(t, q) : { context:null };
+    const sub = info.context
+      ? `<span class="tab-tags">${highlight(info.context, q)}</span>`
+      : `<span class="tab-tags">${escapeHtml((t.tags||[]).join(' · '))}</span>`;
+    const readMark = progress[t.slug] ? '<span class="read-badge">✓</span>' : '';
+    return `
+    <button class="tab ${t.slug===ACTIVE_SLUG?'active':''} ${progress[t.slug]?'read-topic':''}" data-slug="${t.slug}">
+      ${escapeHtml(t.title)}${readMark}
+      ${sub}
+    </button>
+  `;
+  }).join('');
+  wrap.querySelectorAll('.tab').forEach(btn=>{
+    btn.addEventListener('click', ()=> openTopic(btn.dataset.slug));
+  });
+}
+
+function currentFiltered(q){
+  if(!q) return ALL_TOPICS;
+  return ALL_TOPICS.filter(t => matchTopic(t, q).match);
+}
+
+document.getElementById('search').addEventListener('input', (e)=>{
+  const q = e.target.value.trim().toLowerCase();
+  renderList(currentFiltered(q), q);
+  document.getElementById('browse-layout').classList.remove('showing-article');
+});
+
+function showPlaceholder(){
+  document.getElementById('card').innerHTML = `
+    <div class="card-placeholder">
+      <div class="big">একটি টপিক খুলুন</div>
+      বাম পাশের তালিকা থেকে বেছে নিন, বা উপরে সার্চ করুন
+    </div>`;
+}
+
+async function openTopic(slug, updateHash=true){
+  if(CURRENT_MODE === 'ghotonaprobaho'){
+    await setGhotonaprobahoMode(false);
+  }
+  const topic = ALL_TOPICS.find(t=>t.slug===slug);
+  const card = document.getElementById('card');
+  const browseLayout = document.getElementById('browse-layout');
+
+  window.scrollTo(0, 0);
+
+  if(!topic){
+    ACTIVE_SLUG = null;
+    browseLayout.classList.add('showing-article');
+    card.innerHTML = `
+      <button class="mobile-back-btn" id="mobile-back-btn-notfound">← তালিকায় ফিরুন</button>
+      <div class="card-placeholder">এই লিংকের টপিকটা খুঁজে পাওয়া যাচ্ছে না — হয়তো নাম বদলেছে বা মুছে গেছে।</div>
+    `;
+    document.getElementById('mobile-back-btn-notfound').addEventListener('click', backToList);
+    return;
+  }
+
+  ACTIVE_SLUG = slug;
+  browseLayout.classList.add('showing-article');
+  if(updateHash) location.hash = slug;
+
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  renderList(currentFiltered(q), q);
+
+  card.innerHTML = '<div class="card-placeholder">লোড হচ্ছে…</div>';
+  try{
+    const res = await fetch('./' + topic.file);
+    if(!res.ok){
+      card.innerHTML = '<div class="card-placeholder">এই টপিক পেজ লোড করা যাচ্ছে না (ফাইল খুঁজে পাওয়া যায়নি)।</div>';
+      return;
+    }
+    const raw = (await res.text()).replace(/^\uFEFF/, '');
+    const body = raw.replace(/^---[\s\S]*?---\s*/, '');
+    let html = marked.parse(body);
+    html = DOMPurify.sanitize(html);
+    html = html.replace(/<h2>পরিবর্তনের ইতিহাস<\/h2>/, '<h2 class="history-heading">পরিবর্তনের ইতিহাস</h2>');
+    html = html.replace(/<table(\s[^>]*)?>/g, (m, attrs) => `<div class="table-scroll"><table${attrs||''}>`);
+    html = html.replace(/<\/table>/g, '</table></div>');
+
+    const alreadyRead = isRead(slug);
+    const related = getRelatedTopics(topic);
+    card.innerHTML = `
+      <button class="mobile-back-btn" id="mobile-back-btn">← তালিকায় ফিরুন</button>
+      <div class="seal">সর্বশেষ<br>${escapeHtml(topic.last_updated || '—')}</div>
+      <div class="card-actions">
+        <button class="print-topic-btn" id="print-topic-btn">🖨️ প্রিন্ট / PDF</button>
+        <button class="mark-read-btn ${alreadyRead?'done':''}" id="mark-read-btn">${alreadyRead ? '✓ পড়া হয়েছে' : '⬜ পড়া হয়েছে?'}</button>
+        <button class="copy-link" id="copy-link-btn" title="এই টপিকের লিংক কপি করো">🔗 লিংক কপি</button>
+      </div>
+      <h2>${escapeHtml(topic.title)}</h2>
+      <div class="tags-row">${(topic.tags||[]).map(t=>`<span class="pill" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</span>`).join('')}</div>
+      <div class="card-body">${html}</div>
+      ${related.length ? `
+        <div class="related-topics">
+          <div class="related-title">🔗 এটাও দেখো</div>
+          ${related.map(r => `<span class="related-chip" data-slug="${r.slug}">${escapeHtml(r.title)}</span>`).join('')}
+        </div>
+      ` : ''}
+    `;
+
+    document.getElementById('mobile-back-btn').addEventListener('click', backToList);
+
+    document.getElementById('print-topic-btn').addEventListener('click', () => {
+      window.print();
+    });
+
+    document.getElementById('copy-link-btn').addEventListener('click', async (e) => {
+      const url = window.location.origin + window.location.pathname + '#' + slug;
+      try{
+        await navigator.clipboard.writeText(url);
+        e.target.textContent = '✓ কপি হয়েছে';
+      }catch(err){
+        e.target.textContent = url;
+      }
+      setTimeout(()=>{ e.target.textContent = '🔗 লিংক কপি'; }, 1800);
+    });
+
+    document.getElementById('mark-read-btn').addEventListener('click', (e) => {
+      const nowRead = toggleRead(slug);
+      e.target.classList.toggle('done', nowRead);
+      e.target.textContent = nowRead ? '✓ পড়া হয়েছে' : '⬜ পড়া হয়েছে?';
+      const qNow = document.getElementById('search').value.trim().toLowerCase();
+      renderList(currentFiltered(qNow), qNow);
+    });
+
+    card.querySelectorAll('.pill').forEach(pill => {
+      pill.addEventListener('click', () => filterByTag(pill.dataset.tag));
+    });
+    card.querySelectorAll('.related-chip').forEach(chip => {
+      chip.addEventListener('click', () => openTopic(chip.dataset.slug));
+    });
+
+  }catch(e){
+    card.innerHTML = '<div class="card-placeholder">এই টপিক পেজ লোড করা যাচ্ছে না।</div>';
+  }
+}
+
+function backToList(){
+  document.getElementById('browse-layout').classList.remove('showing-article');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function getRelatedTopics(topic, limit=5){
+  const myTags = topic.tags || [];
+  if(myTags.length === 0) return [];
+  return ALL_TOPICS
+    .filter(t => t.slug !== topic.slug)
+    .map(t => ({ topic: t, shared: (t.tags||[]).filter(tag => myTags.includes(tag)).length }))
+    .filter(x => x.shared > 0)
+    .sort((a,b) => b.shared - a.shared)
+    .slice(0, limit)
+    .map(x => x.topic);
+}
+
+function filterByTag(tag){
+  const input = document.getElementById('search');
+  input.value = tag;
+  input.dispatchEvent(new Event('input'));
+  input.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+window.addEventListener('hashchange', () => {
+  const slug = decodeURIComponent(location.hash.slice(1));
+  if(slug && slug !== ACTIVE_SLUG){
+    openTopic(slug, false);
+  } else if(!slug && ACTIVE_SLUG){
+    ACTIVE_SLUG = null;
+    showPlaceholder();
+    document.getElementById('browse-layout').classList.remove('showing-article');
+    const q = document.getElementById('search').value.trim().toLowerCase();
+    renderList(currentFiltered(q), q);
+  }
+});
+
+document.getElementById('theme-toggle-btn').addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+});
+
+document.getElementById('ghotonaprobaho-toggle-btn').addEventListener('click', () => {
+  setGhotonaprobahoMode(CURRENT_MODE !== 'ghotonaprobaho');
+});
+
+loadIndex().then(() => {
+  const initialSlug = decodeURIComponent(location.hash.slice(1));
+  if(initialSlug){
+    openTopic(initialSlug, false);
+  }
+});
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+
+  let refreshedOnce = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (refreshedOnce) return;
+    refreshedOnce = true;
+    window.location.reload();
+  });
+}
+
+// VERSION বাড়লে sw.js নিজে থেকেই পুরনো ক্যাশ ফেলে দেয় (অটো ক্যাশ-ক্লিনার,
+// দেখুন docs/sw.js-এর activate ইভেন্ট)। তবু কখনো ব্রাউজার পুরনো sw.js/ক্যাশ
+// আটকে রাখলে (যেমন ব্যাকগ্রাউন্ড ট্যাব, অস্বাভাবিক নেটওয়ার্ক অবস্থা), এই বাটন
+// দিয়ে ম্যানুয়ালি সব caches মুছে, service worker আনরেজিস্টার করে, cache-bust
+// query দিয়ে জোর করে রিলোড করা যাবে — একটা এক-ক্লিক "hard reset"।
+const cacheRefreshBtn = document.getElementById("cache-refresh-btn");
+if (cacheRefreshBtn) {
+  cacheRefreshBtn.addEventListener("click", async () => {
+    cacheRefreshBtn.disabled = true;
+    cacheRefreshBtn.textContent = "রিফ্রেশ হচ্ছে…";
+    try {
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((key) => caches.delete(key)));
+      }
+      if ("serviceWorker" in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((reg) => reg.unregister()));
+      }
+    } catch (e) {
+      // ক্যাশ/এসডব্লিউ মুছতে সমস্যা হলেও নিচের রিলোড অন্তত পুরনো পেজ থেকে
+      // বের করে নতুন করে সব ফাইল আনার চেষ্টা করবে
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.set("_refresh", Date.now().toString());
+    window.location.href = url.toString();
+  });
+}
+</script>
+
+</body>
+</html>
