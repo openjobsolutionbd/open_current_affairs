@@ -362,7 +362,7 @@ def stamp_service_worker():
     template = SW_TEMPLATE.read_text(encoding="utf-8")
     stamped = template.replace("__VERSION__", version)
     SW_OUTPUT.write_text(stamped, encoding="utf-8")
-    print(f"তৈরি হলো: {SW_OUTPUT} (cache: jobarchive-cache-{version})")
+    print(f"তৈরি হলো: {SW_OUTPUT} (cache: oca-cache-{version})")
 
 
 def _main():

@@ -6,8 +6,8 @@
 
 - [ ] `python3 scripts/build_index.py` exit code 0 দিয়ে শেষ হয়।
 - [ ] ভুল frontmatter দিয়ে test করলে build non-zero exit দেয়।
-- [ ] `docs/topics/`-এ `topics/`-এর সব topic আছে।
-- [ ] `docs/topics-index.json`-এর topic count source topic count-এর সঙ্গে মেলে।
+- [ ] `docs/topics/`-এর প্রতিটা valid `.md` ফাইল `docs/topics-index.json`-এ ইনডেক্স হয়েছে (কপি-তুলনার আলাদা `topics/` সোর্স ফোল্ডার আর নেই — single-copy architecture)।
+- [ ] `docs/topics-index.json`-এর topic count, `docs/topics/`-এ থাকা valid `.md` ফাইলের সংখ্যার সঙ্গে মেলে।
 - [ ] `docs/sw.js`-এর CACHE_NAME-এ `VERSION`-এর সংখ্যা বসেছে।
 - [ ] `docs/version.json`-এর ভার্সন `VERSION` ফাইলের সংখ্যার সাথে মেলে।
 - [ ] `docs/mcq-index.json` বা কোনো quiz output তৈরি হয় না।

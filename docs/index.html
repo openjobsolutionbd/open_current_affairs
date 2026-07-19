@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JobArchive — কারেন্ট অ্যাফেয়ার্স রেজিস্টার</title>
+<title>Open Current Affairs — কারেন্ট অ্যাফেয়ার্স রেজিস্টার</title>
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#0e2620">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
@@ -839,11 +839,11 @@ let GHOTONAPROBAHO_PAGE = 0; // ০ = সবচেয়ে সাম্প্�
 const GHOTONAPROBAHO_PAGE_SIZE = 3; // প্রতি পেজে কয় মাস একসাথে দেখানো হয়
 
 function loadProgress(){
-  try{ return JSON.parse(localStorage.getItem('jobarchive_progress') || '{}'); }
+  try{ return JSON.parse(localStorage.getItem('oca_progress') || '{}'); }
   catch(e){ return {}; }
 }
 function saveProgress(p){
-  try{ localStorage.setItem('jobarchive_progress', JSON.stringify(p)); }catch(e){}
+  try{ localStorage.setItem('oca_progress', JSON.stringify(p)); }catch(e){}
 }
 function isRead(slug){
   return !!loadProgress()[slug];
@@ -860,12 +860,12 @@ function applyTheme(theme, persist){
   const btn = document.getElementById('theme-toggle-btn');
   if(btn) btn.textContent = theme === 'dark' ? '☀️ লাইট মোড' : '🌙 ডার্ক মোড';
   if(persist){
-    try{ localStorage.setItem('jobarchive_theme', theme); }catch(e){}
+    try{ localStorage.setItem('oca_theme', theme); }catch(e){}
   }
 }
 function initTheme(){
   let saved = null;
-  try{ saved = localStorage.getItem('jobarchive_theme'); }catch(e){}
+  try{ saved = localStorage.getItem('oca_theme'); }catch(e){}
   if(saved){
     applyTheme(saved, false);
     return;

@@ -93,5 +93,40 @@
 
 **শেখার বিষয় (ভবিষ্যতের জন্য নোট):** হার্ডকোডেড রঙ খোঁজার সময় শুধু `#fff`/`#000` না, `rgba(255,255,255,...)` ও `rgba(0,0,0,...)` ফর্মেও সার্চ করা দরকার।
 
+---
+
+## [1.2.0] — ২০২৬-০৭-২০
+
+**যা করা হয়েছে: প্রজেক্টের নাম "JobArchive" থেকে "Open Current Affairs"-এ বদলানো হলো (ব্যবহারকারীর অনুরোধে)**
+
+পুরো কোডবেসে যেখানে যেখানে পুরনো নাম ব্যবহৃত হচ্ছিল, সেসব জায়গা খুঁজে বদলানো হয়েছে:
+
+- `docs/index.html` — `<title>` ও `localStorage` key দুটো (`jobarchive_progress` → `oca_progress`, `jobarchive_theme` → `oca_theme`)
+- `docs/manifest.json` — `name` ও `short_name`
+- `scripts/sw_template.js` ও `docs/sw.js` (generated) — কমেন্ট ও `CACHE_NAME` (`jobarchive-cache-*` → `oca-cache-*`)
+- `scripts/build_index.py` — বিল্ড লগ মেসেজে cache নাম রেফারেন্স
+- `wrangler.toml` — Cloudflare Pages project `name` (`jobarchive` → `open-current-affairs`)
+- `README.md`, `PROJECT.md` — প্রজেক্ট শিরোনাম ও ফোল্ডার-কাঠামো ডায়াগ্রামের লেবেল
+
+**গুরুত্বপূর্ণ (breaking change):** `localStorage` key বদলানোর সিদ্ধান্ত ব্যবহারকারীর সরাসরি অনুমোদনে নেওয়া হয়েছে — এর ফলে যারা আগে সাইট ভিজিট করেছেন, তাদের সেভ করা reading progress ও dark/light mode পছন্দ নতুন ভার্সনে রিসেট হয়ে যাবে (নতুন key খালি অবস্থা থেকে শুরু হবে)। এটা সচেতনভাবে করা হয়েছে, পুরনো key-র সাথে সামঞ্জস্য রাখার (migration) বদলে পুরোপুরি consistent নতুন নামকরণের জন্য।
+
+ওয়েবসাইটের দৃশ্যমান UI heading (`<h1>কারেন্ট অ্যাফেয়ার্স রেজিস্টার</h1>`)-এ আগে থেকেই "JobArchive" শব্দটা ছিল না, তাই সেটা অপরিবর্তিত রাখা হয়েছে।
+
+`python3 scripts/build_index.py` চালিয়ে generated output (`docs/sw.js`, `docs/version.json`, `docs/topics-index.json`, `docs/recent-changes.json`, `docs/ghotonaprobaho-index.json`) নতুন ভার্সন নম্বর ও cache নাম দিয়ে রিফ্রেশ করা হয়েছে।
+
+---
+
+## [Unreleased] — ডকুমেন্টেশন ফিক্স, ২০২৬-০৭-২০
+
+**যা করা হয়েছে: `README.md`, `PROJECT.md`, `TEST_CHECKLIST.md`-কে আসল single-copy `docs/topics/` architecture-এর সাথে মিলিয়ে ঠিক করা হলো**
+
+রিব্র্যান্ডিংয়ের পর পুরো প্রজেক্ট বাগের জন্য পুনরায় পরীক্ষা করার সময় ধরা পড়ে যে `scripts/build_index.py`-এর কোড (এবং তার নিজের comment) অনুযায়ী root-level আলাদা `topics/` সোর্স ফোল্ডার আর নেই — `TOPICS_DIR` সরাসরি `docs/topics/` নির্দেশ করে এবং কোনো `copytree`/কপি ধাপ নেই (`docs/topics/`-ই একইসাথে সোর্স এবং deploy হওয়া কনটেন্ট)। কিন্তু এই তিনটা ডকুমেন্টেশন ফাইল তখনও পুরনো দুই-ফোল্ডার ব্যবস্থা (`topics/` → `docs/topics/` কপি) বর্ণনা করছিল। এটা কোনো নতুন কোড-বাগ ছিল না (আপলোড করা zip-এই root-level `topics/` অনুপস্থিত ছিল), কিন্তু ডকুমেন্টেশন-কোড mismatch হিসেবে ভুল নির্দেশনা তৈরি করছিল — বিশেষভাবে `TEST_CHECKLIST.md`-এর একটা আইটেম আক্ষরিক অর্থেই সম্পন্ন করা অসম্ভব ছিল, কারণ যেই `topics/` ফোল্ডারের সাথে তুলনা করতে বলা হচ্ছিল সেটাই নেই।
+
+**ঠিক করা হয়েছে:**
+- `PROJECT.md` — ফোল্ডার-ডায়াগ্রাম, source-of-truth ব্যাখ্যা, build flow (কপি-ধাপ বাদ), roadmap section, আর একটা historical নোট যোগ করা হলো যাতে এই architecture-পরিবর্তন ভবিষ্যতে ট্র্যাক করা যায়
+- `README.md` — সব `topics/` রেফারেন্স `docs/topics/`-এ বদলানো হলো (৫ জায়গায়)
+- `TEST_CHECKLIST.md` — যেই চেকলিস্ট-আইটেম করাই অসম্ভব ছিল সেটা অর্থবহ একটা চেকে বদলানো হলো (`docs/topics/`-এর প্রতিটা valid ফাইল ইনডেক্স হয়েছে কিনা, এবং topic count মিলছে কিনা)
+
+কোনো কোড ফাইল বদলায়নি — এটা খাঁটি ডকুমেন্টেশন সংশোধন, তাই VERSION বাড়ানো হয়নি।
 
 

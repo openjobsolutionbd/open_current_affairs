@@ -1,8 +1,8 @@
-// JobArchive service worker — অফলাইনেও আগে দেখা টপিক পড়া যাবে।
+// Open Current Affairs service worker — অফলাইনেও আগে দেখা টপিক পড়া যাবে।
 // CACHE_NAME নিচে বিল্ড-স্ক্রিপ্ট স্বয়ংক্রিয়ভাবে VERSION ফাইল থেকে বসিয়ে দেয়।
 // তাই VERSION বাড়লেই পুরনো ক্যাশ বাতিল হয়ে সবার জন্য নতুন ভার্সন লোড হয় —
 // এই ফাইলে হাতে কিছু বদলানোর দরকার নেই।
-const CACHE_NAME = "jobarchive-cache-__VERSION__";
+const CACHE_NAME = "oca-cache-__VERSION__";
 
 const APP_SHELL = [
   "./",

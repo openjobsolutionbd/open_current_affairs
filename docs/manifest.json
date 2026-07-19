@@ -1,6 +1,6 @@
 {
-  "name": "JobArchive — কারেন্ট অ্যাফেয়ার্স রেজিস্টার",
-  "short_name": "JobArchive",
+  "name": "Open Current Affairs — কারেন্ট অ্যাফেয়ার্স রেজিস্টার",
+  "short_name": "Open Current Affairs",
   "description": "টপিক-ভিত্তিক কারেন্ট অ্যাফেয়ার্স নলেজ-বেস, রিয়েল-টাইম সার্চ সহ",
   "start_url": "./index.html",
   "scope": "./",
