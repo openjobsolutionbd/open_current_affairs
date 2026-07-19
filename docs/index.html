@@ -18,6 +18,34 @@
     font-style:normal;
     font-display:swap;
   }
+  @font-face{
+    font-family:'Noto Serif Bengali';
+    src:url('./fonts/NotoSerifBengali-Regular.woff2') format('woff2');
+    font-weight:400;
+    font-style:normal;
+    font-display:swap;
+  }
+  @font-face{
+    font-family:'Noto Serif Bengali';
+    src:url('./fonts/NotoSerifBengali-Bold.woff2') format('woff2');
+    font-weight:700;
+    font-style:normal;
+    font-display:swap;
+  }
+  @font-face{
+    font-family:'Hind Siliguri';
+    src:url('./fonts/HindSiliguri-SemiBold.woff2') format('woff2');
+    font-weight:600;
+    font-style:normal;
+    font-display:swap;
+  }
+  @font-face{
+    font-family:'Hind Siliguri';
+    src:url('./fonts/HindSiliguri-Medium.woff2') format('woff2');
+    font-weight:500;
+    font-style:normal;
+    font-display:swap;
+  }
   :root{
     --ink:#1c231e;
     --paper:#eeebe1;
@@ -47,10 +75,10 @@
      (সাদা-টেক্সট-অন-green, --brass-এর ওপর/নিচে টেক্সট, seal-অন-paper-raised)
      ভুল ছিল, সেগুলো ঠিক করা হয়েছে। */
   [data-theme="dark"]{
-    --ink:#e9e5d9;
-    --paper:#121814;
-    --paper-raised:#1c2620;
-    --green:#2d6b4f;
+    --ink:#d6d1c3;
+    --paper:#141a15;
+    --paper-raised:#1e2921;
+    --green:#1f4a37;
     --green-deep:#0e2620;
     --seal:#c74d38;
     --seal-text:#e28569;
@@ -187,15 +215,19 @@
   .tab:hover{background:rgba(169,130,46,0.12);}
   .tab.active{
     background:var(--green);
-    color:#fff;
+    color:var(--on-dark);
     font-weight:600;
   }
   .tab .tab-tags{
     display:block;
     font-family:'Kalpurush',sans-serif;
     font-size:11px;
-    opacity:0.65;
+    color:var(--muted);
     margin-top:2px;
+  }
+  .tab.active .tab-tags{
+    color:var(--on-dark);
+    opacity:0.75;
   }
   .tab mark{
     background:rgba(162,59,46,0.18);
@@ -247,7 +279,7 @@
     height:60px;
     border-radius:50%;
     background:var(--seal);
-    color:#fff;
+    color:var(--on-dark);
     display:flex;
     align-items:center;
     justify-content:center;
@@ -318,12 +350,18 @@
   }
 
   .card h2{
-    font-family:'Kalpurush',serif;
+    font-family:'Hind Siliguri',sans-serif;
+    font-weight:600;
     color:var(--heading);
     font-size:26px;
     margin:0 0 4px 90px;
     border-bottom:2px solid var(--brass);
     padding-bottom:10px;
+    padding-right:320px;
+  }
+  @media (max-width:700px){
+    .card h2{ padding-right:0; margin-left:0; }
+    .card .tags-row{ margin-left:0; }
   }
   .card .tags-row{
     margin:8px 0 20px 90px;
@@ -335,17 +373,32 @@
     font-family:'Kalpurush',sans-serif;
     font-size:11px;
     background:var(--pill-bg);
-    color:var(--heading);
+    color:var(--ink);
     padding:3px 10px;
     border-radius:12px;
     border:1px solid var(--line);
     cursor:pointer;
   }
+  [data-theme="dark"] .pill{
+    color:var(--on-dark);
+    border-color:var(--line);
+  }
   .pill:hover{background:var(--brass); color:var(--on-brass);}
   .card-body{margin-top:6px;}
-  .card-body h2{font-size:19px;margin:22px 0 10px;padding-bottom:6px;}
+  .card-body h2{
+    font-family:'Hind Siliguri',sans-serif;
+    font-weight:500;
+    font-size:19px;
+    margin:22px 0 10px;
+    padding-bottom:6px;
+  }
   .card-body h1{display:none;}
-  .card-body p{line-height:1.75;margin:0 0 12px;}
+  .card-body p{
+    font-family:'Noto Serif Bengali',serif;
+    font-size:16.5px;
+    line-height:1.8;
+    margin:0 0 12px;
+  }
   .card-body strong{color:var(--heading);}
   .table-scroll{
     overflow-x:auto;
@@ -364,18 +417,27 @@
     padding:8px 10px;
     text-align:right;
   }
+  .card-body td{
+    font-family:'Noto Serif Bengali',serif;
+    font-size:14.5px;
+  }
   .card-body th{
     background:var(--green);
-    color:#fff;
+    color:var(--on-dark);
     font-family:'Kalpurush',sans-serif;
     font-weight:500;
     font-size:12.5px;
   }
   .card-body tr:nth-child(even) td{background:rgba(169,130,46,0.06);}
-  .card-body ul{padding-right:20px;line-height:1.8;}
+  .card-body ul{
+    font-family:'Noto Serif Bengali',serif;
+    font-size:16.5px;
+    padding-right:20px;
+    line-height:1.8;
+  }
 
-  .history-heading{
-    font-family:'Kalpurush',serif;
+  .card-body h2.history-heading{
+    font-family:'Kalpurush',serif !important;
     color:var(--seal-text);
     font-size:18px;
     border-top:3px double var(--line);
@@ -453,7 +515,7 @@
     display:inline-block;
   }
   .mode-toggle:hover, .theme-toggle:hover{background:rgba(169,130,46,0.15);}
-  .mode-toggle.active{background:var(--seal);color:#fff;border-color:var(--seal);}
+  .mode-toggle.active{background:var(--seal);color:var(--on-dark);border-color:var(--seal);}
 
   .changes-item{
     border-bottom:1px solid var(--line);
@@ -471,7 +533,7 @@
     font-family:'Kalpurush',sans-serif;
     font-size:10.5px;
     font-weight:600;
-    color:#fff;
+    color:var(--on-dark);
     background:var(--seal);
     padding:2px 9px;
     border-radius:10px;
@@ -657,7 +719,7 @@
     list-style-position:outside;
   }
   .ghotonaprobaho-items li{
-    font-family:'Kalpurush',sans-serif;
+    font-family:'Noto Serif Bengali',serif;
     font-size:14.5px;
     line-height:1.65;
     color:var(--ink);
@@ -793,16 +855,24 @@ function toggleRead(slug){
   return p[slug];
 }
 
-function applyTheme(theme){
+function applyTheme(theme, persist){
   document.documentElement.setAttribute('data-theme', theme);
   const btn = document.getElementById('theme-toggle-btn');
   if(btn) btn.textContent = theme === 'dark' ? '☀️ লাইট মোড' : '🌙 ডার্ক মোড';
-  try{ localStorage.setItem('jobarchive_theme', theme); }catch(e){}
+  if(persist){
+    try{ localStorage.setItem('jobarchive_theme', theme); }catch(e){}
+  }
 }
 function initTheme(){
   let saved = null;
   try{ saved = localStorage.getItem('jobarchive_theme'); }catch(e){}
-  applyTheme(saved || 'light');
+  if(saved){
+    applyTheme(saved, false);
+    return;
+  }
+  let prefersDark = false;
+  try{ prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches; }catch(e){}
+  applyTheme(prefersDark ? 'dark' : 'light', false);
 }
 
 async function loadIndex(){
@@ -1133,7 +1203,7 @@ window.addEventListener('hashchange', () => {
 
 document.getElementById('theme-toggle-btn').addEventListener('click', () => {
   const current = document.documentElement.getAttribute('data-theme');
-  applyTheme(current === 'dark' ? 'light' : 'dark');
+  applyTheme(current === 'dark' ? 'light' : 'dark', true);
 });
 
 document.getElementById('ghotonaprobaho-toggle-btn').addEventListener('click', () => {
