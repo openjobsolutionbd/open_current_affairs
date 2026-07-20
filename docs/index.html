@@ -8,6 +8,16 @@
 <meta name="theme-color" content="#0e2620">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
+<script>
+  /* থিম flash এড়াতে head-এই localStorage থেকে পড়া হচ্ছে */
+  (function(){
+    var t;
+    try{ t = localStorage.getItem('oca_theme'); }catch(e){}
+    if(t === 'dark' || t === 'night-paper' || t === 'light'){
+      document.documentElement.setAttribute('data-theme', t);
+    }
+  })();
+</script>
 <script src="./vendor/marked.min.js"></script>
 <script src="./vendor/purify.min.js"></script>
 <style>
@@ -68,32 +78,58 @@
     --error-text:#7a2a20;
     --shadow: 0 8px 24px rgba(14,38,32,0.18);
   }
-  /* ডার্ক মোড: নিরপেক্ষ (paper/ink/border) রঙ বদলায়, এবং ব্র্যান্ড-রঙগুলোও
-     (green/seal/brass) ডার্ক ব্যাকগ্রাউন্ডে পড়ার-যোগ্য মানে সমন্বয় করা।
-     প্রতিটা টেক্সট/ব্যাকগ্রাউন্ড জোড়া প্রকৃত hex মান দিয়ে হিসাব করে
-     (WCAG AA, ≥4.5:1) যাচাই করা হয়েছে — আগে এই যাচাইয়ে কয়েকটা জোড়ায়
-     (সাদা-টেক্সট-অন-green, --brass-এর ওপর/নিচে টেক্সট, seal-অন-paper-raised)
-     ভুল ছিল, সেগুলো ঠিক করা হয়েছে। */
+  /* ══════════════════════════════════════════════════════
+     Book Dark থিম — warm charcoal + cream
+     চোখের আরাম, বইয়ের পাতার মতো উষ্ণ অনুভূতি
+     ══════════════════════════════════════════════════════ */
   [data-theme="dark"]{
-    --ink:#d6d1c3;
-    --paper:#141a15;
-    --paper-raised:#1e2921;
-    --green:#1f4a37;
-    --green-deep:#0e2620;
-    --seal:#c74d38;
-    --seal-text:#e28569;
-    --brass:#d1a63f;
-    --line:#3f4c42;
-    --on-brass:#0e2620;
-    --heading:#8fd6b4;
-    --muted:#a89f8c;
-    --pill-bg: rgba(143,214,180,0.12);
-    --success-bg:#173322;
-    --success-border:#4caf6e;
-    --success-text:#a9e6bf;
-    --error-bg:#3a201d;
-    --error-text:#f0a99c;
-    --shadow: 0 8px 24px rgba(0,0,0,0.5);
+    --ink:#e8e0cc;
+    --paper:#1e1a14;
+    --paper-raised:#2a2418;
+    --green:#2e4a2e;
+    --green-deep:#1a2e1a;
+    --seal:#c4532a;
+    --seal-text:#e8916a;
+    --brass:#c9943a;
+    --line:#4a3f2e;
+    --on-dark:#f0e8d0;
+    --on-brass:#1a1208;
+    --heading:#d4b896;
+    --muted:#9c8a6e;
+    --pill-bg: rgba(201,148,58,0.12);
+    --success-bg:#1a2e1a;
+    --success-border:#5a9e5a;
+    --success-text:#a0d4a0;
+    --error-bg:#3a1e14;
+    --error-text:#f0a080;
+    --shadow: 0 8px 24px rgba(0,0,0,0.55);
+  }
+
+  /* ══════════════════════════════════════════════════════
+     Night Paper থিম — deep sepia + golden
+     পুরনো কাগজের রঙ, সোনালি আভা, আরও warm
+     ══════════════════════════════════════════════════════ */
+  [data-theme="night-paper"]{
+    --ink:#f0dfc0;
+    --paper:#1a1408;
+    --paper-raised:#261e0e;
+    --green:#3a3010;
+    --green-deep:#120e04;
+    --seal:#b84a20;
+    --seal-text:#e89060;
+    --brass:#d4a830;
+    --line:#4e3e1a;
+    --on-dark:#f5e8c0;
+    --on-brass:#120e04;
+    --heading:#e0c060;
+    --muted:#a08850;
+    --pill-bg: rgba(212,168,48,0.13);
+    --success-bg:#1a2810;
+    --success-border:#6ab040;
+    --success-text:#b0e080;
+    --error-bg:#3a1a08;
+    --error-text:#f0a870;
+    --shadow: 0 8px 24px rgba(0,0,0,0.6);
   }
   *{box-sizing:border-box;}
   body{
@@ -382,7 +418,8 @@
     border:1px solid var(--line);
     cursor:pointer;
   }
-  [data-theme="dark"] .pill{
+  [data-theme="dark"] .pill,
+  [data-theme="night-paper"] .pill{
     color:var(--on-dark);
     border-color:var(--line);
   }
@@ -810,7 +847,7 @@
 
 <div class="toolbar">
   <button id="ghotonaprobaho-toggle-btn" class="mode-toggle">🗓️ দৈনিক ঘটনাপ্রবাহ</button>
-  <button id="theme-toggle-btn" class="theme-toggle">🌙 ডার্ক মোড</button>
+  <button id="theme-toggle-btn" class="theme-toggle">🌙 Book Dark</button>
 </div>
 
 <div class="layout" id="browse-layout">
@@ -858,10 +895,18 @@ function toggleRead(slug){
   return p[slug];
 }
 
+/* থিম সাইকেল: light → dark (Book Dark) → night-paper (Night Paper) → light */
+const THEME_CYCLE = ['light', 'dark', 'night-paper'];
+const THEME_LABELS = {
+  'light':       '🌙 Book Dark',
+  'dark':        '📜 Night Paper',
+  'night-paper': '☀️ লাইট মোড',
+};
+
 function applyTheme(theme, persist){
   document.documentElement.setAttribute('data-theme', theme);
   const btn = document.getElementById('theme-toggle-btn');
-  if(btn) btn.textContent = theme === 'dark' ? '☀️ লাইট মোড' : '🌙 ডার্ক মোড';
+  if(btn) btn.textContent = THEME_LABELS[theme] || '🌙 থিম';
   if(persist){
     try{ localStorage.setItem('oca_theme', theme); }catch(e){}
   }
@@ -869,7 +914,7 @@ function applyTheme(theme, persist){
 function initTheme(){
   let saved = null;
   try{ saved = localStorage.getItem('oca_theme'); }catch(e){}
-  if(saved){
+  if(saved && THEME_CYCLE.includes(saved)){
     applyTheme(saved, false);
     return;
   }
@@ -1205,8 +1250,10 @@ window.addEventListener('hashchange', () => {
 });
 
 document.getElementById('theme-toggle-btn').addEventListener('click', () => {
-  const current = document.documentElement.getAttribute('data-theme');
-  applyTheme(current === 'dark' ? 'light' : 'dark', true);
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
+  const idx = THEME_CYCLE.indexOf(current);
+  const next = THEME_CYCLE[(idx + 1) % THEME_CYCLE.length];
+  applyTheme(next, true);
 });
 
 document.getElementById('ghotonaprobaho-toggle-btn').addEventListener('click', () => {
