@@ -1263,7 +1263,8 @@ window.addEventListener('hashchange', () => {
   }
 });
 
-document.addEventListener('DOMContentLoaded', () => { initTheme(); });
+// Script <body> শেষে আছে, তাই DOM ready — DOMContentLoaded wrapper লাগবে না
+initTheme();
 
 document.getElementById('theme-toggle-btn').addEventListener('click', () => {
   const current = document.documentElement.getAttribute('data-theme') || 'light';
