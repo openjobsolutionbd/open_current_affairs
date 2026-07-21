@@ -13,9 +13,10 @@
   (function(){
     var t;
     try{ t = localStorage.getItem('oca_theme'); }catch(e){}
-    if(t === 'dark' || t === 'night-paper' || t === 'light'){
+    if(t === 'dark' || t === 'night-paper'){
       document.documentElement.setAttribute('data-theme', t);
     }
+    // light বা unknown হলে attribute সেট করা হয় না — :root CSS কাজ করে
   })();
 </script>
 <script src="./vendor/marked.min.js"></script>
@@ -902,11 +903,25 @@ const THEME_LABELS = {
   'dark':        '📜 Night Paper',
   'night-paper': '☀️ লাইট মোড',
 };
+const THEME_COLORS = {
+  'light':       '#eeebe1',
+  'dark':        '#1e1a14',
+  'night-paper': '#1a1408',
+};
 
 function applyTheme(theme, persist){
-  document.documentElement.setAttribute('data-theme', theme);
+  // Bug 3 fix: light থিমে attribute না রাখলেই হয়, :root CSS কাজ করে
+  if(theme === 'light'){
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+  // Bug 1 fix: btn null হলে skip, DOMContentLoaded এর পরে আবার call হবে
   const btn = document.getElementById('theme-toggle-btn');
   if(btn) btn.textContent = THEME_LABELS[theme] || '🌙 থিম';
+  // Bug 2 fix: meta theme-color আপডেট
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if(metaTheme) metaTheme.setAttribute('content', THEME_COLORS[theme] || THEME_COLORS['light']);
   if(persist){
     try{ localStorage.setItem('oca_theme', theme); }catch(e){}
   }
@@ -924,7 +939,6 @@ function initTheme(){
 }
 
 async function loadIndex(){
-  initTheme();
   try{
     const res = await fetch('./topics-index.json');
     const data = await res.json();
@@ -1248,6 +1262,8 @@ window.addEventListener('hashchange', () => {
     renderList(currentFiltered(q), q);
   }
 });
+
+document.addEventListener('DOMContentLoaded', () => { initTheme(); });
 
 document.getElementById('theme-toggle-btn').addEventListener('click', () => {
   const current = document.documentElement.getAttribute('data-theme') || 'light';
