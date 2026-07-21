@@ -13,7 +13,7 @@
   (function(){
     var t;
     try{ t = localStorage.getItem('oca_theme'); }catch(e){}
-    if(t === 'dark' || t === 'night-paper'){
+    if(t === 'dark'){
       document.documentElement.setAttribute('data-theme', t);
     }
     // light বা unknown হলে attribute সেট করা হয় না — :root CSS কাজ করে
@@ -57,96 +57,123 @@
     font-style:normal;
     font-display:swap;
   }
-  :root{
-    --ink:#1c231e;
-    --paper:#eeebe1;
-    --paper-raised:#f6f3ea;
-    --green:#16362b;
-    --green-deep:#0e2620;
-    --seal:#a23b2e;
-    --seal-text:#a23b2e;
-    --brass:#8c691f;
-    --line:#c9c2ac;
-    --on-dark:#f6f3ea;
-    --on-brass:#f6f3ea;
-    --heading:#0e2620;
-    --muted:#6e6754;
-    --pill-bg: rgba(22,54,43,0.08);
-    --success-bg:#dcefe0;
-    --success-border:#2f7245;
-    --success-text:#1f4a2c;
-    --error-bg:#f6dcd8;
-    --error-text:#7a2a20;
-    --shadow: 0 8px 24px rgba(14,38,32,0.18);
-  }
+
   /* ══════════════════════════════════════════════════════
-     Book Dark থিম — warm charcoal + cream
-     চোখের আরাম, বইয়ের পাতার মতো উষ্ণ অনুভূতি
+     Light Mode — বাংলাদেশ সরকারের সিলের রঙ
+     সবুজ #006B3F · লাল #E8112D · হলুদ #F5C518
      ══════════════════════════════════════════════════════ */
-  [data-theme="dark"]{
-    --ink:#e8e0cc;
-    --paper:#1e1a14;
-    --paper-raised:#2a2418;
-    --green:#2e4a2e;
-    --green-deep:#1a2e1a;
-    --seal:#c4532a;
-    --seal-text:#e8916a;
-    --brass:#c9943a;
-    --line:#4a3f2e;
-    --on-dark:#f0e8d0;
-    --on-brass:#1a1208;
-    --heading:#d4b896;
-    --muted:#9c8a6e;
-    --pill-bg: rgba(201,148,58,0.12);
-    --success-bg:#1a2e1a;
-    --success-border:#5a9e5a;
-    --success-text:#a0d4a0;
-    --error-bg:#3a1e14;
-    --error-text:#f0a080;
-    --shadow: 0 8px 24px rgba(0,0,0,0.55);
+  :root{
+    --ink:#1a1a1a;
+    --paper:#f2f2ef;
+    --paper-raised:#ffffff;
+    --masthead-bg:#004d2c;
+    --masthead-border:#F5C518;
+    --drawer-bg:#004d2c;
+    --drawer-label-color:#ffffff;
+    --accent:#006B3F;
+    --accent-deep:#004d2c;
+    --accent-light:rgba(0,107,63,0.08);
+    --line:#d8d8d8;
+    --on-dark:#ffffff;
+    --on-accent:#ffffff;
+    --heading:#006B3F;
+    --heading-border:#006B3F;
+    --muted:#666666;
+    --seal:#E8112D;
+    --seal-text:#c00020;
+    --pill-bg:rgba(0,107,63,0.09);
+    --success-bg:#e8f5ee;
+    --success-border:#006B3F;
+    --success-text:#004d2c;
+    --error-bg:#fdecea;
+    --error-text:#c00020;
+    --shadow:0 2px 12px rgba(0,0,0,0.09);
   }
 
   /* ══════════════════════════════════════════════════════
-     Night Paper থিম — deep sepia + golden
-     পুরনো কাগজের রঙ, সোনালি আভা, আরও warm
+     Dark Mode — গভীর কালো, সরকারি সবুজ heading
      ══════════════════════════════════════════════════════ */
-  [data-theme="night-paper"]{
-    --ink:#f0dfc0;
-    --paper:#1a1408;
-    --paper-raised:#261e0e;
-    --green:#3a3010;
-    --green-deep:#120e04;
-    --seal:#b84a20;
-    --seal-text:#e89060;
-    --brass:#d4a830;
-    --line:#4e3e1a;
-    --on-dark:#f5e8c0;
-    --on-brass:#120e04;
-    --heading:#e0c060;
-    --muted:#a08850;
-    --pill-bg: rgba(212,168,48,0.13);
-    --success-bg:#1a2810;
-    --success-border:#6ab040;
-    --success-text:#b0e080;
-    --error-bg:#3a1a08;
-    --error-text:#f0a870;
-    --shadow: 0 8px 24px rgba(0,0,0,0.6);
+  [data-theme="dark"]{
+    --ink:#e8e8e8;
+    --paper:#111111;
+    --paper-raised:#1a1a1a;
+    --masthead-bg:#001a0f;
+    --masthead-border:#F5C518;
+    --drawer-bg:#001a0f;
+    --drawer-label-color:#e0e0e0;
+    --accent:#2aad6e;
+    --accent-deep:#006B3F;
+    --accent-light:rgba(42,173,110,0.10);
+    --line:#2a2a2a;
+    --on-dark:#e8e8e8;
+    --on-accent:#001a0f;
+    --heading:#2aad6e;
+    --heading-border:#2aad6e;
+    --muted:#888888;
+    --seal:#ff3a50;
+    --seal-text:#ff6070;
+    --pill-bg:rgba(42,173,110,0.10);
+    --success-bg:#0d2018;
+    --success-border:#2aad6e;
+    --success-text:#7adaaa;
+    --error-bg:#200a0a;
+    --error-text:#ff8090;
+    --shadow:0 2px 12px rgba(0,0,0,0.5);
   }
   *{box-sizing:border-box;}
+
+  /* ── Linen/canvas texture — Lightshot-এর মতো সূক্ষ্ম woven fabric ── */
   body{
     margin:0;
-    background:var(--paper);
     color:var(--ink);
     font-family:'Kalpurush', sans-serif;
     -webkit-font-smoothing:antialiased;
     transition:background-color 0.2s ease, color 0.2s ease;
+
+    /* light mode: হালকা ধূসর canvas — দুটো আধা-স্বচ্ছ line cross করে texture তৈরি */
+    background-color: var(--paper);
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(0,0,0,0.025) 3px,
+        rgba(0,0,0,0.025) 4px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 3px,
+        rgba(0,0,0,0.025) 3px,
+        rgba(0,0,0,0.025) 4px
+      );
+  }
+
+  /* dark mode: একই texture কিন্তু সাদা আভায় */
+  [data-theme="dark"] body{
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(255,255,255,0.025) 3px,
+        rgba(255,255,255,0.025) 4px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 3px,
+        rgba(255,255,255,0.025) 3px,
+        rgba(255,255,255,0.025) 4px
+      );
   }
   .masthead{
-    background:var(--green-deep);
+    background:var(--masthead-bg);
     color:var(--on-dark);
     padding:28px 24px 22px;
     text-align:center;
-    border-bottom:6px double var(--brass);
+    border-bottom:5px solid var(--masthead-border);
+    box-shadow:0 2px 0 var(--seal);
   }
   .masthead h1{
     font-family:'Kalpurush', serif;
@@ -178,8 +205,8 @@
     position:absolute;
     top:-11px;
     left:14px;
-    background:var(--brass);
-    color:var(--on-brass);
+    background:var(--accent);
+    color:var(--on-accent);
     font-family:'Kalpurush',sans-serif;
     font-size:11px;
     font-weight:600;
@@ -192,9 +219,9 @@
     border:none;
     background:transparent;
     outline:none;
-    padding:20px 16px 14px;
+    padding:12px 14px 9px;
     font-family:'Kalpurush',sans-serif;
-    font-size:18px;
+    font-size:15px;
     color:var(--ink);
   }
   #search::placeholder{color:var(--muted);}
@@ -230,8 +257,8 @@
     align-self:start;
   }
   .drawer-label{
-    background:var(--green);
-    color:var(--on-dark);
+    background:var(--drawer-bg);
+    color:var(--drawer-label-color);
     font-family:'Kalpurush',sans-serif;
     font-size:12px;
     letter-spacing:0.08em;
@@ -252,11 +279,12 @@
     cursor:pointer;
   }
   .tab:last-child{border-bottom:none;}
-  .tab:hover{background:rgba(169,130,46,0.12);}
+  .tab:hover{background:var(--accent-light);}
   .tab.active{
-    background:var(--green);
+    background:var(--drawer-bg);
     color:var(--on-dark);
     font-weight:600;
+    border-left:3px solid var(--accent);
   }
   .tab .tab-tags{
     display:block;
@@ -270,7 +298,7 @@
     opacity:0.75;
   }
   .tab mark{
-    background:rgba(162,59,46,0.18);
+    background:rgba(232,17,45,0.12);
     color:var(--heading);
     font-weight:600;
     border-radius:2px;
@@ -379,7 +407,7 @@
     cursor:pointer;
     transition:background 0.15s ease;
   }
-  .copy-link:hover{background:rgba(169,130,46,0.15);}
+  .copy-link:hover{background:var(--accent-light);}
   @media (max-width:700px){
     .card-actions{
       position:static;
@@ -395,7 +423,7 @@
     color:var(--heading);
     font-size:26px;
     margin:0 0 4px 90px;
-    border-bottom:2px solid var(--brass);
+    border-bottom:2px solid var(--heading-border);
     padding-bottom:10px;
     padding-right:320px;
   }
@@ -419,19 +447,20 @@
     border:1px solid var(--line);
     cursor:pointer;
   }
-  [data-theme="dark"] .pill,
-  [data-theme="night-paper"] .pill{
+  [data-theme="dark"] .pill{
     color:var(--on-dark);
     border-color:var(--line);
   }
-  .pill:hover{background:var(--brass); color:var(--on-brass);}
+  .pill:hover{background:var(--accent); color:var(--on-accent);}
   .card-body{margin-top:6px;}
   .card-body h2{
     font-family:'Hind Siliguri',sans-serif;
-    font-weight:500;
+    font-weight:600;
     font-size:19px;
+    color:var(--heading);
     margin:22px 0 10px;
     padding-bottom:6px;
+    border-bottom:1px solid var(--line);
   }
   .card-body h1{display:none;}
   .card-body p{
@@ -463,13 +492,13 @@
     font-size:14.5px;
   }
   .card-body th{
-    background:var(--green);
+    background:var(--drawer-bg);
     color:var(--on-dark);
     font-family:'Kalpurush',sans-serif;
     font-weight:500;
     font-size:12.5px;
   }
-  .card-body tr:nth-child(even) td{background:rgba(169,130,46,0.06);}
+  .card-body tr:nth-child(even) td{background:rgba(0,107,63,0.05);}
   .card-body ul{
     font-family:'Noto Serif Bengali',serif;
     font-size:16.5px;
@@ -479,9 +508,9 @@
 
   .card-body h2.history-heading{
     font-family:'Kalpurush',serif !important;
-    color:var(--seal-text);
+    color:var(--heading);
     font-size:18px;
-    border-top:3px double var(--line);
+    border-top:2px solid var(--line);
     padding-top:18px;
     margin-top:26px !important;
   }
@@ -494,7 +523,7 @@
   .related-title{
     font-family:'Kalpurush',sans-serif;
     font-size:12px;
-    color:var(--brass);
+    color:var(--accent);
     font-weight:600;
     margin-bottom:10px;
   }
@@ -510,7 +539,7 @@
     margin:0 6px 6px 0;
     cursor:pointer;
   }
-  .related-chip:hover{background:rgba(169,130,46,0.15);}
+  .related-chip:hover{background:var(--accent-light);}
 
   footer{
     text-align:center;
@@ -530,7 +559,7 @@
     cursor:pointer;
     padding:0;
   }
-  .cache-refresh-btn:hover{ color:var(--brass); }
+  .cache-refresh-btn:hover{ color:var(--accent); }
   .cache-refresh-btn:disabled{ opacity:0.6; cursor:default; text-decoration:none; }
 
   .toolbar{
@@ -555,8 +584,8 @@
     text-decoration:none;
     display:inline-block;
   }
-  .mode-toggle:hover, .theme-toggle:hover{background:rgba(169,130,46,0.15);}
-  .mode-toggle.active{background:var(--seal);color:var(--on-dark);border-color:var(--seal);}
+  .mode-toggle:hover, .theme-toggle:hover{background:var(--accent-light);}
+  .mode-toggle.active{background:var(--drawer-bg);color:var(--on-dark);border-color:var(--drawer-bg);}
 
   .changes-item{
     border-bottom:1px solid var(--line);
@@ -656,7 +685,7 @@
   }
   .dash-bar-fill{
     height:100%;
-    background:var(--brass);
+    background:var(--accent);
     border-radius:6px;
   }
   .dash-bar-fill.success{background:var(--success-border);}
@@ -682,7 +711,7 @@
     cursor:pointer;
     text-align:right;
   }
-  .dash-list-item:hover{background:rgba(169,130,46,0.1);}
+  .dash-list-item:hover{background:var(--accent-light);}
   .dash-list-meta{
     font-family:'Kalpurush',sans-serif;
     font-size:11px;
@@ -704,8 +733,10 @@
     font-family:'Kalpurush',serif;
     font-size:19px;
     font-weight:700;
-    color:var(--brass);
+    color:var(--heading);
     margin-bottom:14px;
+    padding-bottom:6px;
+    border-bottom:1px solid var(--line);
   }
   .ghotonaprobaho-pager{
     display:flex;
@@ -726,7 +757,7 @@
     border-radius:4px;
     cursor:pointer;
   }
-  .ghotonaprobaho-page-btn:hover:not(:disabled){background:rgba(169,130,46,0.1);}
+  .ghotonaprobaho-page-btn:hover:not(:disabled){background:var(--accent-light);}
   .ghotonaprobaho-page-btn:disabled{opacity:0.4;cursor:default;}
   .ghotonaprobaho-page-info{
     font-family:'Kalpurush',sans-serif;
@@ -751,7 +782,7 @@
     font-family:'Kalpurush',sans-serif;
     font-size:13px;
     font-weight:600;
-    color:var(--brass);
+    color:var(--accent);
     margin:10px 0 6px;
   }
   .ghotonaprobaho-items{
@@ -776,7 +807,7 @@
   .progress-summary{
     font-family:'Kalpurush',sans-serif;
     font-size:11px;
-    color:var(--brass);
+    color:var(--accent);
   }
   .tab.read-topic:not(.active){opacity:0.6;}
   .tab .read-badge{color:var(--success-border); margin-left:4px;}
@@ -842,13 +873,13 @@
 
 <div class="search-bar-wrap">
   <div class="search-slot">
-    <input id="search" type="text" placeholder="যে বিষয়ে জানতে চাও লেখো... যেমন GDP, সংসদ, ইরান" autocomplete="off">
+    <input id="search" type="text" placeholder="যে বিষয়ে জানতে চাও লেখো..." autocomplete="off">
   </div>
 </div>
 
 <div class="toolbar">
   <button id="ghotonaprobaho-toggle-btn" class="mode-toggle">🗓️ দৈনিক ঘটনাপ্রবাহ</button>
-  <button id="theme-toggle-btn" class="theme-toggle">🌙 Book Dark</button>
+  <button id="theme-toggle-btn" class="theme-toggle">🌙 ডার্ক মোড</button>
 </div>
 
 <div class="layout" id="browse-layout">
@@ -896,17 +927,15 @@ function toggleRead(slug){
   return p[slug];
 }
 
-/* থিম সাইকেল: light → dark (Book Dark) → night-paper (Night Paper) → light */
-const THEME_CYCLE = ['light', 'dark', 'night-paper'];
+/* থিম টগল: light ↔ dark */
+const THEME_CYCLE = ['light', 'dark'];
 const THEME_LABELS = {
-  'light':       '🌙 Book Dark',
-  'dark':        '📜 Night Paper',
-  'night-paper': '☀️ লাইট মোড',
+  'light': '🌙 ডার্ক মোড',
+  'dark':  '☀️ লাইট মোড',
 };
 const THEME_COLORS = {
-  'light':       '#eeebe1',
-  'dark':        '#1e1a14',
-  'night-paper': '#1a1408',
+  'light': '#004d2c',
+  'dark':  '#001a0f',
 };
 
 function applyTheme(theme, persist){
@@ -1018,9 +1047,9 @@ function renderGhotonaprobahoView(){
 
   html += `
     <div class="ghotonaprobaho-pager">
-      <button class="ghotonaprobaho-page-btn" id="ghotonaprobaho-next-btn" type="button" ${GHOTONAPROBAHO_PAGE <= 0 ? 'disabled' : ''}>পরের ৩ মাস →</button>
-      <span class="ghotonaprobaho-page-info">পেজ ${GHOTONAPROBAHO_PAGE + 1} / ${totalPages}</span>
       <button class="ghotonaprobaho-page-btn" id="ghotonaprobaho-prev-btn" type="button" ${GHOTONAPROBAHO_PAGE >= totalPages - 1 ? 'disabled' : ''}>← আগের ৩ মাস</button>
+      <span class="ghotonaprobaho-page-info">পেজ ${GHOTONAPROBAHO_PAGE + 1} / ${totalPages}</span>
+      <button class="ghotonaprobaho-page-btn" id="ghotonaprobaho-next-btn" type="button" ${GHOTONAPROBAHO_PAGE <= 0 ? 'disabled' : ''}>পরের ৩ মাস →</button>
     </div>
   `;
 
