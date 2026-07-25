@@ -170,7 +170,7 @@
   .masthead{
     background:var(--masthead-bg);
     color:var(--on-dark);
-    padding:28px 24px 22px;
+    padding:16px 24px 12px;
     text-align:center;
     border-bottom:5px solid var(--masthead-border);
     box-shadow:0 2px 0 var(--seal);
@@ -178,20 +178,24 @@
   .masthead h1{
     font-family:'Kalpurush', serif;
     font-weight:700;
-    font-size:clamp(26px,4vw,40px);
+    font-size:clamp(20px,3.2vw,28px);
     margin:0;
   }
   .masthead .sub{
-    font-size:13px;
+    font-size:12px;
     opacity:0.7;
-    margin-top:6px;
+    margin-top:4px;
     font-family:'Kalpurush',sans-serif;
   }
 
   .search-bar-wrap{
-    max-width:720px;
-    margin:22px auto 0;
+    max-width:900px;
+    margin:14px auto 0;
     padding:0 20px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    flex-wrap:wrap;
   }
   .search-slot{
     position:relative;
@@ -199,6 +203,7 @@
     border:2px solid var(--heading);
     border-radius:4px;
     box-shadow:var(--shadow);
+    flex:1 1 260px;
   }
   .search-slot::before{
     content:"সার্চ";
@@ -219,7 +224,7 @@
     border:none;
     background:transparent;
     outline:none;
-    padding:12px 14px 9px;
+    padding:9px 14px 7px;
     font-family:'Kalpurush',sans-serif;
     font-size:15px;
     color:var(--ink);
@@ -228,7 +233,7 @@
 
   .layout{
     max-width:1080px;
-    margin:28px auto 60px;
+    margin:18px auto 60px;
     padding:0 20px;
     display:grid;
     grid-template-columns:280px 1fr;
@@ -246,6 +251,9 @@
     .card h2{ margin-left:66px; font-size:21px; }
     .card .tags-row{ margin-left:66px; }
     .seal{ width:48px; height:48px; font-size:9px; top:18px; left:16px; }
+    .search-bar-wrap{ justify-content:center; }
+    .search-slot{ flex-basis:100%; }
+    .toolbar{ justify-content:center; flex-basis:100%; }
   }
 
   .drawer{
@@ -563,19 +571,16 @@
   .cache-refresh-btn:disabled{ opacity:0.6; cursor:default; text-decoration:none; }
 
   .toolbar{
-    max-width:720px;
-    margin:14px auto 0;
-    padding:0 20px;
     display:flex;
     gap:10px;
-    justify-content:center;
     flex-wrap:wrap;
+    flex:0 0 auto;
   }
   .mode-toggle, .theme-toggle{
     font-family:'Kalpurush',sans-serif;
     font-size:13px;
     font-weight:600;
-    padding:8px 16px;
+    padding:6px 14px;
     border-radius:16px;
     border:1px solid var(--heading);
     background:var(--paper-raised);
@@ -730,11 +735,10 @@
   <div class="search-slot">
     <input id="search" type="text" placeholder="যে বিষয়ে জানতে চাও লেখো..." autocomplete="off">
   </div>
-</div>
-
-<div class="toolbar">
-  <button id="ghotonaprobaho-toggle-btn" class="mode-toggle">🗓️ দৈনিক ঘটনাপ্রবাহ</button>
-  <button id="theme-toggle-btn" class="theme-toggle">🌙 ডার্ক মোড</button>
+  <div class="toolbar">
+    <button id="ghotonaprobaho-toggle-btn" class="mode-toggle">🗓️ দৈনিক ঘটনাপ্রবাহ</button>
+    <button id="theme-toggle-btn" class="theme-toggle">🌙 ডার্ক মোড</button>
+  </div>
 </div>
 
 <div class="layout" id="browse-layout">
