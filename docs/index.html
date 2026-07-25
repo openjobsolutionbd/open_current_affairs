@@ -1110,7 +1110,7 @@ function renderList(list, q){
   q = (q||'').trim().toLowerCase();
   const wrap = document.getElementById('tab-list');
   const progress = loadProgress();
-  const readCount = ALL_TOPICS.filter(t => progress[t.slug]).length;
+  const readCount = list.filter(t => progress[t.slug]).length;
   document.getElementById('topic-count').textContent =
     `${list.length} টি${ALL_TOPICS.length ? ` · ${readCount} পড়া হয়েছে` : ''}`;
   if(list.length === 0){
