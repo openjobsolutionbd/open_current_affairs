@@ -242,6 +242,14 @@
   #ghotonaprobaho-layout{
     grid-template-columns:1fr;
   }
+  .above-drawer-row{
+    max-width:1080px;
+    margin:14px auto 0;
+    padding:0 20px;
+    display:grid;
+    grid-template-columns:280px 1fr;
+    gap:22px;
+  }
   @media (max-width:760px){
     .layout{grid-template-columns:1fr;}
     #browse-layout.showing-article .drawer{ display:none; }
@@ -254,6 +262,7 @@
     .search-bar-wrap{ justify-content:center; }
     .search-slot{ flex-basis:100%; }
     .toolbar{ justify-content:center; flex-basis:100%; }
+    .above-drawer-row{ grid-template-columns:1fr; }
   }
 
   .drawer{
@@ -736,9 +745,12 @@
     <input id="search" type="text" placeholder="যে বিষয়ে জানতে চাও লেখো..." autocomplete="off">
   </div>
   <div class="toolbar">
-    <button id="ghotonaprobaho-toggle-btn" class="mode-toggle">🗓️ দৈনিক ঘটনাপ্রবাহ</button>
     <button id="theme-toggle-btn" class="theme-toggle">🌙 ডার্ক মোড</button>
   </div>
+</div>
+
+<div class="above-drawer-row">
+  <button id="ghotonaprobaho-toggle-btn" class="mode-toggle">🗓️ দৈনিক ঘটনাপ্রবাহ</button>
 </div>
 
 <div class="layout" id="browse-layout">
