@@ -817,9 +817,9 @@ function initTheme(){
     applyTheme(saved, false);
     return;
   }
-  let prefersDark = false;
-  try{ prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches; }catch(e){}
-  applyTheme(prefersDark ? 'dark' : 'light', false);
+  // সিস্টেমের prefers-color-scheme উপেক্ষা করা হয় — সেভ করা পছন্দ না থাকলে
+  // সবসময় লাইট মোডই ডিফল্ট থাকবে।
+  applyTheme('light', false);
 }
 
 async function loadIndex(){
