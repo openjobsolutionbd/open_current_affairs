@@ -4,15 +4,24 @@
 
 ## এই রিপোতে কী কী আছে
 
-- **`docs/topics/`** — মূল কনটেন্ট, হাতে edit করার সোর্স। প্রতিটি ফাইলে "বর্তমান তথ্য" ও "পরিবর্তনের ইতিহাস" অংশ থাকে।
-- **`archive/`** — মাসিক আসল সোর্স ডকুমেন্ট, যাচাই ও রেফারেন্সের জন্য।
-- **`docs/index.html`** — সার্চ, টপিক পড়া, আজকের রিভিশন, সাম্প্রতিক পরিবর্তন ও ড্যাশবোর্ডসহ static website। Cloudflare Pages দিয়ে হোস্ট করা হয়।
+- **`docs/topics/`** — মূল কনটেন্ট, হাতে edit করার সোর্স (২৭টি topic file)। প্রতিটি ফাইলে "বর্তমান তথ্য" ও "পরিবর্তনের ইতিহাস" অংশ থাকে।
+- **`docs/ghotonaprobaho/`** — তারিখ-ভিত্তিক দৈনিক ঘটনাপ্রবাহের হাতে-লেখা সোর্স `.md` ফাইল (যেমন `2026-04-25_2026-05-18.md`)।
+- **`archive/`** — মাসিক আসল সোর্স ডকুমেন্ট, যাচাই ও রেফারেন্সের জন্য (বর্তমানে `2026-04.md`)।
+- **`docs/index.html`** — সার্চ, টপিক পড়া, দৈনিক ঘটনাপ্রবাহ, প্রিন্ট/শেয়ার ও ডার্ক মোডসহ static website। Cloudflare Pages দিয়ে হোস্ট করা হয়।
 - **`docs/topics-index.json`** — সার্চের জন্য স্বয়ংক্রিয়ভাবে তৈরি index; হাতে edit করবে না।
-- **`docs/recent-changes.json`**, **`docs/sw.js`**, **`docs/version.json`** — build-এর সময় তৈরি হওয়া website output; হাতে edit করবে না।
-- **`docs/vendor/`** — offline rendering-এর জন্য local Markdown renderer ও sanitizer library।
+- **`docs/ghotonaprobaho-index.json`**, **`docs/recent-changes.json`**, **`docs/sw.js`**, **`docs/version.json`** — build-এর সময় `scripts/build_index.py` থেকে তৈরি হওয়া website output; হাতে edit করবে না।
+- **`docs/manifest.json`**, **`docs/icon-192.png`**, **`docs/icon-512.png`** — PWA (installable app) সাপোর্টের জন্য।
+- **`docs/fonts/`** — বাংলা ওয়েবফন্ট (Hind Siliguri, Kalpurush, Noto Serif Bengali)।
+- **`docs/vendor/`** — offline rendering-এর জন্য local Markdown renderer (`marked.min.js`) ও sanitizer (`purify.min.js`)।
+- **`design-drafts/`** — ওয়েবসাইটের ডিজাইন প্রিভিউ/ড্রাফট।
 - **`scripts/build_index.py`** — topic validate করে website-এর generated data তৈরি করে।
 - **`scripts/sw_template.js`** — service worker-এর template।
 - **`.github/workflows/update-wiki.yml`** — push-এর পর build চালিয়ে generated output আপডেট করে (যদি repo-তে workflow সক্রিয় থাকে)।
+- **`PROJECT.md`** — সিস্টেম কীভাবে বানানো/গঠিত তার ডকুমেন্টেশন।
+- **`EDITORIAL_MEMORY.md`** — কনটেন্ট আপডেটের সময়কার স্থায়ী সম্পাদকীয় সিদ্ধান্তের নিয়ম-খাতা।
+- **`CHANGELOG.md`**, **`VERSION`** (বর্তমানে `1.2.0`) — ভার্সন হিস্ট্রি।
+- **`TEST_CHECKLIST.md`** — রিলিজের আগে যাচাইয়ের চেকলিস্ট।
+- **`wrangler.toml`** — Cloudflare Pages/Wrangler ডিপ্লয় কনফিগ।
 
 ## Cloudflare Pages-এ চালু করা
 
@@ -27,7 +36,7 @@
 ## নতুন মাসের তথ্য যোগ করা
 
 1. নতুন মাসের কারেন্ট অ্যাফেয়ার্স ফাইল Claude-কে দাও।
-2. বলো: “এই মাসের তথ্য দিয়ে টপিক পেজগুলো আপডেট করো।”
+2. বলো: "এই মাসের তথ্য দিয়ে টপিক পেজগুলো আপডেট করো।"
 3. Claude সংশ্লিষ্ট টপিকের বর্তমান তথ্য ও পরিবর্তনের ইতিহাস আপডেট করবে, নতুন বিষয় হলে নতুন topic file বানাবে এবং আসল মাসিক ফাইল `archive/`-এ রাখবে।
 4. পরিবর্তন GitHub-এ push করলে generated search index আপডেট হবে।
 
@@ -55,21 +64,19 @@ last_updated: 2026-04
 
 ## Website-এর ফিচার
 
-- আজকের রিভিশন: প্রতিদিন পাঁচটি random topic দেখায়।
-- Search: title, tags ও full text-এ খোঁজে।
-- Topic print/PDF ও shareable link।
-- Dashboard: topic count, tag coverage, oldest topics ও reading progress।
-- Recent changes feed, tag browsing ও related topics।
-- Reading progress, dark mode এবং offline support browser-এ কাজ করে।
+- টপিক তালিকা/ড্রয়ার থেকে ব্রাউজ ও সার্চ।
+- **🗓️ দৈনিক ঘটনাপ্রবাহ** — আলাদা view টগল করে তারিখ-ভিত্তিক ঘটনাপ্রবাহ (`docs/ghotonaprobaho/`), prev/next নেভিগেশনসহ।
+- টপিক প্রিন্ট আর লিংক কপি করে শেয়ার।
+- "পড়া হয়েছে" মার্ক করার বাটন।
+- 🌙 ডার্ক মোড টগল, থিম পছন্দ মনে রাখে।
+- Service worker + cache-refresh বাটন দিয়ে offline support।
 
-Reading progress ও theme preference browser-এর localStorage-এ থাকে; অন্য browser বা device-এ এগুলো আলাদা থাকবে।
+Reading progress (কোন টপিক পড়া হয়েছে) ও theme preference browser-এর localStorage-এ থাকে; অন্য browser বা device-এ এগুলো আলাদা থাকবে।
 
-## বর্তমান topic-এর উদাহরণ
+> ⚠️ অসংগতি পাওয়া গেছে: `PROJECT.md`-এ লেখা আছে ওয়েবসাইটে "dashboard" ও "daily revision strip" আছে, কিন্তু `docs/index.html`-এর বর্তমান কোডে এই দুটোর কোনো চিহ্ন (element, id, ফাংশন) পাওয়া যায়নি। হয় `PROJECT.md` পুরনো রয়ে গেছে, অথবা ফিচারদুটো এখনও build হয়নি — নিশ্চিত হতে repo-র মালিকের সাথে check করা দরকার। এই README-এ তাই ফিচার তালিকাটা `docs/index.html`-এর প্রকৃত কোড দেখে বানানো হলো, `PROJECT.md`-এর বর্ণনা নয়।
 
-- বাংলাদেশের GDP পরিসংখ্যান
-- মন্ত্রিসভা ও দপ্তর বণ্টন
-- ত্রয়োদশ জাতীয় সংসদ
-- ইরান-ইসরায়েল-মার্কিন সংকট
-- LDC উত্তরণ
+## বর্তমান topic-সমূহ (২৭টি)
+
+বাংলাদেশের GDP পরিসংখ্যান, মন্ত্রিসভা ও দপ্তর বণ্টন, ত্রয়োদশ জাতীয় সংসদ, ত্রয়োদশ জাতীয় সংসদের যাত্রা, ইরান-ইসরায়েল-মার্কিন সংকট, LDC উত্তরণ, অ্যাপল প্রতিষ্ঠার ৫০ বছর, BINA'র নতুন ধানের জাত, বিশ্বের বৃহত্তম কারশিয়ার বিপণনকেন্দ্র, দেশ পরিক্রমা, দিবস ও প্রতিপাদ্য (মার্চ), ইস্ট ইন্ডিয়া কোম্পানির অবসান, একই পরিবারে ৩ রাষ্ট্রনেতা ও নেপালে ক্ষমতার পালাবদল, ইন্দুরকানী ফিরে পেলো জিয়ানগর, জাহাজ — জলপথের জয়গান, লাইব্রেরি — জ্ঞানের মহাসমুদ্র, নারী ক্রীড়া ২০২৬, পদক-পুরস্কার ও বিনোদন, PRB-তে যুক্ত হলো সিটি ব্যাংক, রিপোর্ট-সমীক্ষা, শারক বৃক্ষ ও পবিত্র বৃক্ষ ও কুঞ্জবন, ২০২৬ শীতকালীন অলিম্পিক ও অন্যান্য খেলার খবর, সম্মেলন-বৈঠক, সংস্থা পরিচিতি — সিরডাপ ও অক্সফাম, টি-২০ বিশ্বকাপ ২০২৬, তথ্যকোষ — খার্গ দ্বীপ/হরমুজ প্রণালী/ডিস্যালিনেশন প্লান্ট, UNGA'র সভাপতি পদে বাংলাদেশ।
 
 আরও বিষয় যোগ করতে `docs/topics/`-এ নতুন valid topic file তৈরি করো।
