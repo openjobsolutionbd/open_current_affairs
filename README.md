@@ -15,7 +15,7 @@
 - **`docs/vendor/`** — offline rendering-এর জন্য local Markdown renderer (`marked.min.js`) ও sanitizer (`purify.min.js`)।
 - **`scripts/build_index.py`** — topic validate করে website-এর generated data তৈরি করে।
 - **`scripts/sw_template.js`** — service worker-এর template।
-- **`.github/workflows/update-wiki.yml`** — push-এর পর build চালিয়ে generated output আপডেট করে (যদি repo-তে workflow সক্রিয় থাকে)।
+- **`.github/workflows/update-wiki.yml`** — push-এর পর build চালিয়ে generated output আপডেট করে।
 - **`PROJECT.md`** — সিস্টেম কীভাবে বানানো/গঠিত তার ডকুমেন্টেশন।
 - **`EDITORIAL_MEMORY.md`** — কনটেন্ট আপডেটের সময়কার স্থায়ী সম্পাদকীয় সিদ্ধান্তের নিয়ম-খাতা।
 - **`CHANGELOG.md`**, **`VERSION`** (বর্তমানে `1.4.0`) — ভার্সন হিস্ট্রি।

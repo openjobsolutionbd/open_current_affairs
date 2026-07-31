@@ -53,7 +53,7 @@ Validation ব্যর্থ হলে build non-zero exit করে এবং 
 
 ## ৪. Deployment
 
-Cloudflare Pages-এর output directory `docs`। তাই `docs/` path বদলালে Cloudflare configuration-ও বদলাতে হবে। GitHub Action সক্রিয় থাকলে push-এর পর build script চালিয়ে generated output commit বা deploy-এর জন্য প্রস্তুত করবে। Workflow-এর actual behavior যাচাই না করে generated output fresh হয়েছে ধরে নেওয়া যাবে না।
+Cloudflare Pages-এর output directory `docs`। তাই `docs/` path বদলালে Cloudflare configuration-ও বদলাতে হবে। push-এর পর `.github/workflows/update-wiki.yml` build script চালিয়ে generated output commit বা deploy-এর জন্য প্রস্তুত করবে। তবে Workflow-এর actual behavior যাচাই না করে generated output fresh হয়েছে ধরে নেওয়া যাবে না।
 
 ## ৫. নিরাপত্তা ও রক্ষণাবেক্ষণ
 
