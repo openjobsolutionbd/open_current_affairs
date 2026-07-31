@@ -2271,6 +2271,9 @@ loadIndex().then(() => {
   const initialSlug = decodeURIComponent(location.hash.slice(1));
   if(initialSlug){
     openTopic(initialSlug, false);
+  } else {
+    // হ্যাশে নির্দিষ্ট কোনো টপিক না থাকলে ডিফল্ট হিসেবে "দৈনিক ঘটনাপ্রবাহ" মোড খুলবে
+    setGhotonaprobahoMode(true);
   }
 });
 
