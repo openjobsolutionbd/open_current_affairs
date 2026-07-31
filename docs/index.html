@@ -544,9 +544,6 @@
     max-width:1080px;
     margin:14px auto 0;
     padding:0 20px;
-    display:grid;
-    grid-template-columns:280px 1fr;
-    gap:22px;
   }
   @media (max-width:760px){
     .layout{grid-template-columns:1fr;}
@@ -560,7 +557,11 @@
     .search-bar-wrap{ justify-content:center; }
     .search-slot{ flex-basis:100%; }
     .toolbar{ justify-content:center; flex-basis:100%; }
-    .above-drawer-row{ grid-template-columns:1fr; }
+    .above-drawer-row{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
   }
 
   .drawer{
@@ -1221,13 +1222,13 @@
     <input id="search" type="text" placeholder="যে বিষয়ে জানতে চাও লেখো..." autocomplete="off">
   </div>
   <div class="toolbar">
+    <button id="recent-changes-toggle-btn" class="mode-toggle">🕘 সাম্প্রতিক পরিবর্তন</button>
     <button id="theme-toggle-btn" class="theme-toggle">🌙 ডার্ক মোড</button>
   </div>
 </div>
 
-<div class="above-drawer-row">
+<div class="above-drawer-row" id="above-drawer-row">
   <button id="ghotonaprobaho-toggle-btn" class="mode-toggle">🗓️ দৈনিক ঘটনাপ্রবাহ</button>
-  <button id="recent-changes-toggle-btn" class="mode-toggle">🕘 সাম্প্রতিক পরিবর্তন</button>
 </div>
 
 <div class="layout" id="browse-layout">
@@ -2237,6 +2238,34 @@ document.getElementById('ghotonaprobaho-toggle-btn').addEventListener('click', (
 document.getElementById('recent-changes-toggle-btn').addEventListener('click', () => {
   setRecentChangesMode(CURRENT_MODE !== 'recent-changes');
 });
+
+// ══════════════════════════════════════════════════════
+// "🕘 সাম্প্রতিক পরিবর্তন" বাটনের জায়গা স্ক্রিন সাইজ অনুযায়ী বদলায়:
+// ডেস্কটপে toolbar-এ "🌙 ডার্ক মোড"-এর ঠিক বাম পাশে (HTML-এ এমনিতেই
+// ওখানে বসানো আছে), মোবাইলে above-drawer-row-তে "🗓️ দৈনিক
+// ঘটনাপ্রবাহ"-এর পাশে (আগে যেমন ছিল)। একই বাটন এলিমেন্ট DOM-এ শুধু
+// সরানো হয় — তাই event listener/id সব অক্ষত থাকে, ডুপ্লিকেট মার্কআপ
+// লাগে না।
+// ══════════════════════════════════════════════════════
+(function placeRecentChangesButtonResponsively(){
+  const rcBtn = document.getElementById('recent-changes-toggle-btn');
+  const toolbar = document.querySelector('.toolbar');
+  const aboveDrawerRow = document.getElementById('above-drawer-row');
+  const themeBtn = document.getElementById('theme-toggle-btn');
+  const mq = window.matchMedia('(max-width:760px)');
+
+  function place(){
+    if(mq.matches){
+      if(rcBtn.parentElement !== aboveDrawerRow) aboveDrawerRow.appendChild(rcBtn);
+    } else {
+      if(rcBtn.parentElement !== toolbar || rcBtn.nextElementSibling !== themeBtn){
+        toolbar.insertBefore(rcBtn, themeBtn);
+      }
+    }
+  }
+  place();
+  mq.addEventListener('change', place);
+})();
 
 loadIndex().then(() => {
   const initialSlug = decodeURIComponent(location.hash.slice(1));
