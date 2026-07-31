@@ -244,6 +244,9 @@
     font-family:'Kalpurush', sans-serif;
   }
   .floating-search-wrap.visible{ display:block; }
+  /* ড্র্যাগ করে সরানোর সময় left/top দিয়ে পজিশন করা হয় (JS সেট করে);
+     তখন right/bottom বাতিল করে দিতে হয় যাতে দুই দিক থেকে টানাটানি না হয়। */
+  .floating-search-wrap.dragged{ right:auto; bottom:auto; }
 
   .floating-search-pill{
     display:flex;
@@ -258,11 +261,19 @@
     height:46px;
     transition:width 0.28s cubic-bezier(.4,0,.2,1), box-shadow 0.2s ease, transform 0.2s ease;
     overflow:hidden;
-    cursor:pointer;
+    cursor:grab;
   }
   .floating-search-pill:hover{
     transform:translateY(-2px);
     box-shadow:0 8px 22px rgba(0,0,0,0.24);
+  }
+  /* ড্র্যাগ চলাকালীন transition/hover-lift বন্ধ রাখা হয় যাতে বক্সটা
+     মাউসের পিছু পিছু আটকে না গিয়ে ঠিকঠাক অনুসরণ করে। */
+  .floating-search-pill.dragging{
+    cursor:grabbing;
+    transition:none;
+    transform:none;
+    box-shadow:0 10px 26px rgba(0,0,0,0.3);
   }
   .floating-search-pill.open{
     width:min(78vw, 260px);
@@ -274,7 +285,9 @@
     flex:0 0 auto;
     line-height:1;
     user-select:none;
+    cursor:grab;
   }
+  .floating-search-pill.dragging .floating-search-icon{ cursor:grabbing; }
   .floating-search-pill #floating-search-input{
     flex:1 1 auto;
     min-width:0;
@@ -351,6 +364,52 @@
 
   @media (max-width:720px){
     .floating-search-wrap{ right:14px; bottom:70px; }
+  }
+
+  /* ভাসমান সার্চ থেকে টপিক খুললে এই মডালে দেখানো হয় — এতে বর্তমান
+     মোড/স্ক্রিন (যেমন "দৈনিক ঘটনাপ্রবাহ") অক্ষত থাকে, অন্য কোথাও যেতে হয় না। */
+  .topic-modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.45);
+    z-index:500;
+    display:none;
+    align-items:flex-start;
+    justify-content:center;
+    padding:40px 16px;
+    overflow-y:auto;
+  }
+  .topic-modal-overlay.visible{ display:flex; }
+  .topic-modal{
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:8px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.35);
+    max-width:720px;
+    width:100%;
+    padding:30px 34px 34px;
+    position:relative;
+    font-family:'Kalpurush', sans-serif;
+  }
+  .topic-modal-close{
+    position:absolute;
+    top:14px;
+    right:14px;
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    border:none;
+    background:var(--accent-light);
+    color:var(--ink);
+    font-size:16px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .topic-modal-close:hover{ background:var(--heading); color:var(--paper-raised); }
+  @media (max-width:720px){
+    .topic-modal{ padding:24px 18px 26px; }
   }
 
   .layout{
@@ -1085,6 +1144,13 @@
   </div>
 </div>
 
+<div class="topic-modal-overlay" id="topic-modal-overlay">
+  <div class="topic-modal" id="topic-modal">
+    <button type="button" class="topic-modal-close" id="topic-modal-close" aria-label="বন্ধ করুন">✕</button>
+    <div id="topic-modal-body"></div>
+  </div>
+</div>
+
 <footer>প্রতিটি এন্ট্রির শেষে "পরিবর্তনের ইতিহাস" থেকে যাচাই করা যাবে কবে ও কেন তথ্য বদলেছে। <span id="app-version"></span> · <button id="cache-refresh-btn" class="cache-refresh-btn" type="button" title="পুরনো ক্যাশ মুছে সর্বশেষ ভার্সন লোড করবে">🧹 সর্বশেষ ভার্সন লোড করুন</button></footer>
 
 <script>
@@ -1492,11 +1558,11 @@ function setActiveLayout(mode){
   document.getElementById('recent-changes-layout').style.display = mode === 'recent-changes' ? '' : 'none';
   // ভাসমান সার্চ বক্স শুধু "দৈনিক ঘটনাপ্রবাহ" মোডে দেখানো হয় — এই মোডে
   // বাম পাশের টপিক-তালিকা থাকে না, তাই টপিক খোঁজার এই ছোট বিকল্পটা কাজে লাগে।
-  const floatWrap = document.getElementById('floating-search-wrap');
+  const fsWrap = document.getElementById('floating-search-wrap');
   if(mode === 'ghotonaprobaho'){
-    floatWrap.classList.add('visible');
+    fsWrap.classList.add('visible');
   } else {
-    floatWrap.classList.remove('visible');
+    fsWrap.classList.remove('visible');
     closeFloatingSearch();
   }
 }
@@ -1607,13 +1673,16 @@ document.getElementById('search').addEventListener('input', (e)=>{
 // ══════════════════════════════════════════════════════
 // ভাসমান সার্চ বক্স ("দৈনিক ঘটনাপ্রবাহ" মোডে) — উপরের মূল #search-এর
 // মতোই matchTopic/currentFiltered ব্যবহার করে টপিক খোঁজে, কিন্তু ফলাফল
-// একটা ছোট dropdown-এ দেখায় এবং ক্লিক করলে সরাসরি openTopic() দিয়ে
-// আর্কাইভ মোডে গিয়ে টপিকটা খুলে দেয়।
+// একটা ছোট dropdown-এ দেখায় এবং ক্লিক করলে openTopicInModal() দিয়ে
+// একটা মডাল ওভারলেতে দেখায় — বর্তমান মোড/স্ক্রিন বদলায় না।
 // ══════════════════════════════════════════════════════
+const floatWrap = document.getElementById('floating-search-wrap');
 const floatPill = document.getElementById('floating-search-pill');
 const floatInput = document.getElementById('floating-search-input');
 const floatResults = document.getElementById('floating-search-results');
 const floatClose = document.getElementById('floating-search-close');
+const topicModalOverlay = document.getElementById('topic-modal-overlay');
+const topicModalClose = document.getElementById('topic-modal-close');
 
 function openFloatingSearch(){
   floatPill.classList.add('open');
@@ -1643,7 +1712,7 @@ function renderFloatingResults(q){
     floatResults.querySelectorAll('.floating-search-result-item').forEach(btn=>{
       btn.addEventListener('click', () => {
         closeFloatingSearch();
-        openTopic(btn.dataset.slug);
+        openTopicInModal(btn.dataset.slug);
       });
     });
   }
@@ -1679,12 +1748,188 @@ document.addEventListener('click', (e)=>{
   }
 });
 
+// মডাল বন্ধ করা — ক্রস বাটনে, ওভারলের বাইরে ক্লিকে, বা Escape-এ
+topicModalClose.addEventListener('click', closeTopicModal);
+topicModalOverlay.addEventListener('click', (e)=>{
+  if(e.target === topicModalOverlay) closeTopicModal();
+});
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape' && topicModalOverlay.classList.contains('visible')){
+    closeTopicModal();
+  }
+});
+
+// ══════════════════════════════════════════════════════
+// ভাসমান সার্চ বক্স মাউস/টাচ দিয়ে টেনে মনিটরের যেকোনো জায়গায় রাখা যায়।
+// পজিশনটা শুধু চলতি সেশনে থাকে — পেজ রিফ্রেশ করলে আবার ডিফল্ট
+// (নিচে-ডানে) জায়গায় ফিরে যায়, তাই কোথাও সংরক্ষণ করার দরকার নেই।
+// পিলের "🔍" আইকন বা বন্ধ-অবস্থার গোল বাটনটাই handle — খোলা অবস্থায়
+// ইনপুট বক্সের ভেতর ক্লিক করলে টাইপ করা যাবে, ড্র্যাগ শুরু হবে না।
+// ══════════════════════════════════════════════════════
+(function enableFloatingSearchDrag(){
+  let dragging = false;
+  let moved = false;
+  let startX = 0, startY = 0;
+  let startLeft = 0, startTop = 0;
+
+  function getClientXY(e){
+    if(e.touches && e.touches.length) return {x:e.touches[0].clientX, y:e.touches[0].clientY};
+    return {x:e.clientX, y:e.clientY};
+  }
+
+  function dragStart(e){
+    // ইনপুট বক্স বা বন্ধ-বাটনে ক্লিক করলে ড্র্যাগ শুরু হবে না, শুধু
+    // পিলের বাকি অংশ (আইকন/ব্যাকগ্রাউন্ড) থেকেই ড্র্যাগ শুরু হয়।
+    if(e.target === floatInput || e.target === floatClose) return;
+    const {x, y} = getClientXY(e);
+    const rect = floatWrap.getBoundingClientRect();
+    dragging = true;
+    moved = false;
+    startX = x;
+    startY = y;
+    startLeft = rect.left;
+    startTop = rect.top;
+    floatPill.classList.add('dragging');
+    document.addEventListener('mousemove', dragMove);
+    document.addEventListener('mouseup', dragEnd);
+    document.addEventListener('touchmove', dragMove, {passive:false});
+    document.addEventListener('touchend', dragEnd);
+  }
+
+  function dragMove(e){
+    if(!dragging) return;
+    const {x, y} = getClientXY(e);
+    const dx = x - startX;
+    const dy = y - startY;
+    if(Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+    if(!moved) return;
+    if(e.cancelable) e.preventDefault();
+
+    const rect = floatWrap.getBoundingClientRect();
+    const maxLeft = window.innerWidth - rect.width;
+    const maxTop = window.innerHeight - rect.height;
+    let newLeft = startLeft + dx;
+    let newTop = startTop + dy;
+    // মনিটরের বাইরে চলে যাওয়া ঠেকাতে সীমার মধ্যে রাখা হয়
+    newLeft = Math.max(0, Math.min(newLeft, Math.max(0, maxLeft)));
+    newTop = Math.max(0, Math.min(newTop, Math.max(0, maxTop)));
+
+    floatWrap.classList.add('dragged');
+    floatWrap.style.left = newLeft + 'px';
+    floatWrap.style.top = newTop + 'px';
+  }
+
+  function dragEnd(){
+    dragging = false;
+    floatPill.classList.remove('dragging');
+    document.removeEventListener('mousemove', dragMove);
+    document.removeEventListener('mouseup', dragEnd);
+    document.removeEventListener('touchmove', dragMove);
+    document.removeEventListener('touchend', dragEnd);
+    // ড্র্যাগ শেষে ক্লিক ইভেন্ট বাতিল করা হয়, যাতে টেনে ছাড়ার পর
+    // ভুলবশত পিল open/close টগল না হয়ে যায়।
+    if(moved){
+      const suppressClick = (ev) => { ev.stopPropagation(); floatPill.removeEventListener('click', suppressClick, true); };
+      floatPill.addEventListener('click', suppressClick, true);
+    }
+  }
+
+  floatPill.addEventListener('mousedown', dragStart);
+  floatPill.addEventListener('touchstart', dragStart, {passive:true});
+})();
+
 function showPlaceholder(){
   document.getElementById('card').innerHTML = `
     <div class="card-placeholder">
       <div class="big">একটি টপিক খুলুন</div>
       বাম পাশের তালিকা থেকে বেছে নিন, বা উপরে সার্চ করুন
     </div>`;
+}
+
+// টপিকের মার্কডাউন ফাইল fetch করে sanitize/render করে দেওয়া কমন লজিক।
+// openTopic() (মূল আর্কাইভ কার্ড) এবং openTopicInModal() (ভাসমান সার্চের
+// ফলাফল) — দুই জায়গাতেই একই ফাংশন ব্যবহার হয়, যাতে দুটো জায়গায় একই
+// কোড কপি-পেস্ট করে রাখতে না হয়।
+// container-এ শুধু "লোড হচ্ছে…" থেকে চূড়ান্ত কার্ড HTML বসানো পর্যন্ত হয়;
+// backBtnId দিয়ে "তালিকায় ফিরুন" বাটনের আইডি ঠিক করা যায় (মডালে দরকার নেই),
+// onRelatedClick দিয়ে "এটাও দেখো" চিপে ক্লিক করলে কী হবে তা কলার ঠিক করে দেয়।
+async function renderTopicContent(topic, container, {backBtnId, onRelatedClick} = {}){
+  container.innerHTML = '<div class="card-placeholder">লোড হচ্ছে…</div>';
+  try{
+    const res = await fetch('./' + topic.file);
+    if(!res.ok){
+      container.innerHTML = '<div class="card-placeholder">এই টপিক পেজ লোড করা যাচ্ছে না (ফাইল খুঁজে পাওয়া যায়নি)।</div>';
+      return;
+    }
+    const raw = (await res.text()).replace(/^\uFEFF/, '');
+    const body = raw.replace(/^---[\s\S]*?---\s*/, '');
+    let html = marked.parse(body);
+    html = DOMPurify.sanitize(html);
+    html = html.replace(/<h2>পরিবর্তনের ইতিহাস<\/h2>/, '<h2 class="history-heading">পরিবর্তনের ইতিহাস</h2>');
+    html = html.replace(/<table(\s[^>]*)?>/g, (m, attrs) => `<div class="table-scroll"><table${attrs||''}>`);
+    html = html.replace(/<\/table>/g, '</table></div>');
+
+    const alreadyRead = isRead(topic.slug);
+    const related = getRelatedTopics(topic);
+    container.innerHTML = `
+      ${backBtnId ? `<button class="mobile-back-btn" id="${backBtnId}">← তালিকায় ফিরুন</button>` : ''}
+      <div class="seal">সর্বশেষ<br>${escapeHtml(topic.last_updated || '—')}</div>
+      <div class="card-actions">
+        <button class="print-topic-btn" id="print-topic-btn-${topic.slug}">🖨️ প্রিন্ট / PDF</button>
+        <button class="mark-read-btn ${alreadyRead?'done':''}" id="mark-read-btn-${topic.slug}">${alreadyRead ? '✓ পড়া হয়েছে' : '⬜ পড়া হয়েছে?'}</button>
+        <button class="copy-link" id="copy-link-btn-${topic.slug}" title="এই টপিকের লিংক কপি করো">🔗 লিংক কপি</button>
+      </div>
+      <h2>${escapeHtml(topic.title)}</h2>
+      <div class="tags-row">${(topic.tags||[]).map(t=>`<span class="pill" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</span>`).join('')}</div>
+      <div class="card-body">${html}</div>
+      ${related.length ? `
+        <div class="related-topics">
+          <div class="related-title">🔗 এটাও দেখো</div>
+          ${related.map(r => `<span class="related-chip" data-slug="${r.slug}">${escapeHtml(r.title)}</span>`).join('')}
+        </div>
+      ` : ''}
+    `;
+
+    if(backBtnId){
+      document.getElementById(backBtnId).addEventListener('click', backToList);
+    }
+
+    document.getElementById(`print-topic-btn-${topic.slug}`).addEventListener('click', () => {
+      window.print();
+    });
+
+    document.getElementById(`copy-link-btn-${topic.slug}`).addEventListener('click', async (e) => {
+      const url = window.location.origin + window.location.pathname + '#' + topic.slug;
+      try{
+        await navigator.clipboard.writeText(url);
+        e.target.textContent = '✓ কপি হয়েছে';
+      }catch(err){
+        e.target.textContent = url;
+      }
+      setTimeout(()=>{ e.target.textContent = '🔗 লিংক কপি'; }, 1800);
+    });
+
+    document.getElementById(`mark-read-btn-${topic.slug}`).addEventListener('click', (e) => {
+      const nowRead = toggleRead(topic.slug);
+      e.target.classList.toggle('done', nowRead);
+      e.target.textContent = nowRead ? '✓ পড়া হয়েছে' : '⬜ পড়া হয়েছে?';
+      const qNow = document.getElementById('search').value.trim().toLowerCase();
+      renderList(currentFiltered(qNow), qNow);
+    });
+
+    container.querySelectorAll('.pill').forEach(pill => {
+      pill.addEventListener('click', () => filterByTag(pill.dataset.tag));
+    });
+    container.querySelectorAll('.related-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        if(onRelatedClick) onRelatedClick(chip.dataset.slug);
+        else openTopic(chip.dataset.slug);
+      });
+    });
+
+  }catch(e){
+    container.innerHTML = '<div class="card-placeholder">এই টপিক পেজ লোড করা যাচ্ছে না।</div>';
+  }
 }
 
 async function openTopic(slug, updateHash=true){
@@ -1718,77 +1963,31 @@ async function openTopic(slug, updateHash=true){
   const q = document.getElementById('search').value.trim().toLowerCase();
   renderList(currentFiltered(q), q);
 
-  card.innerHTML = '<div class="card-placeholder">লোড হচ্ছে…</div>';
-  try{
-    const res = await fetch('./' + topic.file);
-    if(!res.ok){
-      card.innerHTML = '<div class="card-placeholder">এই টপিক পেজ লোড করা যাচ্ছে না (ফাইল খুঁজে পাওয়া যায়নি)।</div>';
-      return;
-    }
-    const raw = (await res.text()).replace(/^\uFEFF/, '');
-    const body = raw.replace(/^---[\s\S]*?---\s*/, '');
-    let html = marked.parse(body);
-    html = DOMPurify.sanitize(html);
-    html = html.replace(/<h2>পরিবর্তনের ইতিহাস<\/h2>/, '<h2 class="history-heading">পরিবর্তনের ইতিহাস</h2>');
-    html = html.replace(/<table(\s[^>]*)?>/g, (m, attrs) => `<div class="table-scroll"><table${attrs||''}>`);
-    html = html.replace(/<\/table>/g, '</table></div>');
+  await renderTopicContent(topic, card, {backBtnId:'mobile-back-btn'});
+}
 
-    const alreadyRead = isRead(slug);
-    const related = getRelatedTopics(topic);
-    card.innerHTML = `
-      <button class="mobile-back-btn" id="mobile-back-btn">← তালিকায় ফিরুন</button>
-      <div class="seal">সর্বশেষ<br>${escapeHtml(topic.last_updated || '—')}</div>
-      <div class="card-actions">
-        <button class="print-topic-btn" id="print-topic-btn">🖨️ প্রিন্ট / PDF</button>
-        <button class="mark-read-btn ${alreadyRead?'done':''}" id="mark-read-btn">${alreadyRead ? '✓ পড়া হয়েছে' : '⬜ পড়া হয়েছে?'}</button>
-        <button class="copy-link" id="copy-link-btn" title="এই টপিকের লিংক কপি করো">🔗 লিংক কপি</button>
-      </div>
-      <h2>${escapeHtml(topic.title)}</h2>
-      <div class="tags-row">${(topic.tags||[]).map(t=>`<span class="pill" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</span>`).join('')}</div>
-      <div class="card-body">${html}</div>
-      ${related.length ? `
-        <div class="related-topics">
-          <div class="related-title">🔗 এটাও দেখো</div>
-          ${related.map(r => `<span class="related-chip" data-slug="${r.slug}">${escapeHtml(r.title)}</span>`).join('')}
-        </div>
-      ` : ''}
-    `;
-
-    document.getElementById('mobile-back-btn').addEventListener('click', backToList);
-
-    document.getElementById('print-topic-btn').addEventListener('click', () => {
-      window.print();
-    });
-
-    document.getElementById('copy-link-btn').addEventListener('click', async (e) => {
-      const url = window.location.origin + window.location.pathname + '#' + slug;
-      try{
-        await navigator.clipboard.writeText(url);
-        e.target.textContent = '✓ কপি হয়েছে';
-      }catch(err){
-        e.target.textContent = url;
-      }
-      setTimeout(()=>{ e.target.textContent = '🔗 লিংক কপি'; }, 1800);
-    });
-
-    document.getElementById('mark-read-btn').addEventListener('click', (e) => {
-      const nowRead = toggleRead(slug);
-      e.target.classList.toggle('done', nowRead);
-      e.target.textContent = nowRead ? '✓ পড়া হয়েছে' : '⬜ পড়া হয়েছে?';
-      const qNow = document.getElementById('search').value.trim().toLowerCase();
-      renderList(currentFiltered(qNow), qNow);
-    });
-
-    card.querySelectorAll('.pill').forEach(pill => {
-      pill.addEventListener('click', () => filterByTag(pill.dataset.tag));
-    });
-    card.querySelectorAll('.related-chip').forEach(chip => {
-      chip.addEventListener('click', () => openTopic(chip.dataset.slug));
-    });
-
-  }catch(e){
-    card.innerHTML = '<div class="card-placeholder">এই টপিক পেজ লোড করা যাচ্ছে না।</div>';
+// ভাসমান সার্চের ফলাফলে ক্লিক করলে এটা কল হয়। openTopic()-এর মতো মোড
+// বদলায় না — "দৈনিক ঘটনাপ্রবাহ" (বা যেকোনো) মোডে যেখানে ছিলেন সেখানেই
+// থেকে যান, টপিকটা শুধু একটা মডাল ওভারলেতে দেখানো হয়।
+async function openTopicInModal(slug){
+  const topic = ALL_TOPICS.find(t=>t.slug===slug);
+  const overlay = document.getElementById('topic-modal-overlay');
+  const body = document.getElementById('topic-modal-body');
+  if(!topic){
+    body.innerHTML = '<div class="card-placeholder">এই টপিকটা খুঁজে পাওয়া যাচ্ছে না — হয়তো নাম বদলেছে বা মুছে গেছে।</div>';
+    overlay.classList.add('visible');
+    return;
   }
+  overlay.classList.add('visible');
+  await renderTopicContent(topic, body, {
+    backBtnId:null,
+    onRelatedClick:(relatedSlug) => openTopicInModal(relatedSlug)
+  });
+}
+
+function closeTopicModal(){
+  document.getElementById('topic-modal-overlay').classList.remove('visible');
+  document.getElementById('topic-modal-body').innerHTML = '';
 }
 
 function backToList(){
