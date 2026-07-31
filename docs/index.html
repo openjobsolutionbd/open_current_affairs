@@ -248,45 +248,93 @@
      তখন right/bottom বাতিল করে দিতে হয় যাতে দুই দিক থেকে টানাটানি না হয়। */
   .floating-search-wrap.dragged{ right:auto; bottom:auto; }
 
+  /* আধুনিক glassmorphism pill — blurred translucent ব্যাকগ্রাউন্ড, gradient
+     accent রিং, এবং স্তরে-স্তরে সাজানো soft shadow দিয়ে গভীরতা তৈরি করে। */
   .floating-search-pill{
     display:flex;
     align-items:center;
-    gap:6px;
-    background:var(--paper-raised);
-    border:2px solid var(--heading);
+    gap:8px;
+    position:relative;
+    background:linear-gradient(180deg, var(--paper-raised) 0%, var(--paper-raised) 100%);
+    background-color:var(--paper-raised);
+    background-color:color-mix(in srgb, var(--paper-raised) 88%, transparent);
+    -webkit-backdrop-filter:blur(16px) saturate(160%);
+    backdrop-filter:blur(16px) saturate(160%);
+    border:1px solid var(--line);
+    border:1px solid color-mix(in srgb, var(--accent) 28%, var(--line));
     border-radius:999px;
-    box-shadow:0 6px 18px rgba(0,0,0,0.18);
-    padding:8px 8px 8px 16px;
-    width:46px;
-    height:46px;
-    transition:width 0.28s cubic-bezier(.4,0,.2,1), box-shadow 0.2s ease, transform 0.2s ease;
+    box-shadow:
+      0 1px 2px rgba(0,0,0,0.06),
+      0 10px 24px -8px rgba(0,0,0,0.22),
+      0 0 0 1px rgba(255,255,255,0.02) inset;
+    padding:9px 9px 9px 18px;
+    width:48px;
+    height:48px;
+    transition:width 0.32s cubic-bezier(.34,1.2,.4,1), box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
     overflow:hidden;
     cursor:grab;
   }
+  /* pill-এর গায়ে সরু gradient accent রেখা — hover করলে ফুটে ওঠে */
+  .floating-search-pill::before{
+    content:'';
+    position:absolute;
+    inset:0;
+    border-radius:inherit;
+    padding:1px;
+    background:linear-gradient(135deg, var(--accent), transparent 45%, transparent 60%, var(--accent) 130%);
+    -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite:xor;
+    mask-composite:exclude;
+    opacity:0;
+    transition:opacity 0.3s ease;
+    pointer-events:none;
+  }
+  .floating-search-pill:hover::before{ opacity:0.55; }
   .floating-search-pill:hover{
-    transform:translateY(-2px);
-    box-shadow:0 8px 22px rgba(0,0,0,0.24);
+    transform:translateY(-3px);
+    box-shadow:
+      0 1px 2px rgba(0,0,0,0.08),
+      0 16px 32px -10px rgba(0,0,0,0.28),
+      0 0 0 1px rgba(255,255,255,0.02) inset;
+    border-color:color-mix(in srgb, var(--accent) 45%, var(--line));
   }
   /* ড্র্যাগ চলাকালীন transition/hover-lift বন্ধ রাখা হয় যাতে বক্সটা
      মাউসের পিছু পিছু আটকে না গিয়ে ঠিকঠাক অনুসরণ করে। */
   .floating-search-pill.dragging{
     cursor:grabbing;
     transition:none;
-    transform:none;
-    box-shadow:0 10px 26px rgba(0,0,0,0.3);
+    transform:scale(1.03);
+    box-shadow:
+      0 4px 10px rgba(0,0,0,0.15),
+      0 20px 40px -8px rgba(0,0,0,0.35);
+    border-color:var(--accent);
   }
   .floating-search-pill.open{
-    width:min(78vw, 260px);
+    width:min(80vw, 280px);
     cursor:default;
-    border-radius:22px;
+    border-radius:24px;
+    box-shadow:
+      0 1px 2px rgba(0,0,0,0.08),
+      0 20px 40px -10px rgba(0,0,0,0.3),
+      0 0 0 1px rgba(255,255,255,0.02) inset;
+    border-color:color-mix(in srgb, var(--accent) 50%, var(--line));
   }
+  .floating-search-pill.open::before{ opacity:0.7; }
   .floating-search-icon{
-    font-size:17px;
+    font-size:18px;
     flex:0 0 auto;
     line-height:1;
     user-select:none;
     cursor:grab;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:22px;
+    height:22px;
+    filter:saturate(1.1);
+    transition:transform 0.25s cubic-bezier(.34,1.56,.64,1);
   }
+  .floating-search-pill:not(.open):hover .floating-search-icon{ transform:scale(1.12) rotate(-8deg); }
   .floating-search-pill.dragging .floating-search-icon{ cursor:grabbing; }
   .floating-search-pill #floating-search-input{
     flex:1 1 auto;
@@ -296,12 +344,13 @@
     background:transparent;
     color:var(--ink);
     font-family:'Kalpurush', sans-serif;
-    font-size:14px;
+    font-size:14.5px;
     padding:2px 0;
     opacity:0;
-    transition:opacity 0.18s ease;
+    transform:translateX(4px);
+    transition:opacity 0.22s ease 0.08s, transform 0.22s ease 0.08s;
   }
-  .floating-search-pill.open #floating-search-input{ opacity:1; }
+  .floating-search-pill.open #floating-search-input{ opacity:1; transform:translateX(0); }
   .floating-search-pill #floating-search-input::placeholder{ color:var(--muted); }
 
   .floating-search-close{
@@ -309,54 +358,70 @@
     display:none;
     align-items:center;
     justify-content:center;
-    width:20px;
-    height:20px;
+    width:24px;
+    height:24px;
     border:none;
-    background:transparent;
+    background:var(--accent-light);
     color:var(--muted);
-    font-size:13px;
+    font-size:12px;
     cursor:pointer;
     border-radius:50%;
+    transition:background 0.2s ease, color 0.2s ease, transform 0.2s ease;
   }
   .floating-search-pill.open .floating-search-close{ display:flex; }
-  .floating-search-close:hover{ background:var(--accent-light); color:var(--ink); }
+  .floating-search-close:hover{
+    background:var(--accent);
+    color:var(--on-accent);
+    transform:rotate(90deg);
+  }
 
   .floating-search-results{
     position:absolute;
     right:0;
-    bottom:56px;
-    width:min(84vw, 300px);
+    bottom:60px;
+    width:min(86vw, 310px);
     max-height:min(50vh, 340px);
     overflow-y:auto;
     background:var(--paper-raised);
-    border:2px solid var(--heading);
-    border-radius:14px;
-    box-shadow:0 10px 26px rgba(0,0,0,0.22);
-    padding:6px;
+    background:color-mix(in srgb, var(--paper-raised) 92%, transparent);
+    -webkit-backdrop-filter:blur(18px) saturate(160%);
+    backdrop-filter:blur(18px) saturate(160%);
+    border:1px solid var(--line);
+    border:1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
+    border-radius:16px;
+    box-shadow:
+      0 4px 12px rgba(0,0,0,0.1),
+      0 20px 44px -12px rgba(0,0,0,0.3);
+    padding:8px;
     display:none;
+    opacity:0;
+    transform:translateY(6px) scale(0.98);
+    transition:opacity 0.18s ease, transform 0.18s ease;
   }
-  .floating-search-results.visible{ display:block; }
+  .floating-search-results.visible{ display:block; opacity:1; transform:translateY(0) scale(1); }
   .floating-search-result-item{
     display:block;
     width:100%;
     text-align:right;
     background:transparent;
     border:none;
-    border-radius:9px;
-    padding:9px 10px;
+    border-radius:10px;
+    padding:10px 12px;
     font-family:'Kalpurush', sans-serif;
     font-size:13.5px;
     color:var(--ink);
     cursor:pointer;
+    transition:background 0.15s ease, padding-right 0.15s ease;
   }
   .floating-search-result-item:hover, .floating-search-result-item:focus-visible{
     background:var(--accent-light);
+    padding-right:16px;
   }
   .floating-search-result-item + .floating-search-result-item{
-    border-top:1px solid var(--line);
+    margin-top:2px;
   }
   .floating-search-empty{
-    padding:12px 10px;
+    padding:14px 10px;
     text-align:center;
     color:var(--muted);
     font-size:13px;
