@@ -231,6 +231,128 @@
   }
   #search::placeholder{color:var(--muted);}
 
+  /* ══════════════════════════════════════════════════════
+     ভাসমান সার্চ বক্স — "দৈনিক ঘটনাপ্রবাহ" মোডে স্ক্রল করলে
+     সাথে সাথে ভেসে থাকে। ছোট, গোলগাল, একটু কিউট।
+     ══════════════════════════════════════════════════════ */
+  .floating-search-wrap{
+    position:fixed;
+    right:20px;
+    bottom:22px;
+    z-index:400;
+    display:none; /* শুধু ghotonaprobaho মোডে দেখানো হয় — JS টগল করে */
+    font-family:'Kalpurush', sans-serif;
+  }
+  .floating-search-wrap.visible{ display:block; }
+
+  .floating-search-pill{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:var(--paper-raised);
+    border:2px solid var(--heading);
+    border-radius:999px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.18);
+    padding:8px 8px 8px 16px;
+    width:46px;
+    height:46px;
+    transition:width 0.28s cubic-bezier(.4,0,.2,1), box-shadow 0.2s ease, transform 0.2s ease;
+    overflow:hidden;
+    cursor:pointer;
+  }
+  .floating-search-pill:hover{
+    transform:translateY(-2px);
+    box-shadow:0 8px 22px rgba(0,0,0,0.24);
+  }
+  .floating-search-pill.open{
+    width:min(78vw, 260px);
+    cursor:default;
+    border-radius:22px;
+  }
+  .floating-search-icon{
+    font-size:17px;
+    flex:0 0 auto;
+    line-height:1;
+    user-select:none;
+  }
+  .floating-search-pill #floating-search-input{
+    flex:1 1 auto;
+    min-width:0;
+    border:none;
+    outline:none;
+    background:transparent;
+    color:var(--ink);
+    font-family:'Kalpurush', sans-serif;
+    font-size:14px;
+    padding:2px 0;
+    opacity:0;
+    transition:opacity 0.18s ease;
+  }
+  .floating-search-pill.open #floating-search-input{ opacity:1; }
+  .floating-search-pill #floating-search-input::placeholder{ color:var(--muted); }
+
+  .floating-search-close{
+    flex:0 0 auto;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    width:20px;
+    height:20px;
+    border:none;
+    background:transparent;
+    color:var(--muted);
+    font-size:13px;
+    cursor:pointer;
+    border-radius:50%;
+  }
+  .floating-search-pill.open .floating-search-close{ display:flex; }
+  .floating-search-close:hover{ background:var(--accent-light); color:var(--ink); }
+
+  .floating-search-results{
+    position:absolute;
+    right:0;
+    bottom:56px;
+    width:min(84vw, 300px);
+    max-height:min(50vh, 340px);
+    overflow-y:auto;
+    background:var(--paper-raised);
+    border:2px solid var(--heading);
+    border-radius:14px;
+    box-shadow:0 10px 26px rgba(0,0,0,0.22);
+    padding:6px;
+    display:none;
+  }
+  .floating-search-results.visible{ display:block; }
+  .floating-search-result-item{
+    display:block;
+    width:100%;
+    text-align:right;
+    background:transparent;
+    border:none;
+    border-radius:9px;
+    padding:9px 10px;
+    font-family:'Kalpurush', sans-serif;
+    font-size:13.5px;
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .floating-search-result-item:hover, .floating-search-result-item:focus-visible{
+    background:var(--accent-light);
+  }
+  .floating-search-result-item + .floating-search-result-item{
+    border-top:1px solid var(--line);
+  }
+  .floating-search-empty{
+    padding:12px 10px;
+    text-align:center;
+    color:var(--muted);
+    font-size:13px;
+  }
+
+  @media (max-width:720px){
+    .floating-search-wrap{ right:14px; bottom:70px; }
+  }
+
   .layout{
     max-width:1080px;
     margin:18px auto 60px;
@@ -954,6 +1076,15 @@
   <div class="card" id="recent-changes-card"></div>
 </div>
 
+<div class="floating-search-wrap" id="floating-search-wrap">
+  <div class="floating-search-pill" id="floating-search-pill">
+    <span class="floating-search-icon" aria-hidden="true">🔍</span>
+    <input id="floating-search-input" type="text" placeholder="টপিক খোঁজো..." autocomplete="off">
+    <button type="button" class="floating-search-close" id="floating-search-close" aria-label="সার্চ বন্ধ করুন">✕</button>
+    <div class="floating-search-results" id="floating-search-results"></div>
+  </div>
+</div>
+
 <footer>প্রতিটি এন্ট্রির শেষে "পরিবর্তনের ইতিহাস" থেকে যাচাই করা যাবে কবে ও কেন তথ্য বদলেছে। <span id="app-version"></span> · <button id="cache-refresh-btn" class="cache-refresh-btn" type="button" title="পুরনো ক্যাশ মুছে সর্বশেষ ভার্সন লোড করবে">🧹 সর্বশেষ ভার্সন লোড করুন</button></footer>
 
 <script>
@@ -1359,6 +1490,15 @@ function setActiveLayout(mode){
   document.getElementById('browse-layout').style.display = mode === 'browse' ? '' : 'none';
   document.getElementById('ghotonaprobaho-layout').style.display = mode === 'ghotonaprobaho' ? '' : 'none';
   document.getElementById('recent-changes-layout').style.display = mode === 'recent-changes' ? '' : 'none';
+  // ভাসমান সার্চ বক্স শুধু "দৈনিক ঘটনাপ্রবাহ" মোডে দেখানো হয় — এই মোডে
+  // বাম পাশের টপিক-তালিকা থাকে না, তাই টপিক খোঁজার এই ছোট বিকল্পটা কাজে লাগে।
+  const floatWrap = document.getElementById('floating-search-wrap');
+  if(mode === 'ghotonaprobaho'){
+    floatWrap.classList.add('visible');
+  } else {
+    floatWrap.classList.remove('visible');
+    closeFloatingSearch();
+  }
 }
 function resetModeToggleButtons(){
   const ghotoBtn = document.getElementById('ghotonaprobaho-toggle-btn');
@@ -1462,6 +1602,81 @@ document.getElementById('search').addEventListener('input', (e)=>{
   const q = e.target.value.trim().toLowerCase();
   renderList(currentFiltered(q), q);
   document.getElementById('browse-layout').classList.remove('showing-article');
+});
+
+// ══════════════════════════════════════════════════════
+// ভাসমান সার্চ বক্স ("দৈনিক ঘটনাপ্রবাহ" মোডে) — উপরের মূল #search-এর
+// মতোই matchTopic/currentFiltered ব্যবহার করে টপিক খোঁজে, কিন্তু ফলাফল
+// একটা ছোট dropdown-এ দেখায় এবং ক্লিক করলে সরাসরি openTopic() দিয়ে
+// আর্কাইভ মোডে গিয়ে টপিকটা খুলে দেয়।
+// ══════════════════════════════════════════════════════
+const floatPill = document.getElementById('floating-search-pill');
+const floatInput = document.getElementById('floating-search-input');
+const floatResults = document.getElementById('floating-search-results');
+const floatClose = document.getElementById('floating-search-close');
+
+function openFloatingSearch(){
+  floatPill.classList.add('open');
+  floatInput.focus();
+}
+
+function closeFloatingSearch(){
+  floatPill.classList.remove('open');
+  floatInput.value = '';
+  floatResults.classList.remove('visible');
+  floatResults.innerHTML = '';
+}
+
+function renderFloatingResults(q){
+  if(!q){
+    floatResults.classList.remove('visible');
+    floatResults.innerHTML = '';
+    return;
+  }
+  const list = currentFiltered(q).slice(0, 8);
+  if(list.length === 0){
+    floatResults.innerHTML = '<div class="floating-search-empty">কোনো টপিক পাওয়া যায়নি</div>';
+  } else {
+    floatResults.innerHTML = list.map(t =>
+      `<button type="button" class="floating-search-result-item" data-slug="${escapeHtml(t.slug)}">${escapeHtml(t.title)}</button>`
+    ).join('');
+    floatResults.querySelectorAll('.floating-search-result-item').forEach(btn=>{
+      btn.addEventListener('click', () => {
+        closeFloatingSearch();
+        openTopic(btn.dataset.slug);
+      });
+    });
+  }
+  floatResults.classList.add('visible');
+}
+
+floatPill.addEventListener('click', (e)=>{
+  if(!floatPill.classList.contains('open')) openFloatingSearch();
+});
+
+floatClose.addEventListener('click', (e)=>{
+  e.stopPropagation();
+  closeFloatingSearch();
+});
+
+floatInput.addEventListener('click', (e)=> e.stopPropagation());
+
+floatInput.addEventListener('input', (e)=>{
+  const q = e.target.value.trim().toLowerCase();
+  renderFloatingResults(q);
+});
+
+floatInput.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape'){
+    closeFloatingSearch();
+  }
+});
+
+// বাইরে ক্লিক করলে খোলা থাকলে বন্ধ হয়ে যাবে
+document.addEventListener('click', (e)=>{
+  if(!floatPill.contains(e.target) && floatPill.classList.contains('open')){
+    closeFloatingSearch();
+  }
 });
 
 function showPlaceholder(){
