@@ -540,11 +540,6 @@
   #ghotonaprobaho-layout, #recent-changes-layout{
     grid-template-columns:1fr;
   }
-  .above-drawer-row{
-    max-width:1080px;
-    margin:14px auto 0;
-    padding:0 20px;
-  }
   @media (max-width:760px){
     .layout{grid-template-columns:1fr;}
     #browse-layout.showing-article .drawer{ display:none; }
@@ -557,11 +552,6 @@
     .search-bar-wrap{ justify-content:center; }
     .search-slot{ flex-basis:100%; }
     .toolbar{ justify-content:center; flex-basis:100%; }
-    .above-drawer-row{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:10px;
-    }
   }
 
   .drawer{
@@ -883,7 +873,7 @@
     flex-wrap:wrap;
     flex:0 0 auto;
   }
-  .mode-toggle, .theme-toggle{
+  .theme-toggle{
     font-family:'Kalpurush',sans-serif;
     font-size:13px;
     font-weight:600;
@@ -896,8 +886,50 @@
     text-decoration:none;
     display:inline-block;
   }
-  .mode-toggle:hover, .theme-toggle:hover{background:var(--accent-light);}
-  .mode-toggle.active{background:var(--drawer-bg);color:var(--on-dark);border-color:var(--drawer-bg);}
+  .theme-toggle:hover{background:var(--accent-light);}
+
+  /* তিনটা মোড (সকল টপিক / সাম্প্রতিক পরিবর্তন / দৈনিক ঘটনাপ্রবাহ) একই
+     সারিতে সমান-গুরুত্বের ট্যাব হিসেবে — একসাথে দুইটা জিনিস (টপিক তালিকা
+     ও ঘটনাপ্রবাহ) হোমপেজে না রেখে, প্রতিটা মোড স্পষ্ট আলাদা ট্যাবে থাকে। */
+  .mode-tabs-row{
+    max-width:1080px;
+    margin:16px auto 0;
+    padding:0 20px;
+    display:flex;
+    gap:8px;
+  }
+  .mode-tab{
+    flex:1 1 0;
+    font-family:'Kalpurush',sans-serif;
+    font-size:14px;
+    font-weight:600;
+    padding:10px 14px;
+    border-radius:8px 8px 0 0;
+    border:1px solid var(--line);
+    border-bottom:3px solid transparent;
+    background:var(--paper-raised);
+    color:var(--ink);
+    cursor:pointer;
+    text-align:center;
+    transition:background 0.15s;
+  }
+  .mode-tab:hover{background:var(--accent-light);}
+  .mode-tab.active{
+    background:var(--drawer-bg);
+    color:var(--on-dark);
+    border-color:var(--drawer-bg);
+    border-bottom:3px solid var(--accent);
+  }
+  @media (max-width:760px){
+    .mode-tabs-row{
+      gap:6px;
+      padding:0 12px;
+    }
+    .mode-tab{
+      font-size:12px;
+      padding:9px 6px;
+    }
+  }
 
   .ghotonaprobaho-month-block{
     margin-bottom:28px;
@@ -1190,7 +1222,7 @@
   @media print{
     .masthead, .search-bar-wrap, .toolbar, .drawer, footer,
     .card-actions, .seal, .related-topics, .mobile-back-btn,
-    .above-drawer-row, #ghotonaprobaho-layout, #recent-changes-layout{
+    .mode-tabs-row, #ghotonaprobaho-layout, #recent-changes-layout{
       display:none !important;
     }
     body{ background:#fff; }
@@ -1222,13 +1254,14 @@
     <input id="search" type="text" placeholder="যে বিষয়ে জানতে চাও লেখো..." autocomplete="off">
   </div>
   <div class="toolbar">
-    <button id="recent-changes-toggle-btn" class="mode-toggle">🕘 সাম্প্রতিক পরিবর্তন</button>
     <button id="theme-toggle-btn" class="theme-toggle">🌙 ডার্ক মোড</button>
   </div>
 </div>
 
-<div class="above-drawer-row" id="above-drawer-row">
-  <button id="ghotonaprobaho-toggle-btn" class="mode-toggle">🗓️ দৈনিক ঘটনাপ্রবাহ</button>
+<div class="mode-tabs-row" id="mode-tabs-row">
+  <button id="browse-toggle-btn" class="mode-tab">📋 সকল টপিক</button>
+  <button id="recent-changes-toggle-btn" class="mode-tab">🕘 সাম্প্রতিক পরিবর্তন</button>
+  <button id="ghotonaprobaho-toggle-btn" class="mode-tab">🗓️ দৈনিক ঘটনাপ্রবাহ</button>
 </div>
 
 <div class="layout" id="browse-layout">
@@ -1700,8 +1733,16 @@ function renderRecentChangesView(){
   });
 }
 
-// তিনটা মোড (browse, ghotonaprobaho, recent-changes) পরস্পর exclusive —
-// একটা সক্রিয় হলে বাকি দুইটার layout ও toggle বাটন-টেক্সট রিসেট হয়ে যায়।
+// তিনটা মোড (browse, ghotonaprobaho, recent-changes) এখন উপরের
+// mode-tabs-row-এ সমান-গুরুত্বের তিনটা ট্যাব হিসেবে দেখানো হয় — পরস্পর
+// exclusive, একটা সক্রিয় হলে বাকি দুইটার layout লুকিয়ে যায় ও ট্যাব-বাটনের
+// active ক্লাস রিসেট হয়।
+const MODE_TAB_IDS = {
+  'browse': 'browse-toggle-btn',
+  'ghotonaprobaho': 'ghotonaprobaho-toggle-btn',
+  'recent-changes': 'recent-changes-toggle-btn'
+};
+
 function setActiveLayout(mode){
   document.getElementById('browse-layout').style.display = mode === 'browse' ? '' : 'none';
   document.getElementById('ghotonaprobaho-layout').style.display = mode === 'ghotonaprobaho' ? '' : 'none';
@@ -1716,41 +1757,41 @@ function setActiveLayout(mode){
     closeFloatingSearch();
   }
 }
-function resetModeToggleButtons(){
-  const ghotoBtn = document.getElementById('ghotonaprobaho-toggle-btn');
-  ghotoBtn.classList.remove('active');
-  ghotoBtn.textContent = '🗓️ দৈনিক ঘটনাপ্রবাহ';
-  const rcBtn = document.getElementById('recent-changes-toggle-btn');
-  rcBtn.classList.remove('active');
-  rcBtn.textContent = '🕘 সাম্প্রতিক পরিবর্তন';
+
+function resetModeTabButtons(){
+  Object.values(MODE_TAB_IDS).forEach(id => {
+    document.getElementById(id).classList.remove('active');
+  });
 }
 
-async function setGhotonaprobahoMode(showGhotonaprobaho){
-  CURRENT_MODE = showGhotonaprobaho ? 'ghotonaprobaho' : 'browse';
-  setActiveLayout(CURRENT_MODE);
-  resetModeToggleButtons();
-  if(showGhotonaprobaho){
-    const btn = document.getElementById('ghotonaprobaho-toggle-btn');
-    btn.classList.add('active');
-    btn.textContent = '📚 আর্কাইভে ফিরুন';
+// একটা মোডে সরাসরি সুইচ করে — টগল নয়, কারণ তিনটা ট্যাবই সবসময় দৃশ্যমান।
+async function setMode(mode){
+  CURRENT_MODE = mode;
+  setActiveLayout(mode);
+  resetModeTabButtons();
+  document.getElementById(MODE_TAB_IDS[mode]).classList.add('active');
+
+  if(mode === 'ghotonaprobaho'){
     await ensureGhotonaprobahoLoaded();
     GHOTONAPROBAHO_PAGE = 0; // প্রতিবার মোডে ঢুকলে সবচেয়ে সাম্প্রতিক ৩ মাস থেকে শুরু
     renderGhotonaprobahoView();
-  }
-}
-
-async function setRecentChangesMode(showRecentChanges){
-  CURRENT_MODE = showRecentChanges ? 'recent-changes' : 'browse';
-  setActiveLayout(CURRENT_MODE);
-  resetModeToggleButtons();
-  if(showRecentChanges){
-    const btn = document.getElementById('recent-changes-toggle-btn');
-    btn.classList.add('active');
-    btn.textContent = '📚 আর্কাইভে ফিরুন';
+  } else if(mode === 'recent-changes'){
     await ensureRecentChangesLoaded();
     RECENT_CHANGES_PAGE = 0; // প্রতিবার মোডে ঢুকলে সবচেয়ে সাম্প্রতিক মাস থেকে শুরু
     renderRecentChangesView();
+  } else {
+    document.getElementById('browse-layout').classList.remove('showing-article');
   }
+}
+
+// আগের নাম দুটো (ব্যাকওয়ার্ড কম্প্যাটিবিলিটির জন্য অন্য কোথাও রেফারেন্স
+// থাকলে) — সরাসরি নতুন setMode()-এ পাঠিয়ে দেয়।
+async function setGhotonaprobahoMode(showGhotonaprobaho){
+  await setMode(showGhotonaprobaho ? 'ghotonaprobaho' : 'browse');
+}
+
+async function setRecentChangesMode(showRecentChanges){
+  await setMode(showRecentChanges ? 'recent-changes' : 'browse');
 }
 
 
@@ -2231,41 +2272,20 @@ document.getElementById('theme-toggle-btn').addEventListener('click', () => {
   applyTheme(next, true);
 });
 
+// তিনটা মোড-ট্যাব — "সকল টপিক" / "সাম্প্রতিক পরিবর্তন" / "দৈনিক
+// ঘটনাপ্রবাহ" — সবসময় mode-tabs-row-তে পাশাপাশি থাকে, ক্লিকে সরাসরি
+// সেই মোডে সুইচ করে (টগল নয়, তাই বারবার ক্লিকেও ঠিকঠাক আচরণ করে)।
+document.getElementById('browse-toggle-btn').addEventListener('click', () => {
+  setMode('browse');
+});
+
 document.getElementById('ghotonaprobaho-toggle-btn').addEventListener('click', () => {
-  setGhotonaprobahoMode(CURRENT_MODE !== 'ghotonaprobaho');
+  setMode('ghotonaprobaho');
 });
 
 document.getElementById('recent-changes-toggle-btn').addEventListener('click', () => {
-  setRecentChangesMode(CURRENT_MODE !== 'recent-changes');
+  setMode('recent-changes');
 });
-
-// ══════════════════════════════════════════════════════
-// "🕘 সাম্প্রতিক পরিবর্তন" বাটনের জায়গা স্ক্রিন সাইজ অনুযায়ী বদলায়:
-// ডেস্কটপে toolbar-এ "🌙 ডার্ক মোড"-এর ঠিক বাম পাশে (HTML-এ এমনিতেই
-// ওখানে বসানো আছে), মোবাইলে above-drawer-row-তে "🗓️ দৈনিক
-// ঘটনাপ্রবাহ"-এর পাশে (আগে যেমন ছিল)। একই বাটন এলিমেন্ট DOM-এ শুধু
-// সরানো হয় — তাই event listener/id সব অক্ষত থাকে, ডুপ্লিকেট মার্কআপ
-// লাগে না।
-// ══════════════════════════════════════════════════════
-(function placeRecentChangesButtonResponsively(){
-  const rcBtn = document.getElementById('recent-changes-toggle-btn');
-  const toolbar = document.querySelector('.toolbar');
-  const aboveDrawerRow = document.getElementById('above-drawer-row');
-  const themeBtn = document.getElementById('theme-toggle-btn');
-  const mq = window.matchMedia('(max-width:760px)');
-
-  function place(){
-    if(mq.matches){
-      if(rcBtn.parentElement !== aboveDrawerRow) aboveDrawerRow.appendChild(rcBtn);
-    } else {
-      if(rcBtn.parentElement !== toolbar || rcBtn.nextElementSibling !== themeBtn){
-        toolbar.insertBefore(rcBtn, themeBtn);
-      }
-    }
-  }
-  place();
-  mq.addEventListener('change', place);
-})();
 
 loadIndex().then(() => {
   const initialSlug = decodeURIComponent(location.hash.slice(1));
@@ -2273,7 +2293,7 @@ loadIndex().then(() => {
     openTopic(initialSlug, false);
   } else {
     // হ্যাশে নির্দিষ্ট কোনো টপিক না থাকলে ডিফল্ট হিসেবে "দৈনিক ঘটনাপ্রবাহ" মোড খুলবে
-    setGhotonaprobahoMode(true);
+    setMode('ghotonaprobaho');
   }
 });
 
