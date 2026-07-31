@@ -13,10 +13,9 @@ const APP_SHELL = [
   "./vendor/marked.min.js",
   "./vendor/purify.min.js",
   // TASK 4: ইনডেক্স ফাইলগুলোও ইনস্টল-টাইমে ক্যাশ করা হয়, যাতে প্রথমবার
-  // অফলাইনে গেলেও (একবারও এই নির্দিষ্ট ফাইল না খুলে থাকলেও) তালিকা,
-  // সাম্প্রতিক-পরিবর্তন মোড ও দৈনিক ঘটনাপ্রবাহ মোড — সবই কাজ করে।
+  // অফলাইনে গেলেও (একবারও এই নির্দিষ্ট ফাইল না খুলে থাকলেও) তালিকা ও
+  // দৈনিক ঘটনাপ্রবাহ মোড — দুইটাই কাজ করে।
   "./topics-index.json",
-  "./recent-changes.json",
   "./ghotonaprobaho-index.json",
   "./version.json",
   // ফন্ট ফাইলগুলোও আগে থেকে ক্যাশ করা হয়, যাতে প্রথম অফলাইন ভিজিটেও
@@ -51,7 +50,7 @@ self.addEventListener("activate", (event) => {
 });
 
 // ফেচ-স্ট্র্যাটেজি:
-// - topics-index.json, recent-changes.json, version.json ও topics/*.md (কনটেন্ট):
+// - topics-index.json, version.json ও topics/*.md (কনটেন্ট):
 //   আগে নেটওয়ার্ক থেকে চেষ্টা, অফলাইন হলে ক্যাশ থেকে দেখানো — যাতে নতুন তথ্য
 //   (ভার্সন নম্বর সহ) থাকলে সেটাই আগে দেখা যায়, পুরনো ক্যাশড ভার্সন আটকে না থাকে।
 // - বাকি সব (অ্যাপ-শেল): আগে ক্যাশ থেকে দেখানো, দ্রুত লোডের জন্য।
@@ -59,7 +58,6 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   const isContent =
     url.pathname.endsWith("topics-index.json") ||
-    url.pathname.endsWith("recent-changes.json") ||
     url.pathname.endsWith("version.json") ||
     url.pathname.includes("/topics/");
 
