@@ -1182,8 +1182,8 @@
       <svg class="fsi-svg" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <radialGradient id="fsiLensGrad" cx="35%" cy="30%" r="75%">
-            <stop offset="0%" stop-color="#eafff5"/>
-            <stop offset="55%" stop-color="#bdf0d8"/>
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="50%" stop-color="#c9f5e0"/>
             <stop offset="100%" stop-color="var(--accent)"/>
           </radialGradient>
           <linearGradient id="fsiRimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -1191,23 +1191,15 @@
             <stop offset="100%" stop-color="var(--accent-deep)"/>
           </linearGradient>
         </defs>
-        <!-- হ্যান্ডেল (3D tube শেড) -->
-        <rect x="27.5" y="28" width="7" height="13" rx="3.4" transform="rotate(45 31 34.5)" fill="var(--accent-deep)"/>
-        <rect x="28.6" y="28" width="3" height="13" rx="1.5" transform="rotate(45 30.1 34.5)" fill="#ffffff" opacity="0.25"/>
-        <!-- লেন্সের বাইরের রিং (embossed 3D) -->
-        <circle cx="18" cy="18" r="15.5" fill="url(#fsiRimGrad)"/>
-        <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(0,0,0,0.12)" stroke-width="1"/>
-        <!-- লেন্সের কাচ -->
-        <circle cx="18" cy="18" r="11.5" fill="url(#fsiLensGrad)"/>
-        <!-- কাচের ওপর গ্লসি হাইলাইট -->
-        <ellipse class="fsi-glint" cx="13.5" cy="12.5" rx="4.2" ry="2.6" fill="#ffffff" opacity="0.75" transform="rotate(-30 13.5 12.5)"/>
-        <!-- মুখ: দুইটা চোখ (blink হয়) + ছোট্ট হাসি -->
+        <circle cx="22" cy="22" r="21" fill="url(#fsiRimGrad)"/>
+        <circle cx="22" cy="22" r="18" fill="url(#fsiLensGrad)"/>
+        <ellipse class="fsi-glint" cx="15.5" cy="14" rx="6.5" ry="4.2" fill="#ffffff" opacity="0.85" transform="rotate(-30 15.5 14)"/>
         <g class="fsi-face">
-          <ellipse class="fsi-eye fsi-eye-l" cx="14.2" cy="19.5" rx="1.7" ry="2.1" fill="var(--accent-deep)"/>
-          <ellipse class="fsi-eye fsi-eye-r" cx="21.8" cy="19.5" rx="1.7" ry="2.1" fill="var(--accent-deep)"/>
-          <circle class="fsi-eye-glint" cx="14.7" cy="18.8" r="0.55" fill="#ffffff"/>
-          <circle class="fsi-eye-glint" cx="22.3" cy="18.8" r="0.55" fill="#ffffff"/>
-          <path class="fsi-smile" d="M14.5 23.2 Q18 26 21.5 23.2" fill="none" stroke="var(--accent-deep)" stroke-width="1.3" stroke-linecap="round"/>
+          <circle class="fsi-eye fsi-eye-l" cx="17.2" cy="23.5" r="3.6" fill="var(--accent-deep)"/>
+          <circle class="fsi-eye fsi-eye-r" cx="27.4" cy="23.5" r="3.6" fill="var(--accent-deep)"/>
+          <circle class="fsi-eye-glint" cx="18.4" cy="22" r="1.15" fill="#ffffff"/>
+          <circle class="fsi-eye-glint" cx="28.6" cy="22" r="1.15" fill="#ffffff"/>
+          <path class="fsi-smile" d="M16.5 29.6 Q22 34.8 27.5 29.6" fill="none" stroke="var(--accent-deep)" stroke-width="2.2" stroke-linecap="round"/>
         </g>
       </svg>
     </span>
