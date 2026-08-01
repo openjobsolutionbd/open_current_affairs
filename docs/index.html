@@ -2044,15 +2044,44 @@ document.addEventListener('keydown', (e)=>{
     document.removeEventListener('touchmove', dragMove);
     document.removeEventListener('touchend', dragEnd);
     // ড্র্যাগ শেষে ক্লিক ইভেন্ট বাতিল করা হয়, যাতে টেনে ছাড়ার পর
-    // ভুলবশত পিল open/close টগল না হয়ে যায়।
+    // ভুলবশত পিল open/close টগল না হয়ে যায়। এই লিসেনারটা নিজে থেকেই
+    // সরে যায় ক্লিক এলে — কিন্তু কোনো কারণে click ইভেন্ট না এলে (যেমন
+    // ছেড়ে দেওয়ার পর মাউস অন্য কোথাও চলে যায়) যাতে চিরস্থায়ীভাবে লেগে
+    // থেকে পরের আসল ক্লিককে দমন না করে, তাই একটা টাইমআউট ফলব্যাক
+    // হিসেবে অল্প সময় পরই নিজে থেকে সরিয়ে দেয়।
     if(moved){
-      const suppressClick = (ev) => { ev.stopPropagation(); floatPill.removeEventListener('click', suppressClick, true); };
+      const suppressClick = (ev) => {
+        ev.stopPropagation();
+        floatPill.removeEventListener('click', suppressClick, true);
+        clearTimeout(cleanupTimer);
+      };
       floatPill.addEventListener('click', suppressClick, true);
+      const cleanupTimer = setTimeout(() => {
+        floatPill.removeEventListener('click', suppressClick, true);
+      }, 300);
     }
   }
 
   floatPill.addEventListener('mousedown', dragStart);
   floatPill.addEventListener('touchstart', dragStart, {passive:true});
+
+  // স্ক্রিন ঘোরালে বা ব্রাউজার উইন্ডো ছোট করলে (রিসাইজ) আগে টেনে
+  // সরানো বক্সটা স্ক্রিনের বাইরে চলে যেতে পারে — সেটা ঠেকাতে
+  // প্রতিবার সাইজ বদলালে বক্সটাকে আবার স্ক্রিনের সীমার মধ্যে টেনে
+  // আনা হয়। যেসব ক্ষেত্রে বক্স কখনো টানা হয়নি (ডিফল্ট right/bottom
+  // পজিশনে আছে), সেখানে কিছু করার দরকার নেই — CSS নিজেই সামলায়।
+  function clampFloatingSearchToViewport(){
+    if(!floatWrap.classList.contains('dragged')) return;
+    const rect = floatWrap.getBoundingClientRect();
+    const maxLeft = Math.max(0, window.innerWidth - rect.width);
+    const maxTop = Math.max(0, window.innerHeight - rect.height);
+    const newLeft = Math.min(rect.left, maxLeft);
+    const newTop = Math.min(rect.top, maxTop);
+    floatWrap.style.left = newLeft + 'px';
+    floatWrap.style.top = newTop + 'px';
+  }
+  window.addEventListener('resize', clampFloatingSearchToViewport);
+  window.addEventListener('orientationchange', clampFloatingSearchToViewport);
 })();
 
 // ══════════════════════════════════════════════════════
