@@ -688,6 +688,15 @@
     justify-content:flex-end;
     max-width:calc(100% - 110px);
   }
+  /* মূল পাতার কার্ডে .card-actions যেভাবে বসে, ভাসমান সার্চ থেকে খোলা
+     পপআপ-মডালেও ঠিক একই HTML (একই .card-actions সহ) ভেতরে বসানো হয় —
+     কিন্তু মডালের নিজের বন্ধ-করার (✕) বাটনও একই কোণায় (top:14/right:14,
+     ৩২×৩২px) বসে, ফলে দুটো একে অপরের ওপর মিলে যায়। এখানে শুধু মডালের
+     ভেতরের .card-actions-কে বাঁ দিকে সরিয়ে ✕ বাটনের জন্য জায়গা ছেড়ে
+     দেওয়া হচ্ছে — সাধারণ পাতার লেআউট অপরিবর্তিত থাকে। */
+  #topic-modal-body .card-actions{
+    right:56px;
+  }
   .mobile-back-btn{
     display:none;
     background:none;
