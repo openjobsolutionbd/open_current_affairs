@@ -443,6 +443,52 @@
     color:var(--muted);
     font-size:13px;
   }
+  .floating-search-wiki-loading{
+    font-style:italic;
+  }
+  .floating-search-wiki-result{
+    padding:12px 12px 10px;
+  }
+  .floating-search-wiki-badge{
+    display:inline-block;
+    background:var(--accent-light);
+    color:var(--accent-deep);
+    font-size:10.5px;
+    font-weight:600;
+    letter-spacing:0.03em;
+    padding:2px 8px;
+    border-radius:999px;
+    margin-bottom:6px;
+  }
+  .floating-search-wiki-title{
+    font-weight:700;
+    font-size:14px;
+    color:var(--ink);
+    margin-bottom:4px;
+  }
+  .floating-search-wiki-extract{
+    font-size:13px;
+    line-height:1.55;
+    color:var(--ink);
+    margin-bottom:8px;
+  }
+  .floating-search-wiki-link{
+    display:inline-block;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--accent-deep);
+    text-decoration:none;
+  }
+  .floating-search-wiki-link:hover{ text-decoration:underline; }
+  .main-wiki-result{
+    max-width:640px;
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:16px 18px 14px;
+  }
+  .main-wiki-result .floating-search-wiki-title{ font-size:16px; }
+  .main-wiki-result .floating-search-wiki-extract{ font-size:14.5px; }
 
   @media (max-width:720px){
     .floating-search-wrap{ right:14px; bottom:70px; }
@@ -1606,15 +1652,84 @@ function highlight(text, q){
   return escapeHtml(text.slice(0,idx)) + '<mark>' + escapeHtml(text.slice(idx, idx+q.length)) + '</mark>' + escapeHtml(text.slice(idx+q.length));
 }
 
+// ══════════════════════════════════════════════════════
+// স্থানীয় টপিকে ফলাফল না পেলে বাংলা উইকিপিডিয়া থেকে সরাসরি
+// সারাংশ এনে দেখানো হয় (কোনো key/টোকেন লাগে না, ব্রাউজার থেকেই
+// সরাসরি ফ্রি পাবলিক API কল করা হয়)। রেজাল্ট cache করা হয় যাতে
+// একই শব্দ বারবার টাইপ করলে বারবার নেটওয়ার্ক কল না হয়। এই
+// ফাংশনটা মূল সার্চ বার ও ভাসমান সার্চ বাডি — দুইখানেই ব্যবহৃত হয়।
+// ══════════════════════════════════════════════════════
+const wikiCache = new Map();
+let wikiRequestSeq = 0;
+
+async function fetchWikipediaSummary(q){
+  if(wikiCache.has(q)) return wikiCache.get(q);
+  try{
+    // ধাপ ১: প্রথমে সার্চ করে সবচেয়ে কাছের আর্টিকেলের শিরোনাম বের করা
+    const searchUrl = `https://bn.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&format=json&origin=*&srlimit=1`;
+    const searchRes = await fetch(searchUrl);
+    const searchData = await searchRes.json();
+    const hit = searchData?.query?.search?.[0];
+    if(!hit){
+      wikiCache.set(q, null);
+      return null;
+    }
+    // ধাপ ২: সেই শিরোনামের সারাংশ (summary) আনা
+    const summaryUrl = `https://bn.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(hit.title)}`;
+    const summaryRes = await fetch(summaryUrl);
+    if(!summaryRes.ok){
+      wikiCache.set(q, null);
+      return null;
+    }
+    const summaryData = await summaryRes.json();
+    if(!summaryData.extract){
+      wikiCache.set(q, null);
+      return null;
+    }
+    const result = {
+      title: summaryData.title || hit.title,
+      extract: summaryData.extract,
+      url: summaryData.content_urls?.desktop?.page || `https://bn.wikipedia.org/wiki/${encodeURIComponent(hit.title)}`
+    };
+    wikiCache.set(q, result);
+    return result;
+  } catch(err){
+    return null;
+  }
+}
+
+let mainWikiSeq = 0;
+
 function renderList(list, q){
   q = (q||'').trim().toLowerCase();
+  mainWikiSeq++;
+  const seq = mainWikiSeq;
   const wrap = document.getElementById('tab-list');
   const progress = loadProgress();
   const readCount = list.filter(t => progress[t.slug]).length;
   document.getElementById('topic-count').textContent =
     `${list.length} টি${ALL_TOPICS.length ? ` · ${readCount} পড়া হয়েছে` : ''}`;
   if(list.length === 0){
-    wrap.innerHTML = '<div class="empty-note">কোনো টপিক পাওয়া যায়নি</div>';
+    if(q){
+      wrap.innerHTML = '<div class="empty-note floating-search-wiki-loading">উইকিপিডিয়ায় খোঁজা হচ্ছে…</div>';
+      fetchWikipediaSummary(q).then(result => {
+        if(seq !== mainWikiSeq) return;
+        if(!result){
+          wrap.innerHTML = '<div class="empty-note">কোনো টপিক পাওয়া যায়নি</div>';
+          return;
+        }
+        wrap.innerHTML = `
+          <div class="floating-search-wiki-result main-wiki-result">
+            <div class="floating-search-wiki-badge">উইকিপিডিয়া থেকে</div>
+            <div class="floating-search-wiki-title">${escapeHtml(result.title)}</div>
+            <div class="floating-search-wiki-extract">${escapeHtml(result.extract)}</div>
+            <a class="floating-search-wiki-link" href="${result.url}" target="_blank" rel="noopener noreferrer">পুরো আর্টিকেল পড়ুন ↗</a>
+          </div>
+        `;
+      });
+    } else {
+      wrap.innerHTML = '<div class="empty-note">কোনো টপিক পাওয়া যায়নি</div>';
+    }
     return;
   }
   wrap.innerHTML = list.map(t => {
@@ -1672,7 +1787,28 @@ function closeFloatingSearch(){
   floatResults.innerHTML = '';
 }
 
+function renderWikiFallback(container, q, seq){
+  container.innerHTML = '<div class="floating-search-empty floating-search-wiki-loading">উইকিপিডিয়ায় খোঁজা হচ্ছে…</div>';
+  fetchWikipediaSummary(q).then(result => {
+    if(seq !== wikiRequestSeq) return; // এর মধ্যে নতুন সার্চ হয়ে গেলে পুরনো ফলাফল উপেক্ষা করা হয়
+    if(!result){
+      container.innerHTML = '<div class="floating-search-empty">কোনো টপিক পাওয়া যায়নি</div>';
+      return;
+    }
+    container.innerHTML = `
+      <div class="floating-search-wiki-result">
+        <div class="floating-search-wiki-badge">উইকিপিডিয়া থেকে</div>
+        <div class="floating-search-wiki-title">${escapeHtml(result.title)}</div>
+        <div class="floating-search-wiki-extract">${escapeHtml(result.extract)}</div>
+        <a class="floating-search-wiki-link" href="${result.url}" target="_blank" rel="noopener noreferrer">পুরো আর্টিকেল পড়ুন ↗</a>
+      </div>
+    `;
+  });
+}
+
 function renderFloatingResults(q){
+  wikiRequestSeq++;
+  const seq = wikiRequestSeq;
   if(!q){
     floatResults.classList.remove('visible');
     floatResults.innerHTML = '';
@@ -1680,7 +1816,7 @@ function renderFloatingResults(q){
   }
   const list = currentFiltered(q).slice(0, 8);
   if(list.length === 0){
-    floatResults.innerHTML = '<div class="floating-search-empty">কোনো টপিক পাওয়া যায়নি</div>';
+    renderWikiFallback(floatResults, q, seq);
   } else {
     floatResults.innerHTML = list.map(t =>
       `<button type="button" class="floating-search-result-item" data-slug="${escapeHtml(t.slug)}">${escapeHtml(t.title)}</button>`
