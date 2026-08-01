@@ -1939,10 +1939,21 @@ document.addEventListener('keydown', (e)=>{
     document.removeEventListener('touchmove', dragMove);
     document.removeEventListener('touchend', dragEnd);
     // ড্র্যাগ শেষে ক্লিক ইভেন্ট বাতিল করা হয়, যাতে টেনে ছাড়ার পর
-    // ভুলবশত পিল open/close টগল না হয়ে যায়।
+    // ভুলবশত পিল open/close টগল না হয়ে যায়। এই লিসেনারটা নিজে থেকেই
+    // সরে যায় ক্লিক এলে — কিন্তু কোনো কারণে click ইভেন্ট না এলে (যেমন
+    // ছেড়ে দেওয়ার পর মাউস অন্য কোথাও চলে যায়) যাতে চিরস্থায়ীভাবে লেগে
+    // থেকে পরের আসল ক্লিককে দমন না করে, তাই একটা টাইমআউট ফলব্যাক
+    // হিসেবে অল্প সময় পরই নিজে থেকে সরিয়ে দেয়।
     if(moved){
-      const suppressClick = (ev) => { ev.stopPropagation(); floatPill.removeEventListener('click', suppressClick, true); };
+      const suppressClick = (ev) => {
+        ev.stopPropagation();
+        floatPill.removeEventListener('click', suppressClick, true);
+        clearTimeout(cleanupTimer);
+      };
       floatPill.addEventListener('click', suppressClick, true);
+      const cleanupTimer = setTimeout(() => {
+        floatPill.removeEventListener('click', suppressClick, true);
+      }, 300);
     }
   }
 
