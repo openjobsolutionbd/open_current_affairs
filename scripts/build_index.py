@@ -33,6 +33,9 @@ SW_OUTPUT = DOCS_DIR / "sw.js"
 GHOTONAPROBAHO_DIR = DOCS_DIR / "ghotonaprobaho"
 GHOTONAPROBAHO_OUTPUT_FILE = DOCS_DIR / "ghotonaprobaho-index.json"
 
+TOP_NEWS_DIR = DOCS_DIR / "top-news"
+TOP_NEWS_OUTPUT_FILE = DOCS_DIR / "top-news-index.json"
+
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n(.*)$", re.DOTALL)
 
 # TASK 7 / TASK 10: last_updated অবশ্যই ISO-সাজানোর-উপযোগী ফরম্যাটে থাকতে হবে
@@ -75,6 +78,62 @@ def bengali_date_sort_key(date_str):
         return (0, 0, 0)
 
 
+def parse_item_terms(item_text, valid_slugs, path):
+    """একটা বুলেট-লাইনের টেক্সট থেকে [[phrase|slug]] বা পুরনো [[slug]] ফরম্যাটের
+    টার্মগুলো বের করে, স্লাগ ভ্যালিডেট করে, এবং (পরিষ্কার item_text, terms) রিটার্ন
+    করে। ঘটনাপ্রবাহ ও টপ নিউজ — দুই পার্সারই এই একই লজিক শেয়ার করে।"""
+    terms = []
+    inline_matches = list(inline_term_re.finditer(item_text))
+    if inline_matches:
+        for im in inline_matches:
+            phrase = im.group(1).strip()
+            slug = im.group(2).strip()
+            if slug not in valid_slugs:
+                raise BuildError(
+                    f"{path.name}: '[[{phrase}|{slug}]]' রেফারেন্স করা টপিক "
+                    f"docs/topics/-এ পাওয়া যায়নি (এন্ট্রি: \"{item_text}\")। "
+                    f"বানান ঠিক আছে কিনা, বা টপিক ফাইলটা মুছে/rename হয়েছে কিনা দেখুন।"
+                )
+            if not phrase:
+                raise BuildError(
+                    f"{path.name}: '[[{phrase}|{slug}]]'-এর বাক্যাংশ অংশ খালি "
+                    f"থাকতে পারবে না (এন্ট্রি: \"{item_text}\")।"
+                )
+            terms.append({"phrase": phrase, "slug": slug})
+        item_text = inline_term_re.sub(lambda mm: mm.group(1), item_text).strip()
+    else:
+        lm = legacy_related_topic_re.match(item_text)
+        if lm:
+            item_text = lm.group(1).strip()
+            slug = lm.group(2).strip()
+            if slug not in valid_slugs:
+                raise BuildError(
+                    f"{path.name}: '[[{slug}]]' রেফারেন্স করা টপিক "
+                    f"docs/topics/-এ পাওয়া যায়নি (এন্ট্রি: \"{item_text}\")। "
+                    f"বানান ঠিক আছে কিনা, বা টপিক ফাইলটা মুছে/rename হয়েছে কিনা দেখুন।"
+                )
+            terms.append({"phrase": item_text, "slug": slug})
+
+    # একই বাক্যাংশ একাধিক টার্মে ওভারল্যাপ করলে ক্লায়েন্ট-সাইড হাইলাইটিং
+    # ভেঙে যেতে পারে (যেমন একটা টার্মের বাক্যাংশ আরেকটার ভেতরে বসে থাকা) —
+    # তাই বিল্ড-টাইমেই সেটা ধরে ফেলা হয়, রানটাইমে চুপচাপ ভুল রেন্ডার হওয়ার
+    # চেয়ে স্পষ্ট এরর দেখানো ভালো।
+    for i, t1 in enumerate(terms):
+        for j, t2 in enumerate(terms):
+            if i != j and t1["phrase"] in t2["phrase"] and t1["phrase"] != t2["phrase"]:
+                raise BuildError(
+                    f"{path.name}: '\"{t1['phrase']}\"' বাক্যাংশটি '\"{t2['phrase']}\"' "
+                    f"-এর ভেতরে বসে আছে (এন্ট্রি: \"{item_text}\")। একটা টার্মের বাক্যাংশ "
+                    f"আরেকটার ভেতরে থাকলে হাইলাইটিং ভুল জায়গায় হতে পারে — বাক্যাংশগুলো "
+                    f"এমনভাবে বাছুন যাতে একটা আরেকটার সাবস্ট্রিং না হয়।"
+                )
+    return item_text, terms
+
+
+inline_term_re = re.compile(r"\[\[([^\[\]|]+)\|([a-z0-9-]+)\]\]")
+legacy_related_topic_re = re.compile(r"^(.*?)\s*\[\[([a-z0-9-]+)\]\]\s*$")
+
+
 def parse_ghotonaprobaho_file(path, valid_slugs):
     """ghotonaprobaho/*.md ফাইলের একটা থেকে দিন-ভিত্তিক এন্ট্রি বের করে।
     প্রত্যাশিত ফরম্যাট:
@@ -107,8 +166,6 @@ def parse_ghotonaprobaho_file(path, valid_slugs):
     date_re = re.compile(r"^##\s+(.+?)\s*$")
     category_re = re.compile(r"^\*\*(.+?)\*\*\s*$")
     bullet_re = re.compile(r"^-\s+(.+?)\s*$")
-    inline_term_re = re.compile(r"\[\[([^\[\]|]+)\|([a-z0-9-]+)\]\]")
-    legacy_related_topic_re = re.compile(r"^(.*?)\s*\[\[([a-z0-9-]+)\]\]\s*$")
 
     for raw_line in text.splitlines():
         line = raw_line.strip()
@@ -131,54 +188,7 @@ def parse_ghotonaprobaho_file(path, valid_slugs):
             continue
         m = bullet_re.match(line)
         if m and current_category is not None:
-            item_text = m.group(1).strip()
-            terms = []
-
-            inline_matches = list(inline_term_re.finditer(item_text))
-            if inline_matches:
-                for im in inline_matches:
-                    phrase = im.group(1).strip()
-                    slug = im.group(2).strip()
-                    if slug not in valid_slugs:
-                        raise BuildError(
-                            f"{path.name}: '[[{phrase}|{slug}]]' রেফারেন্স করা টপিক "
-                            f"docs/topics/-এ পাওয়া যায়নি (এন্ট্রি: \"{item_text}\")। "
-                            f"বানান ঠিক আছে কিনা, বা টপিক ফাইলটা মুছে/rename হয়েছে কিনা দেখুন।"
-                        )
-                    if not phrase:
-                        raise BuildError(
-                            f"{path.name}: '[[{phrase}|{slug}]]'-এর বাক্যাংশ অংশ খালি "
-                            f"থাকতে পারবে না (এন্ট্রি: \"{item_text}\")।"
-                        )
-                    terms.append({"phrase": phrase, "slug": slug})
-                item_text = inline_term_re.sub(lambda mm: mm.group(1), item_text).strip()
-            else:
-                lm = legacy_related_topic_re.match(item_text)
-                if lm:
-                    item_text = lm.group(1).strip()
-                    slug = lm.group(2).strip()
-                    if slug not in valid_slugs:
-                        raise BuildError(
-                            f"{path.name}: '[[{slug}]]' রেফারেন্স করা টপিক "
-                            f"docs/topics/-এ পাওয়া যায়নি (এন্ট্রি: \"{item_text}\")। "
-                            f"বানান ঠিক আছে কিনা, বা টপিক ফাইলটা মুছে/rename হয়েছে কিনা দেখুন।"
-                        )
-                    terms.append({"phrase": item_text, "slug": slug})
-
-            # একই বাক্যাংশ একাধিক টার্মে ওভারল্যাপ করলে ক্লায়েন্ট-সাইড হাইলাইটিং
-            # ভেঙে যেতে পারে (যেমন একটা টার্মের বাক্যাংশ আরেকটার ভেতরে বসে থাকা) —
-            # তাই বিল্ড-টাইমেই সেটা ধরে ফেলা হয়, রানটাইমে চুপচাপ ভুল রেন্ডার হওয়ার
-            # চেয়ে স্পষ্ট এরর দেখানো ভালো।
-            for i, t1 in enumerate(terms):
-                for j, t2 in enumerate(terms):
-                    if i != j and t1["phrase"] in t2["phrase"] and t1["phrase"] != t2["phrase"]:
-                        raise BuildError(
-                            f"{path.name}: '\"{t1['phrase']}\"' বাক্যাংশটি '\"{t2['phrase']}\"' "
-                            f"-এর ভেতরে বসে আছে (এন্ট্রি: \"{item_text}\")। একটা টার্মের বাক্যাংশ "
-                            f"আরেকটার ভেতরে থাকলে হাইলাইটিং ভুল জায়গায় হতে পারে — বাক্যাংশগুলো "
-                            f"এমনভাবে বাছুন যাতে একটা আরেকটার সাবস্ট্রিং না হয়।"
-                        )
-
+            item_text, terms = parse_item_terms(m.group(1).strip(), valid_slugs, path)
             current_category["items"].append({
                 "text": item_text,
                 "terms": terms,
@@ -241,6 +251,68 @@ def compile_ghotonaprobaho(valid_slugs):
     print(f"তৈরি হলো: {GHOTONAPROBAHO_OUTPUT_FILE} ({len(months)} মাস, {total_days} দিন)")
     # ghotonaprobaho/*.md এখন সরাসরি docs/ghotonaprobaho/-এই থাকে (আলাদা
     # root-level সোর্স ফোল্ডার নেই), তাই এখানে আর কপি করার দরকার নেই।
+
+
+def parse_top_news_file(path, valid_slugs):
+    """top-news/*.md ফাইলের একটা থেকে তারিখ-ভিত্তিক এক-লাইন হাইলাইট বের করে।
+    ঘটনাপ্রবাহের মতোই ফরম্যাট, তবে ক্যাটাগরি (বাংলাদেশ/আন্তর্জাতিক) ছাড়া —
+    প্রতিটা তারিখে সাধারণত একটা মাত্র সবচেয়ে গুরুত্বপূর্ণ লাইন থাকে:
+      ## ১৪ মে ২০২৬
+      - বগুড়াকে দেশের ১৩তম সিটি কর্পোরেশন গঠন করে প্রজ্ঞাপন জারি।
+    একই তারিখে একাধিক বুলেট থাকলেও সমস্যা নেই, সবগুলোই যোগ হয়।
+    [[বাক্যাংশ|slug]] লিংক-সিনট্যাক্স ঘটনাপ্রবাহের মতোই কাজ করে।
+    """
+    text = path.read_text(encoding="utf-8").lstrip("\ufeff")
+    items = []
+    current_date = None
+
+    date_re = re.compile(r"^##\s+(.+?)\s*$")
+    bullet_re = re.compile(r"^-\s+(.+?)\s*$")
+
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        m = date_re.match(line)
+        if m:
+            current_date = m.group(1).strip()
+            continue
+        m = bullet_re.match(line)
+        if m and current_date is not None:
+            item_text, terms = parse_item_terms(m.group(1).strip(), valid_slugs, path)
+            items.append({
+                "date": current_date,
+                "_sort": bengali_date_sort_key(current_date),
+                "text": item_text,
+                "terms": terms,
+            })
+            continue
+        # # হেডিং (টাইটেল) লাইন উপেক্ষা করা হয়।
+
+    return items
+
+
+def compile_top_news(valid_slugs):
+    """top-news/ ফোল্ডারের সব .md ফাইল থেকে গুরুত্বপূর্ণ হাইলাইটগুলো একত্র করে
+    docs/top-news-index.json বানায় (নতুন থেকে পুরনো সাজানো, একটাই ফ্ল্যাট
+    তালিকা — 'এক পলকে দেখা'-র জন্য মাস-ভিত্তিক ভাগ/পেজিনেশন ছাড়াই)।"""
+    if not TOP_NEWS_DIR.exists():
+        print("তথ্য: top-news/ ফোল্ডার নেই, এই ফিচার বাদ দিয়ে বিল্ড চলবে।")
+        return
+
+    all_items = []
+    for path in sorted(TOP_NEWS_DIR.glob("*.md")):
+        all_items.extend(parse_top_news_file(path, valid_slugs))
+
+    all_items.sort(key=lambda it: it["_sort"], reverse=True)
+    for it in all_items:
+        del it["_sort"]
+
+    TOP_NEWS_OUTPUT_FILE.write_text(
+        json.dumps({"items": all_items}, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    print(f"তৈরি হলো: {TOP_NEWS_OUTPUT_FILE} ({len(all_items)} টি হাইলাইট)")
 
 
 def parse_frontmatter_yaml(block, path):
@@ -415,6 +487,12 @@ def _main():
 
     try:
         compile_ghotonaprobaho({e["slug"] for e in entries})
+    except BuildError as e:
+        print(f"✗ বিল্ড ব্যর্থ — {e}", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        compile_top_news({e["slug"] for e in entries})
     except BuildError as e:
         print(f"✗ বিল্ড ব্যর্থ — {e}", file=sys.stderr)
         sys.exit(1)

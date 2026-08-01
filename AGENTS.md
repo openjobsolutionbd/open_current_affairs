@@ -14,8 +14,9 @@
 |---|---|
 | `docs/topics/*.md` | মূল কনটেন্ট — হাতে-edit করা টপিক পেজ (frontmatter + "বর্তমান তথ্য" + "পরিবর্তনের ইতিহাস") |
 | `docs/ghotonaprobaho/*.md` | তারিখ-ভিত্তিক দৈনিক ঘটনাপ্রবাহের হাতে-লেখা সোর্স |
+| `docs/top-news/*.md` | "টপ নিউজ" ট্যাবের হাতে-লেখা সোর্স — প্রতিটা তারিখে সাধারণত একটাই সবচেয়ে গুরুত্বপূর্ণ হাইলাইট লাইন (ঘটনাপ্রবাহের মতোই ফরম্যাট, তবে ক্যাটাগরি ছাড়া) |
 | `archive/*.md` | মাসিক আসল সোর্স ডকুমেন্ট (রেফারেন্সের জন্য, edit করার দরকার নেই) |
-| `docs/topics-index.json`, `docs/ghotonaprobaho-index.json`, `docs/sw.js`, `docs/version.json` | **auto-generated** — `scripts/build_index.py` থেকে তৈরি হয়; হাতে edit করবেন না |
+| `docs/topics-index.json`, `docs/ghotonaprobaho-index.json`, `docs/top-news-index.json`, `docs/sw.js`, `docs/version.json` | **auto-generated** — `scripts/build_index.py` থেকে তৈরি হয়; হাতে edit করবেন না |
 | `scripts/build_index.py` | validate + generate — কনটেন্ট বদলানোর পর এটা চালাতে হবে |
 | `.github/workflows/update-wiki.yml` | push হলে GitHub Actions স্বয়ংক্রিয়ভাবে build চালায় এবং generated output commit করে |
 | `CHANGELOG.md` | শুধু **সিস্টেম/কাঠামোর** পরিবর্তনের জন্য (ফিচার, ডিজাইন, ফাইল-কাঠামো বদল) — মাসিক কনটেন্ট আপডেট এখানে লেখা হয় না |
@@ -35,7 +36,7 @@ pip install pyyaml --break-system-packages   # প্রয়োজনে
 python3 scripts/build_index.py
 ```
 
-এটা `docs/topics-index.json`, `docs/ghotonaprobaho-index.json`, `docs/sw.js`, `docs/version.json` রিজেনারেট করে এবং ভ্যালিডেশন এরর থাকলে non-zero exit code দিয়ে থামে। **GitHub push করলে `.github/workflows/update-wiki.yml` এটা স্বয়ংক্রিয়ভাবে চালায়** — কিন্তু push করার আগে লোকালি একবার চালিয়ে দেখাই ভালো অভ্যাস।
+এটা `docs/topics-index.json`, `docs/ghotonaprobaho-index.json`, `docs/top-news-index.json`, `docs/sw.js`, `docs/version.json` রিজেনারেট করে এবং ভ্যালিডেশন এরর থাকলে non-zero exit code দিয়ে থামে। **GitHub push করলে `.github/workflows/update-wiki.yml` এটা স্বয়ংক্রিয়ভাবে চালায়** — কিন্তু push করার আগে লোকালি একবার চালিয়ে দেখাই ভালো অভ্যাস।
 
 ## গুরুত্বপূর্ণ সতর্কতা (এই রিপোতে আগে যা ভুল হয়েছিল)
 

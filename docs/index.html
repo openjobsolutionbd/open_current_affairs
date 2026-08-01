@@ -899,9 +899,10 @@
   }
   .theme-toggle:hover{background:var(--accent-light);}
 
-  /* দুইটা মোড (সকল টপিক / দৈনিক ঘটনাপ্রবাহ) একই সারিতে সমান-গুরুত্বের
-     ট্যাব হিসেবে — একসাথে দুইটা জিনিস (টপিক তালিকা ও ঘটনাপ্রবাহ) হোমপেজে
-     না রেখে, প্রতিটা মোড স্পষ্ট আলাদা ট্যাবে থাকে। */
+  /* তিনটা মোড (সকল টপিক / দৈনিক ঘটনাপ্রবাহ / টপ নিউজ) একই সারিতে সমান-গুরুত্বের
+     ট্যাব হিসেবে — একসাথে সব কনটেন্ট হোমপেজে না রেখে, প্রতিটা মোড স্পষ্ট আলাদা
+     ট্যাবে থাকে। flex:1 1 0 থাকায় নতুন ট্যাব যোগ হলে বাকিগুলোর প্রস্থ এমনিতেই
+     সমান হয়ে যায়, আলাদা CSS বদলাতে হয় না। */
   .mode-tabs-row{
     max-width:1080px;
     margin:16px auto 0;
@@ -1018,6 +1019,47 @@
     line-height:1.65;
     color:var(--ink);
     margin-bottom:6px;
+  }
+
+  /* "টপ নিউজ" ট্যাব — এক পলকে দেখার জন্য একটা সাধারণ তারিখ-ভিত্তিক তালিকা,
+     ঘটনাপ্রবাহের মাস-ব্লক/পেজিনেশনের বদলে হালকা ও সংক্ষিপ্ত রাখা হয়েছে। */
+  .top-news-list{
+    list-style:none;
+    margin:0;
+    padding:0;
+  }
+  .top-news-item{
+    display:flex;
+    gap:14px;
+    align-items:baseline;
+    padding:12px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .top-news-item:last-child{ border-bottom:none; }
+  .top-news-date{
+    flex:0 0 auto;
+    font-family:'Kalpurush',sans-serif;
+    font-size:12.5px;
+    font-weight:700;
+    color:#fff;
+    background:var(--accent);
+    padding:3px 10px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+  .top-news-text{
+    flex:1 1 auto;
+    font-family:'Noto Serif Bengali',serif;
+    font-size:15px;
+    line-height:1.6;
+    color:var(--ink);
+  }
+  @media (max-width:520px){
+    .top-news-item{
+      flex-direction:column;
+      align-items:flex-start;
+      gap:6px;
+    }
   }
   /* ঘটনাপ্রবাহ লাইনের ভেতরে টপিক-লিংকযুক্ত নির্দিষ্ট শব্দ/বাক্যাংশ — একই
      লাইনে একাধিক থাকতে পারে (যেমন "WHO" আর "ইবোলা" আলাদা আলাদা), হালকা
@@ -1162,7 +1204,7 @@
   @media print{
     .masthead, .search-bar-wrap, .toolbar, .drawer, footer,
     .card-actions, .seal, .related-topics, .mobile-back-btn,
-    .mode-tabs-row, #ghotonaprobaho-layout{
+    .mode-tabs-row, #ghotonaprobaho-layout, #top-news-layout{
       display:none !important;
     }
     body{ background:#fff; }
@@ -1201,6 +1243,7 @@
 <div class="mode-tabs-row" id="mode-tabs-row">
   <button id="browse-toggle-btn" class="mode-tab">📋 সকল টপিক</button>
   <button id="ghotonaprobaho-toggle-btn" class="mode-tab">🗓️ দৈনিক ঘটনাপ্রবাহ</button>
+  <button id="top-news-toggle-btn" class="mode-tab">⭐ টপ নিউজ</button>
 </div>
 
 <div class="layout" id="browse-layout">
@@ -1219,6 +1262,10 @@
 
 <div class="layout" id="ghotonaprobaho-layout" style="display:none;">
   <div class="card" id="ghotonaprobaho-card"></div>
+</div>
+
+<div class="layout" id="top-news-layout" style="display:none;">
+  <div class="card" id="top-news-card"></div>
 </div>
 
 
@@ -1273,6 +1320,7 @@ let CURRENT_MODE = 'browse';
 let GHOTONAPROBAHO_MONTHS = null;
 let GHOTONAPROBAHO_PAGE = 0; // ০ = সবচেয়ে সাম্প্রতিক ৩ মাস; বাড়লে আরও পুরনোর দিকে
 const GHOTONAPROBAHO_PAGE_SIZE = 3; // প্রতি পেজে কয় মাস একসাথে দেখানো হয়
+let TOP_NEWS_ITEMS = null; // "টপ নিউজ" ট্যাবের তারিখ-ভিত্তিক হাইলাইট — একবার লোড হলে ক্যাশ থাকে
 
 function loadProgress(){
   try{ return JSON.parse(localStorage.getItem('oca_progress') || '{}'); }
@@ -1472,6 +1520,58 @@ function renderGhotonaprobahoView(){
   });
 }
 
+async function ensureTopNewsLoaded(){
+  if(TOP_NEWS_ITEMS !== null) return;
+  try{
+    const res = await fetch('./top-news-index.json');
+    const data = await res.json();
+    TOP_NEWS_ITEMS = data.items || [];
+  }catch(e){
+    TOP_NEWS_ITEMS = [];
+  }
+}
+
+// "টপ নিউজ" ট্যাব — এক পলকে সবচেয়ে গুরুত্বপূর্ণ হাইলাইটগুলো দেখার জন্য।
+// ঘটনাপ্রবাহের বিপরীতে এখানে মাস-ভিত্তিক ভাগ বা পেজিনেশন নেই — পুরো তালিকাটাই
+// (সাধারণত ছোট, কারণ প্রতিদিনের না, শুধু সবচেয়ে গুরুত্বপূর্ণ খবর) একবারে
+// তারিখ অনুযায়ী (নতুন → পুরনো) দেখানো হয়।
+function renderTopNewsView(){
+  closeTopicPreview();
+  const card = document.getElementById('top-news-card');
+  if(!TOP_NEWS_ITEMS || TOP_NEWS_ITEMS.length === 0){
+    card.innerHTML = `
+      <div class="card-placeholder">
+        <div class="big">এখনো কোনো টপ নিউজ যোগ হয়নি</div>
+        নতুন হাইলাইট যোগ হলে এখানে দেখা যাবে
+      </div>`;
+    return;
+  }
+
+  let html = `<h2 style="margin-left:0;">⭐ টপ নিউজ</h2>`;
+  html += `<ul class="top-news-list">`;
+  html += TOP_NEWS_ITEMS.map(item => `
+    <li class="top-news-item">
+      <div class="top-news-date">${escapeHtml(item.date)}</div>
+      <div class="top-news-text">${renderGhotonaprobahoItemText(item)}</div>
+    </li>
+  `).join('');
+  html += `</ul>`;
+
+  card.innerHTML = html;
+
+  card.querySelectorAll('.ghotonaprobaho-term').forEach(term => {
+    term.addEventListener('click', () => {
+      showTopicPreview(term.dataset.slug, term);
+    });
+    term.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter' || e.key === ' '){
+        e.preventDefault();
+        showTopicPreview(term.dataset.slug, term);
+      }
+    });
+  });
+}
+
 // Wikipedia-ধাঁচের টপিক প্রিভিউ পপআপ। ডেস্কটপে (>720px ভিউপোর্ট) যে
 // এলিমেন্টে ক্লিক হয়েছে তার কাছাকাছি একটা ছোট অ্যাংকরড কার্ড হিসেবে দেখা যায়;
 // সরু/মোবাইল স্ক্রিনে বরাবরের মতো ডকুমেন্টের নিচ থেকে উঠে আসা শিট হিসেবে দেখা যায়,
@@ -1580,16 +1680,18 @@ function closeTopicPreview(){
 // active ক্লাস রিসেট হয়।
 const MODE_TAB_IDS = {
   'browse': 'browse-toggle-btn',
-  'ghotonaprobaho': 'ghotonaprobaho-toggle-btn'
+  'ghotonaprobaho': 'ghotonaprobaho-toggle-btn',
+  'top-news': 'top-news-toggle-btn'
 };
 
 function setActiveLayout(mode){
   document.getElementById('browse-layout').style.display = mode === 'browse' ? '' : 'none';
   document.getElementById('ghotonaprobaho-layout').style.display = mode === 'ghotonaprobaho' ? '' : 'none';
-  // ভাসমান সার্চ বক্স শুধু "দৈনিক ঘটনাপ্রবাহ" মোডে দেখানো হয় — এই মোডে
-  // বাম পাশের টপিক-তালিকা থাকে না, তাই টপিক খোঁজার এই ছোট বিকল্পটা কাজে লাগে।
+  document.getElementById('top-news-layout').style.display = mode === 'top-news' ? '' : 'none';
+  // ভাসমান সার্চ বক্স "দৈনিক ঘটনাপ্রবাহ" ও "টপ নিউজ" — দুই মোডেই দেখানো হয়,
+  // কারণ এই দুই মোডেই বাম পাশের টপিক-তালিকা থাকে না।
   const fsWrap = document.getElementById('floating-search-wrap');
-  if(mode === 'ghotonaprobaho'){
+  if(mode === 'ghotonaprobaho' || mode === 'top-news'){
     fsWrap.classList.add('visible');
   } else {
     fsWrap.classList.remove('visible');
@@ -1614,6 +1716,9 @@ async function setMode(mode){
     await ensureGhotonaprobahoLoaded();
     GHOTONAPROBAHO_PAGE = 0; // প্রতিবার মোডে ঢুকলে সবচেয়ে সাম্প্রতিক ৩ মাস থেকে শুরু
     renderGhotonaprobahoView();
+  } else if(mode === 'top-news'){
+    await ensureTopNewsLoaded();
+    renderTopNewsView();
   } else {
     document.getElementById('browse-layout').classList.remove('showing-article');
   }
@@ -2089,7 +2194,7 @@ async function renderTopicContent(topic, container, {backBtnId, onRelatedClick} 
 }
 
 async function openTopic(slug, updateHash=true){
-  if(CURRENT_MODE === 'ghotonaprobaho'){
+  if(CURRENT_MODE === 'ghotonaprobaho' || CURRENT_MODE === 'top-news'){
     await setGhotonaprobahoMode(false);
   }
   const topic = ALL_TOPICS.find(t=>t.slug===slug);
@@ -2190,7 +2295,7 @@ document.getElementById('theme-toggle-btn').addEventListener('click', () => {
   applyTheme(next, true);
 });
 
-// দুইটা মোড-ট্যাব — "সকল টপিক" / "দৈনিক ঘটনাপ্রবাহ" — সবসময়
+// তিনটা মোড-ট্যাব — "সকল টপিক" / "দৈনিক ঘটনাপ্রবাহ" / "টপ নিউজ" — সবসময়
 // mode-tabs-row-তে পাশাপাশি থাকে, ক্লিকে সরাসরি সেই মোডে সুইচ করে
 // (টগল নয়, তাই বারবার ক্লিকেও ঠিকঠাক আচরণ করে)।
 document.getElementById('browse-toggle-btn').addEventListener('click', () => {
@@ -2199,6 +2304,10 @@ document.getElementById('browse-toggle-btn').addEventListener('click', () => {
 
 document.getElementById('ghotonaprobaho-toggle-btn').addEventListener('click', () => {
   setMode('ghotonaprobaho');
+});
+
+document.getElementById('top-news-toggle-btn').addEventListener('click', () => {
+  setMode('top-news');
 });
 
 loadIndex().then(() => {
