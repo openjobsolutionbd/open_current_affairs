@@ -59,6 +59,8 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   const isContent =
     url.pathname.endsWith("topics-index.json") ||
+    url.pathname.endsWith("ghotonaprobaho-index.json") ||
+    url.pathname.endsWith("top-news-index.json") ||
     url.pathname.endsWith("version.json") ||
     url.pathname.includes("/topics/");
 
