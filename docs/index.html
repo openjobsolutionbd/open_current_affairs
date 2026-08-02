@@ -968,14 +968,24 @@
     padding-top:22px;
     border-top:1px dashed var(--line);
   }
+  .ghotonaprobaho-month-heading-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px 12px;
+    margin-bottom:14px;
+    padding-bottom:6px;
+    border-bottom:1px solid var(--line);
+  }
   .ghotonaprobaho-month-heading{
     font-family:'Kalpurush',serif;
     font-size:19px;
     font-weight:700;
     color:var(--heading);
-    margin-bottom:14px;
-    padding-bottom:6px;
-    border-bottom:1px solid var(--line);
+  }
+  .month-print-btn{
+    flex-shrink:0;
   }
   .ghotonaprobaho-pager{
     display:flex;
@@ -1211,7 +1221,7 @@
     color:var(--muted);
     margin-left:8px;
   }
-  .mark-read-btn, .bookmark-btn{
+  .mark-read-btn, .bookmark-btn, .month-print-btn{
     background:var(--paper);
     border:1px solid var(--heading);
     color:var(--heading);
@@ -1256,6 +1266,8 @@
     .card-body strong{ color:#000; }
     .pill{ border:1px solid #999; background:none; color:#333; }
     a[href]::after{ content:""; }
+    .ghotonaprobaho-term-icon{ display:none; }
+    .ghotonaprobaho-term{ color:#000; font-weight:600; }
   }
 </style>
 </head>
@@ -1527,7 +1539,10 @@ function renderGhotonaprobahoView(){
   let html = `<h2 style="margin-left:0;">🗓️ দৈনিক ঘটনাপ্রবাহ</h2>`;
   html += pageMonths.map(month => `
     <div class="ghotonaprobaho-month-block">
-      <div class="ghotonaprobaho-month-heading">${escapeHtml(month.month_label)}</div>
+      <div class="ghotonaprobaho-month-heading-row">
+        <div class="ghotonaprobaho-month-heading">${escapeHtml(month.month_label)}</div>
+        <button class="month-print-btn" type="button" data-month-key="${escapeHtml(month.month_key)}" data-month-label="${escapeHtml(month.month_label)}">🖨️ এই মাসের সারাংশ প্রিন্ট/PDF</button>
+      </div>
       ${month.days.map(day => `
         <div class="ghotonaprobaho-day">
           <div class="ghotonaprobaho-date">${escapeHtml(day.date)}</div>
@@ -1561,6 +1576,12 @@ function renderGhotonaprobahoView(){
     renderGhotonaprobahoView();
   });
 
+  card.querySelectorAll('.month-print-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      printMonthlySummary(btn.dataset.monthKey, btn.dataset.monthLabel);
+    });
+  });
+
   // সংশ্লিষ্ট টপিক থাকা লাইনে ক্লিক/কি-বোর্ড এন্টার করলে প্রিভিউ পপআপ খোলে
   // (মোবাইলে নিচ থেকে শিট, ডেস্কটপে ক্লিক করা জায়গার কাছে অ্যাংকর করা কার্ড)
   card.querySelectorAll('.ghotonaprobaho-term').forEach(term => {
@@ -1574,6 +1595,85 @@ function renderGhotonaprobahoView(){
       }
     });
   });
+}
+
+// "১৪ মে ২০২৬"-এর মতো টপ-নিউজ তারিখকে "２０２৬-０５" (month.month_key) এর
+// সাথে মেলানোর জন্য "2026-05" ফরম্যাটে রূপান্তর করে। এটা
+// scripts/build_index.py-এর BENGALI_MONTHS/bengali_date_sort_key-এর
+// JS-সংস্করণ — top-news-index.json-এ প্রতিটা আইটেমের সাথে আলাদা
+// month_key সংরক্ষিত নেই (শুধু তারিখের টেক্সট), তাই ক্লায়েন্ট-সাইডেই
+// পার্স করতে হচ্ছে। মাসের বাংলা নাম কখনো বদলালে দুই জায়গাতেই (এখানে ও
+// build_index.py-তে) হালনাগাদ করা লাগবে।
+const BENGALI_MONTHS_JS = {
+  'জানুয়ারি':1,'ফেব্রুয়ারি':2,'মার্চ':3,'এপ্রিল':4,'মে':5,'জুন':6,
+  'জুলাই':7,'আগস্ট':8,'সেপ্টেম্বর':9,'অক্টোবর':10,'নভেম্বর':11,'ডিসেম্বর':12,
+};
+function bengaliDigitsToAscii(s){
+  const bengaliDigits = '০১২৩৪৫৬৭৮৯';
+  return s.replace(/[০-৯]/g, d => bengaliDigits.indexOf(d).toString());
+}
+function parseBengaliDateToMonthKey(dateStr){
+  if(!dateStr) return null;
+  const parts = dateStr.trim().split(/\s+/);
+  if(parts.length < 3) return null;
+  const monthNum = BENGALI_MONTHS_JS[parts[1]];
+  if(!monthNum) return null;
+  const year = bengaliDigitsToAscii(parts[2]);
+  if(!/^\d{4}$/.test(year)) return null;
+  const mm = String(monthNum).padStart(2, '0');
+  return `${year}-${mm}`;
+}
+
+// একটা মাসের "দৈনিক ঘটনাপ্রবাহ" ও সেই একই মাসে পড়া "টপ নিউজ" হাইলাইট
+// একসাথে করে প্রিন্ট-উপযোগী HTML বানিয়ে ব্রাউজারের প্রিন্ট ডায়ালগ খোলে —
+// ঠিক টপিক-পাতার 🖨️ প্রিন্ট/PDF বাটনের মতোই window.print() ও বিদ্যমান
+// @media print CSS পুনর্ব্যবহার করে (নতুন কোনো PDF লাইব্রেরি লাগেনি)।
+// #card-এ সাময়িকভাবে বসিয়ে প্রিন্ট করা হয় (browse-layout-এর CSS
+// @media print-এ আগে থেকেই দৃশ্যমান করার নিয়ম আছে), প্রিন্ট শেষে
+// (afterprint) #card-এর আগের অবস্থা ফিরিয়ে আনা হয় যাতে পরে "সকল টপিক"
+// মোডে গেলে পুরনো টপিক/প্লেসহোল্ডার ঠিকভাবে দেখা যায়।
+async function printMonthlySummary(monthKey, monthLabel){
+  const month = (GHOTONAPROBAHO_MONTHS || []).find(m => m.month_key === monthKey);
+  if(!month) return;
+
+  await ensureTopNewsLoaded();
+  const matchingTopNews = (TOP_NEWS_ITEMS || [])
+    .filter(item => parseBengaliDateToMonthKey(item.date) === monthKey);
+
+  let html = `<h2 style="margin-left:0;">🗓️ মাসিক সারাংশ — ${escapeHtml(monthLabel)}</h2>`;
+
+  if(matchingTopNews.length > 0){
+    html += `<div class="ghotonaprobaho-month-heading" style="margin-top:0;">⭐ টপ নিউজ</div>`;
+    html += `<ul class="ghotonaprobaho-items">`;
+    html += matchingTopNews.map(item =>
+      `<li><strong>${escapeHtml(item.date)}</strong> — ${renderGhotonaprobahoItemText(item)}</li>`
+    ).join('');
+    html += `</ul>`;
+  }
+
+  html += `<div class="ghotonaprobaho-month-heading">🗓️ দৈনিক ঘটনাপ্রবাহ</div>`;
+  html += month.days.map(day => `
+    <div class="ghotonaprobaho-day">
+      <div class="ghotonaprobaho-date">${escapeHtml(day.date)}</div>
+      ${day.categories.map(cat => `
+        <div class="ghotonaprobaho-category">${escapeHtml(cat.category)}</div>
+        <ul class="ghotonaprobaho-items">
+          ${cat.items.map(item => `<li>${renderGhotonaprobahoItemText(item)}</li>`).join('')}
+        </ul>
+      `).join('')}
+    </div>
+  `).join('');
+
+  const card = document.getElementById('card');
+  const previousCardHtml = card.innerHTML;
+  card.innerHTML = html;
+
+  const restoreCard = () => {
+    card.innerHTML = previousCardHtml;
+    window.removeEventListener('afterprint', restoreCard);
+  };
+  window.addEventListener('afterprint', restoreCard);
+  window.print();
 }
 
 async function ensureTopNewsLoaded(){
