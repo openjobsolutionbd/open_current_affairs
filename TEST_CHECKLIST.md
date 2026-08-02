@@ -20,10 +20,12 @@
 - [ ] Search title, tags ও full text-এ কাজ করে।
 - [ ] Topic খুললে Markdown ঠিকভাবে render হয়।
 - [ ] URL hash-এ topic slug বসে এবং shareable link কাজ করে।
-- [ ] সাম্প্রতিক পরিবর্তন (recent changes) view লোড হয়।
 - [ ] দৈনিক ঘটনাপ্রবাহ view-তে মাস অনুযায়ী দিন-তালিকা ঠিকভাবে দেখা যায়।
 - [ ] দৈনিক ঘটনাপ্রবাহ মোডে ভাসমান সার্চ বাডি দেখা যায় এবং কাজ করে।
 - [ ] `[[topic-slug]]` দেওয়া ঘটনাপ্রবাহ এন্ট্রিতে লিংক-ব্যাজ দেখা যায় এবং ক্লিক করলে সঠিক টপিক খোলে।
+- [ ] টপ নিউজ ট্যাব লোড হয় এবং তারিখ-ভিত্তিক হাইলাইট দেখা যায়।
+- [ ] প্রতিটা টপিকের `docs/topic/<slug>/index.html` পাতা খুললে সঠিক meta description/canonical দেখা যায় এবং লোড হয়েই মূল অ্যাপে (`/#slug`) রিডাইরেক্ট করে।
+- [ ] `docs/sitemap.xml`-এ হোমপেজ ও সবগুলো টপিক পাতার URL আছে; `docs/robots.txt` সঠিকভাবে সার্ভ হয়।
 - [ ] Dashboard, quiz button বা quiz screen নেই (এগুলো এই প্রজেক্টের scope-এ নেই)।
 
 ## Mobile ও error handling
