@@ -7,6 +7,7 @@
 প্রতিটা পুশের পর এটা চালিয়ে দেয়।
 """
 import datetime
+import html
 import json
 import re
 import sys
@@ -35,6 +36,18 @@ GHOTONAPROBAHO_OUTPUT_FILE = DOCS_DIR / "ghotonaprobaho-index.json"
 
 TOP_NEWS_DIR = DOCS_DIR / "top-news"
 TOP_NEWS_OUTPUT_FILE = DOCS_DIR / "top-news-index.json"
+
+# TASK: প্রতিটা টপিকের জন্য আলাদা, সার্চ-ইঞ্জিন-বান্ধব একটা স্ট্যাটিক HTML
+# পাতা তৈরি হয় docs/topic/<slug>/index.html-এ। কারণ: মূল সাইট একটা single
+# page app (সব কিছু hash-এ, যেমন /#slug) — সার্চ ইঞ্জিন সাধারণত hash-এর
+# পরের অংশ আলাদা পাতা হিসেবে চেনে না, তাই প্রতিটা টপিক আলাদাভাবে গুগলে
+# আসতে পারে না। এই ছোট পাতাগুলোতে টাইটেল ও বিবরণ আগে থেকেই লেখা থাকে
+# (গুগল সরাসরি পড়তে পারে), আর পাতাটা লোড হওয়ার সাথে সাথেই মূল অ্যাপে
+# (/#slug) নিয়ে যায় — তাই সাধারণ ভিজিটরের অভিজ্ঞতা অপরিবর্তিত থাকে।
+SITE_BASE_URL = "https://open-current-affairs.pages.dev"
+TOPIC_PAGES_DIR = DOCS_DIR / "topic"
+SITEMAP_OUTPUT = DOCS_DIR / "sitemap.xml"
+ROBOTS_OUTPUT = DOCS_DIR / "robots.txt"
 
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n(.*)$", re.DOTALL)
 
@@ -407,6 +420,90 @@ def write_version_json():
     print(f"তৈরি হলো: {VERSION_OUTPUT} (version: {version})")
 
 
+def generate_topic_pages(entries):
+    """প্রতিটা টপিকের জন্য docs/topic/<slug>/index.html বানায় — একটা ছোট,
+    সার্চ-ইঞ্জিন-বান্ধব স্ট্যাটিক পাতা যাতে টাইটেল ও বিবরণ আগে থেকেই লেখা
+    থাকে (গুগল crawl করার সময় সরাসরি পড়তে পারে), আর লোড হওয়ার সাথে সাথেই
+    মূল single-page-app-এ (/#slug) রিডাইরেক্ট করে দেয় — তাই সাধারণ
+    ভিজিটরের অভিজ্ঞতা অপরিবর্তিত থাকে, শুধু সার্চ ইঞ্জিনের জন্য প্রতিটা
+    টপিক এখন থেকে আলাদা crawlable URL পায়।
+
+    পুরনো টপিক মুছে ফেলা হলে বা rename হলে এতিম (stale) পাতা যেন থেকে না
+    যায়, তাই প্রতিবার পুরো docs/topic/ ফোল্ডার মুছে নতুন করে বানানো হয়।
+    """
+    import shutil
+
+    if TOPIC_PAGES_DIR.exists():
+        shutil.rmtree(TOPIC_PAGES_DIR)
+    TOPIC_PAGES_DIR.mkdir(parents=True, exist_ok=True)
+
+    for e in entries:
+        slug = e["slug"]
+        title = html.escape(e["title"])
+        description = html.escape(e["snippet"] or e["title"])
+        canonical = f"{SITE_BASE_URL}/topic/{slug}/"
+        app_url = f"{SITE_BASE_URL}/#{slug}"
+
+        page_html = f"""<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{title} — Open Current Affairs</title>
+<meta name="description" content="{description}">
+<link rel="canonical" href="{canonical}">
+<meta property="og:type" content="article">
+<meta property="og:title" content="{title}">
+<meta property="og:description" content="{description}">
+<meta property="og:url" content="{canonical}">
+<meta name="robots" content="index, follow">
+<meta http-equiv="refresh" content="0; url={app_url}">
+<script>location.replace({json.dumps(app_url)});</script>
+</head>
+<body>
+<p>এই টপিকটা দেখতে <a href="{app_url}">এখানে ক্লিক করুন</a> — যদি স্বয়ংক্রিয়ভাবে না নিয়ে যায়।</p>
+<h1>{title}</h1>
+<p>{description}</p>
+</body>
+</html>
+"""
+        page_dir = TOPIC_PAGES_DIR / slug
+        page_dir.mkdir(parents=True, exist_ok=True)
+        (page_dir / "index.html").write_text(page_html, encoding="utf-8")
+
+    print(f"তৈরি হলো: {TOPIC_PAGES_DIR}/<slug>/index.html ({len(entries)} টি পাতা)")
+
+
+def generate_sitemap_and_robots(entries):
+    """docs/sitemap.xml ও docs/robots.txt বানায়, যাতে সার্চ ইঞ্জিন সহজে
+    হোমপেজ এবং প্রতিটা টপিক-পাতা খুঁজে পায়।"""
+    today = datetime.date.today().isoformat()
+
+    urls = [f"{SITE_BASE_URL}/"]
+    urls.extend(f"{SITE_BASE_URL}/topic/{e['slug']}/" for e in entries)
+
+    url_entries = "\n".join(
+        f"  <url>\n    <loc>{html.escape(u)}</loc>\n    <lastmod>{today}</lastmod>\n  </url>"
+        for u in urls
+    )
+    sitemap = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f"{url_entries}\n"
+        "</urlset>\n"
+    )
+    SITEMAP_OUTPUT.write_text(sitemap, encoding="utf-8")
+    print(f"তৈরি হলো: {SITEMAP_OUTPUT} ({len(urls)} টি URL)")
+
+    robots = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        f"Sitemap: {SITE_BASE_URL}/sitemap.xml\n"
+    )
+    ROBOTS_OUTPUT.write_text(robots, encoding="utf-8")
+    print(f"তৈরি হলো: {ROBOTS_OUTPUT}")
+
+
 def stamp_service_worker():
     """VERSION ফাইলের সংখ্যাটা sw.js-এর ক্যাশ-নামে বসিয়ে docs/sw.js বানায়।
     এভাবে প্রতিবার ভার্সন বাড়লেই ব্যবহারকারীর ব্রাউজার পুরনো ক্যাশ ফেলে
@@ -502,6 +599,9 @@ def _main():
         encoding="utf-8",
     )
     print(f"তৈরি হলো: {OUTPUT_FILE} ({len(entries)} টি টপিক)")
+
+    generate_topic_pages(entries)
+    generate_sitemap_and_robots(entries)
 
 def main():
     """`_main()`-কে wrap করে রাখা হয়েছে — কোনো অপ্রত্যাশিত/অচেনা সমস্যায়ও
