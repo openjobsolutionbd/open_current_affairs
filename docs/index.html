@@ -583,6 +583,10 @@
     font-size:12px;
     letter-spacing:0.08em;
     padding:10px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
   }
   #topic-count{color:var(--on-dark);}
   .tab{
@@ -1182,6 +1186,24 @@
 
   .tab.read-topic:not(.active){opacity:0.6;}
   .tab .read-badge{color:var(--success-border); margin-left:4px;}
+  .tab .bookmark-badge{color:#c8952a; margin-left:4px;}
+  .bookmark-filter-toggle{
+    background:transparent;
+    border:1px solid var(--drawer-label-color);
+    color:var(--drawer-label-color);
+    font-family:'Kalpurush',sans-serif;
+    font-size:11px;
+    font-weight:600;
+    padding:3px 8px;
+    border-radius:12px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .bookmark-filter-toggle.active{
+    background:#c8952a;
+    border-color:#c8952a;
+    color:#1a1200;
+  }
   .tab .months-item-index{
     display:inline-block;
     font-family:'Kalpurush',sans-serif;
@@ -1189,7 +1211,7 @@
     color:var(--muted);
     margin-left:8px;
   }
-  .mark-read-btn{
+  .mark-read-btn, .bookmark-btn{
     background:var(--paper);
     border:1px solid var(--heading);
     color:var(--heading);
@@ -1201,6 +1223,7 @@
     cursor:pointer;
   }
   .mark-read-btn.done{background:var(--success-bg);border-color:var(--success-border);color:var(--success-text);}
+  .bookmark-btn.active{background:#c8952a;border-color:#c8952a;color:#1a1200;}
   .print-topic-btn{
     background:var(--paper);
     border:1px solid var(--heading);
@@ -1260,7 +1283,10 @@
 
 <div class="layout" id="browse-layout">
   <div class="drawer">
-    <div class="drawer-label">টপিক তালিকা — <span id="topic-count">0</span></div>
+    <div class="drawer-label">
+      <span>টপিক তালিকা — <span id="topic-count">0</span></span>
+      <button type="button" class="bookmark-filter-toggle" id="bookmark-filter-toggle">⭐ শুধু প্রিয়</button>
+    </div>
     <div id="tab-list"></div>
   </div>
 
@@ -1350,6 +1376,24 @@ function toggleRead(slug){
   saveProgress(p);
   return p[slug];
 }
+
+function loadBookmarks(){
+  try{ return JSON.parse(localStorage.getItem('oca_bookmarks') || '{}'); }
+  catch(e){ return {}; }
+}
+function saveBookmarks(b){
+  try{ localStorage.setItem('oca_bookmarks', JSON.stringify(b)); }catch(e){}
+}
+function isBookmarked(slug){
+  return !!loadBookmarks()[slug];
+}
+function toggleBookmark(slug){
+  const b = loadBookmarks();
+  b[slug] = !b[slug];
+  saveBookmarks(b);
+  return b[slug];
+}
+let BOOKMARK_FILTER_ACTIVE = false;
 
 /* থিম টগল: light ↔ dark */
 const THEME_CYCLE = ['light', 'dark'];
@@ -1823,10 +1867,17 @@ function renderList(list, q){
   const seq = mainWikiSeq;
   const wrap = document.getElementById('tab-list');
   const progress = loadProgress();
+  const bookmarks = loadBookmarks();
   const readCount = list.filter(t => progress[t.slug]).length;
   document.getElementById('topic-count').textContent =
     `${list.length} টি${ALL_TOPICS.length ? ` · ${readCount} পড়া হয়েছে` : ''}`;
   if(list.length === 0){
+    if(BOOKMARK_FILTER_ACTIVE && !q){
+      // বুকমার্ক ফিল্টার চালু থাকলে খালি তালিকার কারণ সার্চ না, তাই
+      // উইকিপিডিয়া fallback দেখানো ভুল বার্তা দেবে — স্পষ্ট করে বলা হলো।
+      wrap.innerHTML = '<div class="empty-note">এখনো কোনো টপিক ⭐ প্রিয় হিসেবে যোগ করা হয়নি</div>';
+      return;
+    }
     if(q){
       wrap.innerHTML = '<div class="empty-note floating-search-wiki-loading">উইকিপিডিয়ায় খোঁজা হচ্ছে…</div>';
       fetchWikipediaSummary(q).then(result => {
@@ -1855,9 +1906,10 @@ function renderList(list, q){
       ? `<span class="tab-tags">${highlight(info.context, q)}</span>`
       : `<span class="tab-tags">${escapeHtml((t.tags||[]).join(' · '))}</span>`;
     const readMark = progress[t.slug] ? '<span class="read-badge">✓</span>' : '';
+    const bookmarkMark = bookmarks[t.slug] ? '<span class="bookmark-badge">⭐</span>' : '';
     return `
     <button class="tab ${t.slug===ACTIVE_SLUG?'active':''} ${progress[t.slug]?'read-topic':''}" data-slug="${t.slug}">
-      ${escapeHtml(t.title)}${readMark}
+      ${escapeHtml(t.title)}${readMark}${bookmarkMark}
       ${sub}
     </button>
   `;
@@ -1872,10 +1924,31 @@ function currentFiltered(q){
   return ALL_TOPICS.filter(t => matchTopic(t, q).match);
 }
 
+// "সকল টপিক" তালিকায় দেখানোর জন্য চূড়ান্ত ফিল্টার — সার্চ কোয়েরি +
+// ঐচ্ছিক "শুধু প্রিয়" ফিল্টার একসাথে প্রয়োগ করে। ভাসমান সার্চ
+// (renderFloatingResults) ইচ্ছাকৃতভাবে এটা ব্যবহার করে না, কারণ সেটা
+// "দৈনিক ঘটনাপ্রবাহ" মোডে যেকোনো টপিক খুঁজে বের করার জন্য — বুকমার্ক
+// ফিল্টার দিয়ে সীমিত করা উচিত না।
+function visibleTopics(q){
+  let list = currentFiltered(q);
+  if(BOOKMARK_FILTER_ACTIVE){
+    const bookmarks = loadBookmarks();
+    list = list.filter(t => bookmarks[t.slug]);
+  }
+  return list;
+}
+
 document.getElementById('search').addEventListener('input', (e)=>{
   const q = e.target.value.trim().toLowerCase();
-  renderList(currentFiltered(q), q);
+  renderList(visibleTopics(q), q);
   document.getElementById('browse-layout').classList.remove('showing-article');
+});
+
+document.getElementById('bookmark-filter-toggle').addEventListener('click', (e) => {
+  BOOKMARK_FILTER_ACTIVE = !BOOKMARK_FILTER_ACTIVE;
+  e.target.classList.toggle('active', BOOKMARK_FILTER_ACTIVE);
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  renderList(visibleTopics(q), q);
 });
 
 // ══════════════════════════════════════════════════════
@@ -2172,6 +2245,7 @@ async function renderTopicContent(topic, container, {backBtnId, onRelatedClick} 
     html = html.replace(/<\/table>/g, '</table></div>');
 
     const alreadyRead = isRead(topic.slug);
+    const alreadyBookmarked = isBookmarked(topic.slug);
     const related = getRelatedTopics(topic);
     container.innerHTML = `
       ${backBtnId ? `<button class="mobile-back-btn" id="${backBtnId}">← তালিকায় ফিরুন</button>` : ''}
@@ -2179,6 +2253,7 @@ async function renderTopicContent(topic, container, {backBtnId, onRelatedClick} 
       <div class="card-actions">
         <button class="print-topic-btn" id="print-topic-btn-${topic.slug}">🖨️ প্রিন্ট / PDF</button>
         <button class="mark-read-btn ${alreadyRead?'done':''}" id="mark-read-btn-${topic.slug}">${alreadyRead ? '✓ পড়া হয়েছে' : '⬜ পড়া হয়েছে?'}</button>
+        <button class="bookmark-btn ${alreadyBookmarked?'active':''}" id="bookmark-btn-${topic.slug}">${alreadyBookmarked ? '⭐ প্রিয়' : '☆ প্রিয়'}</button>
         <button class="copy-link" id="copy-link-btn-${topic.slug}" title="এই টপিকের লিংক কপি করো">🔗 লিংক কপি</button>
       </div>
       <h2>${escapeHtml(topic.title)}</h2>
@@ -2216,7 +2291,15 @@ async function renderTopicContent(topic, container, {backBtnId, onRelatedClick} 
       e.target.classList.toggle('done', nowRead);
       e.target.textContent = nowRead ? '✓ পড়া হয়েছে' : '⬜ পড়া হয়েছে?';
       const qNow = document.getElementById('search').value.trim().toLowerCase();
-      renderList(currentFiltered(qNow), qNow);
+      renderList(visibleTopics(qNow), qNow);
+    });
+
+    document.getElementById(`bookmark-btn-${topic.slug}`).addEventListener('click', (e) => {
+      const nowBookmarked = toggleBookmark(topic.slug);
+      e.target.classList.toggle('active', nowBookmarked);
+      e.target.textContent = nowBookmarked ? '⭐ প্রিয়' : '☆ প্রিয়';
+      const qNow = document.getElementById('search').value.trim().toLowerCase();
+      renderList(visibleTopics(qNow), qNow);
     });
 
     container.querySelectorAll('.pill').forEach(pill => {
@@ -2260,7 +2343,7 @@ async function openTopic(slug, updateHash=true){
   if(updateHash) location.hash = slug;
 
   const q = document.getElementById('search').value.trim().toLowerCase();
-  renderList(currentFiltered(q), q);
+  renderList(visibleTopics(q), q);
 
   await renderTopicContent(topic, card, {backBtnId:'mobile-back-btn'});
 }
@@ -2322,7 +2405,7 @@ window.addEventListener('hashchange', () => {
     showPlaceholder();
     document.getElementById('browse-layout').classList.remove('showing-article');
     const q = document.getElementById('search').value.trim().toLowerCase();
-    renderList(currentFiltered(q), q);
+    renderList(visibleTopics(q), q);
   }
 });
 
