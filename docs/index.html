@@ -1246,6 +1246,9 @@
     cursor:pointer;
   }
 
+  .print-watermark{
+    display:none; /* স্ক্রিনে দেখা যায় না, শুধু প্রিন্ট/PDF আউটপুটে দেখা যায় */
+  }
   @media print{
     .masthead, .search-bar-wrap, .toolbar, .drawer, footer,
     .card-actions, .seal, .related-topics, .mobile-back-btn,
@@ -1259,6 +1262,7 @@
       border:none;
       padding:0;
       min-height:0;
+      padding-bottom:40px; /* নিচের ফিক্সড ওয়াটারমার্কের সাথে শেষ লাইন যেন না মিশে যায় */
     }
     .card h2{ margin-left:0; color:#000; }
     .card .tags-row{ margin-left:0; }
@@ -1268,6 +1272,20 @@
     a[href]::after{ content:""; }
     .ghotonaprobaho-term-icon{ display:none; }
     .ghotonaprobaho-term{ color:#000; font-weight:600; }
+    .print-watermark{
+      display:block;
+      position:fixed;
+      bottom:0;
+      left:0;
+      right:0;
+      text-align:center;
+      font-family:'Kalpurush',sans-serif;
+      font-size:10px;
+      color:#888;
+      padding:6px 0;
+      background:#fff;
+      text-decoration:none;
+    }
   }
 </style>
 </head>
@@ -1360,6 +1378,12 @@
 </div>
 
 <footer>প্রতিটি এন্ট্রির শেষে "পরিবর্তনের ইতিহাস" থেকে যাচাই করা যাবে কবে ও কেন তথ্য বদলেছে। <span id="app-version"></span> · <button id="cache-refresh-btn" class="cache-refresh-btn" type="button" title="পুরনো ক্যাশ মুছে সর্বশেষ ভার্সন লোড করবে">🧹 সর্বশেষ ভার্সন লোড করুন</button></footer>
+
+<!-- শুধু প্রিন্ট/PDF আউটপুটে দেখা যায় (স্ক্রিনে display:none) — প্রতিটা
+     প্রিন্ট করা পাতার নিচে থাকে (position:fixed print CSS-এর কল্যাণে
+     প্রতি পাতায় পুনরাবৃত্তি হয়)। <a> ট্যাগ হওয়ায় ব্রাউজারের
+     "প্রিন্ট → PDF হিসেবে সেভ" করলে PDF-এও লিংকটা ক্লিকযোগ্য থাকে। -->
+<a href="https://open-current-affairs.pages.dev/" class="print-watermark">open-current-affairs.pages.dev</a>
 
 <script>
 let ALL_TOPICS = [];
