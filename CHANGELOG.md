@@ -8,6 +8,20 @@
 
 ---
 
+## ডকুমেন্টেশন সংশোধন — ২০২৬-০৮-০২
+
+**যা করা হয়েছে: PROJECT.md, README.md, AGENTS.md, TEST_CHECKLIST.md-এ পুরনো/না-থাকা তথ্য ঠিক করা হলো (ব্যবহারকারীর অনুরোধে)**
+
+**ঠিক করা হয়েছে:**
+- `PROJECT.md` — অনেক আগেই সরিয়ে ফেলা "recent changes" (`docs/recent-changes.json`) ফিচারের বর্ণনা ৩ জায়গা থেকে বাদ দেওয়া হলো (ফাইল-ট্রি, প্রোজ, build flow)। file tree ও build flow-তে `docs/top-news/`, `docs/top-news-index.json`, `docs/topic/<slug>/` (SEO পাতা), `docs/sitemap.xml`, `docs/robots.txt` যোগ করা হলো, যাতে `scripts/build_index.py`-এর আসল ধাপগুলোর সাথে মিলে যায়।
+- `TEST_CHECKLIST.md` — না-থাকা "recent changes" view-এর চেক-আইটেম বাদ; টপ নিউজ ট্যাব ও SEO পাতা/sitemap/robots.txt-এর জন্য নতুন চেক-আইটেম যোগ।
+- `README.md` — `VERSION` রেফারেন্স (`1.4.0` লেখা ছিল, আসল `1.5.0`) ঠিক করা হলো; "এই রিপোতে কী কী আছে" ও "Website-এর ফিচার" অংশে `docs/top-news/`, `docs/topic/<slug>/`, `sitemap.xml`, `robots.txt` যোগ করা হলো, যেগুলো আগে ডকুমেন্টেশনে ছিল না।
+- `AGENTS.md` — "বর্তমান অবস্থা"-এ VERSION `1.4.0` থেকে `1.5.0` এবং যাচাইয়ের তারিখ আপডেট করা হলো।
+
+VERSION বাড়ানো হয়নি — খাঁটি ডকুমেন্টেশন সংশোধন, কোনো কোড বা ফিচার বদলায়নি।
+
+---
+
 ## [1.5.0] — ২০২৬-০৮-০২
 
 **যা করা হয়েছে: প্রতিটা টপিকের জন্য আলাদা crawlable SEO পাতা + sitemap/robots.txt**

@@ -6,10 +6,13 @@
 
 - **`docs/topics/`** — মূল কনটেন্ট, হাতে edit করার সোর্স (২৬টি topic file)। প্রতিটি ফাইলে "বর্তমান তথ্য" ও "পরিবর্তনের ইতিহাস" অংশ থাকে।
 - **`docs/ghotonaprobaho/`** — তারিখ-ভিত্তিক দৈনিক ঘটনাপ্রবাহের হাতে-লেখা সোর্স `.md` ফাইল (যেমন `2026-04-25_2026-05-18.md`)।
+- **`docs/top-news/`** — "টপ নিউজ" ট্যাবের হাতে-লেখা সোর্স `.md` ফাইল, প্রতিটা তারিখে সাধারণত একটাই সবচেয়ে গুরুত্বপূর্ণ হাইলাইট লাইন।
 - **`archive/`** — মাসিক আসল সোর্স ডকুমেন্ট, যাচাই ও রেফারেন্সের জন্য (বর্তমানে `2026-04.md`)।
-- **`docs/index.html`** — সার্চ, টপিক পড়া, দৈনিক ঘটনাপ্রবাহ, প্রিন্ট/শেয়ার ও ডার্ক মোডসহ static website। Cloudflare Pages দিয়ে হোস্ট করা হয়।
+- **`docs/index.html`** — সার্চ, টপিক পড়া, দৈনিক ঘটনাপ্রবাহ, টপ নিউজ, প্রিন্ট/শেয়ার ও ডার্ক মোডসহ static website। Cloudflare Pages দিয়ে হোস্ট করা হয়।
 - **`docs/topics-index.json`** — সার্চের জন্য স্বয়ংক্রিয়ভাবে তৈরি index; হাতে edit করবে না।
-- **`docs/ghotonaprobaho-index.json`**, **`docs/sw.js`**, **`docs/version.json`** — build-এর সময় `scripts/build_index.py` থেকে তৈরি হওয়া website output; হাতে edit করবে না।
+- **`docs/ghotonaprobaho-index.json`**, **`docs/top-news-index.json`**, **`docs/sw.js`**, **`docs/version.json`** — build-এর সময় `scripts/build_index.py` থেকে তৈরি হওয়া website output; হাতে edit করবে না।
+- **`docs/topic/<slug>/`** — প্রতিটা টপিকের জন্য আলাদা crawlable SEO পাতা (meta description, canonical, Open Graph ট্যাগসহ static HTML), লোড হলেই মূল অ্যাপে (`/#slug`) রিডাইরেক্ট করে; স্বয়ংক্রিয়ভাবে তৈরি হয়, হাতে edit করবে না।
+- **`docs/sitemap.xml`**, **`docs/robots.txt`** — সার্চ ইঞ্জিনের জন্য স্বয়ংক্রিয়ভাবে তৈরি; হাতে edit করবে না।
 - **`docs/manifest.json`**, **`docs/icon-192.png`**, **`docs/icon-512.png`** — PWA (installable app) সাপোর্টের জন্য।
 - **`docs/fonts/`** — বাংলা ওয়েবফন্ট (Hind Siliguri, Kalpurush, Noto Serif Bengali)।
 - **`docs/vendor/`** — offline rendering-এর জন্য local Markdown renderer (`marked.min.js`) ও sanitizer (`purify.min.js`)।
@@ -18,7 +21,7 @@
 - **`.github/workflows/update-wiki.yml`** — push-এর পর build চালিয়ে generated output আপডেট করে।
 - **`PROJECT.md`** — সিস্টেম কীভাবে বানানো/গঠিত তার ডকুমেন্টেশন।
 - **`EDITORIAL_MEMORY.md`** — কনটেন্ট আপডেটের সময়কার স্থায়ী সম্পাদকীয় সিদ্ধান্তের নিয়ম-খাতা।
-- **`CHANGELOG.md`**, **`VERSION`** (বর্তমানে `1.4.0`) — ভার্সন হিস্ট্রি।
+- **`CHANGELOG.md`**, **`VERSION`** (বর্তমানে `1.5.0`) — ভার্সন হিস্ট্রি।
 - **`TEST_CHECKLIST.md`** — রিলিজের আগে যাচাইয়ের চেকলিস্ট।
 - **`wrangler.toml`** — Cloudflare Pages/Wrangler ডিপ্লয় কনফিগ।
 
@@ -66,10 +69,12 @@ last_updated: 2026-04
 - টপিক তালিকা/ড্রয়ার থেকে ব্রাউজ ও সার্চ।
 - **🗓️ দৈনিক ঘটনাপ্রবাহ** — আলাদা view টগল করে তারিখ-ভিত্তিক ঘটনাপ্রবাহ (`docs/ghotonaprobaho/`), prev/next নেভিগেশনসহ। কোনো এন্ট্রি বিদ্যমান টপিকের আপডেট হলে বুলেটের শেষে `[[topic-slug]]` লিখে সেই টপিকে ক্লিকযোগ্য লিংক দেওয়া যায় (দেখুন `EDITORIAL_MEMORY.md`)।
 - **🔍 ভাসমান সার্চ বাডি** — "দৈনিক ঘটনাপ্রবাহ" মোডে (যেখানে বাম পাশের টপিক-তালিকা থাকে না) একটা ছোট 3D-স্টাইলের সার্চ বাটন ভাসমান থাকে, যাতে একটা কিউট ম্যাগনিফায়িং-গ্লাস চরিত্র (চোখ-হাসিসহ কাস্টম SVG) আছে — ইডল অবস্থায় হালকা "breathe" করে, hover-এ wiggle করে আর মাঝেমধ্যে র‍্যান্ডম পলক ফেলে, তবে সবই এত সূক্ষ্ম যে পড়ায় ব্যাঘাত ঘটায় না। মাউস/টাচ দিয়ে টেনে স্ক্রিনের যেকোনো জায়গায় রাখা যায় (পজিশন শুধু চলতি সেশনে থাকে, রিফ্রেশে ডিফল্ট জায়গায় ফিরে যায়)। ফলাফলে ক্লিক করলে বর্তমান মোড/স্ক্রিন থেকে সরে না গিয়ে একটা মডাল ওভারলেতে টপিকটা দেখায়।
+- **⭐ টপ নিউজ** — আলাদা ট্যাব, প্রতিটা তারিখের সবচেয়ে গুরুত্বপূর্ণ হাইলাইট লাইন দেখায় (`docs/top-news/`)।
 - টপিক প্রিন্ট আর লিংক কপি করে শেয়ার।
 - "পড়া হয়েছে" মার্ক করার বাটন।
 - 🌙 ডার্ক মোড টগল, থিম পছন্দ মনে রাখে।
 - Service worker + cache-refresh বাটন দিয়ে offline support।
+- **SEO:** প্রতিটা টপিকের আলাদা crawlable পাতা (`docs/topic/<slug>/`) + `sitemap.xml`/`robots.txt`, যাতে গুগলে নির্দিষ্ট টপিক সার্চ করলে সরাসরি খুঁজে পাওয়া যায়।
 
 Reading progress (কোন টপিক পড়া হয়েছে) ও theme preference browser-এর localStorage-এ থাকে; অন্য browser বা device-এ এগুলো আলাদা থাকবে।
 
