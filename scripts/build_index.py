@@ -495,11 +495,36 @@ def generate_sitemap_and_robots(entries):
     SITEMAP_OUTPUT.write_text(sitemap, encoding="utf-8")
     print(f"তৈরি হলো: {SITEMAP_OUTPUT} ({len(urls)} টি URL)")
 
-    robots = (
-        "User-agent: *\n"
-        "Allow: /\n"
-        f"Sitemap: {SITE_BASE_URL}/sitemap.xml\n"
-    )
+    # গুগল সার্চে (Googlebot) ইনডেক্স হওয়ার অনুমতি খোলা রাখা হলো, কিন্তু
+    # পরিচিত AI-ট্রেনিং রোবটগুলোকে (কনটেন্ট মডেল-ট্রেনিংয়ে ব্যবহারের জন্য
+    # সংগ্রহ করে) নিষেধ করা হলো — ব্যবহারকারীর সুস্পষ্ট সিদ্ধান্ত অনুযায়ী।
+    # এটা robots.txt-এর প্রমিত আচরণ মেনেই কাজ করে: কোনো নির্দিষ্ট
+    # user-agent-এর জন্য আলাদা নিয়ম থাকলে সেটাই প্রযোজ্য হয়, নাহলে সবার
+    # জন্য সাধারণ "*" নিয়ম প্রযোজ্য হয় (যা এখনো খোলা — তাই Bing-এর মতো
+    # অন্যান্য সাধারণ সার্চ ইঞ্জিন প্রভাবিত হয় না)। robots.txt একটা
+    # স্বেচ্ছা-মেনে-চলার নিয়ম মাত্র, জোর করে আটকানোর প্রযুক্তিগত ব্যবস্থা
+    # না — তবে বড় কোম্পানিগুলো (Google, OpenAI, Anthropic) সাধারণত এটা
+    # মেনে চলে বলে জানিয়েছে। এই তালিকা সময়ে সময়ে হালনাগাদ করা দরকার
+    # হতে পারে, কারণ নতুন AI রোবট নিয়মিত যোগ হচ্ছে।
+    ai_training_bots = [
+        "GPTBot",            # OpenAI — মডেল ট্রেনিং
+        "Google-Extended",   # Google-এর AI ট্রেনিং (Googlebot সার্চের থেকে আলাদা)
+        "ClaudeBot",         # Anthropic — মডেল ট্রেনিং
+        "CCBot",             # Common Crawl — অনেক LLM-এর ডেটাসোর্স
+        "Bytespider",        # ByteDance — মডেল ট্রেনিং
+        "Meta-ExternalAgent",# Meta — AI ট্রেনিং
+        "Applebot-Extended", # Apple — AI ট্রেনিং (Applebot সার্চের থেকে আলাদা)
+    ]
+    robots_lines = ["User-agent: Googlebot", "Allow: /", ""]
+    for bot in ai_training_bots:
+        robots_lines.append(f"User-agent: {bot}")
+        robots_lines.append("Disallow: /")
+        robots_lines.append("")
+    robots_lines.append("User-agent: *")
+    robots_lines.append("Allow: /")
+    robots_lines.append("")
+    robots_lines.append(f"Sitemap: {SITE_BASE_URL}/sitemap.xml")
+    robots = "\n".join(robots_lines) + "\n"
     ROBOTS_OUTPUT.write_text(robots, encoding="utf-8")
     print(f"তৈরি হলো: {ROBOTS_OUTPUT}")
 
