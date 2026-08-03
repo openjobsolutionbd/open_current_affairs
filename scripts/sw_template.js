@@ -62,7 +62,10 @@ self.addEventListener("fetch", (event) => {
     url.pathname.endsWith("ghotonaprobaho-index.json") ||
     url.pathname.endsWith("top-news-index.json") ||
     url.pathname.endsWith("version.json") ||
-    url.pathname.includes("/topics/");
+    url.pathname.includes("/topics/") ||
+    // SEO রিডাইরেক্ট পাতাগুলো (docs/topic/<slug>/index.html) — শেয়ার করা লিংক
+    // অফলাইনেও যেন কাজ করে, তাই এগুলোও নেটওয়ার্ক-ফার্স্ট কনটেন্ট হিসেবে গণ্য হবে
+    url.pathname.includes("/topic/");
 
   if (isContent) {
     event.respondWith(

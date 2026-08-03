@@ -49,7 +49,7 @@ TOPIC_PAGES_DIR = DOCS_DIR / "topic"
 SITEMAP_OUTPUT = DOCS_DIR / "sitemap.xml"
 ROBOTS_OUTPUT = DOCS_DIR / "robots.txt"
 
-FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n(.*)$", re.DOTALL)
+FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n?(.*)$", re.DOTALL)
 
 # TASK 7 / TASK 10: last_updated অবশ্যই ISO-সাজানোর-উপযোগী ফরম্যাটে থাকতে হবে
 # (YYYY-MM বা YYYY-MM-DD) — যাতে স্ট্রিং-তুলনাতেই সময়ানুক্রম ঠিক থাকে, আলাদা
@@ -227,11 +227,9 @@ def compile_ghotonaprobaho(valid_slugs):
         for d in parse_ghotonaprobaho_file(path, valid_slugs):
             date_key = d["date"].strip()
             if date_key in seen_dates:
-                print(
-                    f"সতর্কতা: '{date_key}' তারিখটা একাধিক ফাইলে পাওয়া গেছে "
-                    f"({seen_dates[date_key]} এবং {path.name}) — দুটোই যোগ হচ্ছে, "
-                    f"তাই এই তারিখের এন্ট্রি ডুপ্লিকেট হতে পারে। একটা ফাইল থেকে বাদ দিন।",
-                    file=sys.stderr,
+                raise BuildError(
+                    f"'{date_key}' তারিখটা একাধিক ফাইলে পাওয়া গেছে "
+                    f"({seen_dates[date_key]} এবং {path.name}) — একটা ফাইল থেকে বাদ দিন।"
                 )
             else:
                 seen_dates[date_key] = path.name

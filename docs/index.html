@@ -1482,6 +1482,7 @@ function initTheme(){
 async function loadIndex(){
   try{
     const res = await fetch('./topics-index.json');
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     ALL_TOPICS = data.topics || [];
   }catch(e){
@@ -1509,6 +1510,7 @@ async function ensureGhotonaprobahoLoaded(){
   if(GHOTONAPROBAHO_MONTHS !== null) return;
   try{
     const res = await fetch('./ghotonaprobaho-index.json');
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     GHOTONAPROBAHO_MONTHS = data.months || [];
   }catch(e){
@@ -1712,6 +1714,7 @@ async function ensureTopNewsLoaded(){
   if(TOP_NEWS_ITEMS !== null) return;
   try{
     const res = await fetch('./top-news-index.json');
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     TOP_NEWS_ITEMS = data.items || [];
   }catch(e){
@@ -1961,6 +1964,10 @@ async function fetchWikipediaSummary(q){
     // ধাপ ১: প্রথমে সার্চ করে সবচেয়ে কাছের আর্টিকেলের শিরোনাম বের করা
     const searchUrl = `https://bn.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&format=json&origin=*&srlimit=1`;
     const searchRes = await fetch(searchUrl);
+    if(!searchRes.ok){
+      wikiCache.set(q, null);
+      return null;
+    }
     const searchData = await searchRes.json();
     const hit = searchData?.query?.search?.[0];
     if(!hit){
@@ -1987,6 +1994,7 @@ async function fetchWikipediaSummary(q){
     wikiCache.set(q, result);
     return result;
   } catch(err){
+    wikiCache.set(q, null);
     return null;
   }
 }
@@ -2035,7 +2043,7 @@ function renderList(list, q){
             <div class="floating-search-wiki-badge">${WIKIPEDIA_BADGE_ICON}উইকিপিডিয়া</div>
             <div class="floating-search-wiki-title">${escapeHtml(result.title)}</div>
             <div class="floating-search-wiki-extract">${escapeHtml(result.extract)}</div>
-            <a class="floating-search-wiki-link" href="${result.url}" target="_blank" rel="noopener noreferrer">পুরো আর্টিকেল পড়ুন ↗</a>
+            <a class="floating-search-wiki-link" href="${escapeHtml(result.url)}" target="_blank" rel="noopener noreferrer">পুরো আর্টিকেল পড়ুন ↗</a>
           </div>
         `;
       });
@@ -2134,7 +2142,7 @@ function renderWikiFallback(container, q, seq){
         <div class="floating-search-wiki-badge">${WIKIPEDIA_BADGE_ICON}উইকিপিডিয়া</div>
         <div class="floating-search-wiki-title">${escapeHtml(result.title)}</div>
         <div class="floating-search-wiki-extract">${escapeHtml(result.extract)}</div>
-        <a class="floating-search-wiki-link" href="${result.url}" target="_blank" rel="noopener noreferrer">পুরো আর্টিকেল পড়ুন ↗</a>
+        <a class="floating-search-wiki-link" href="${escapeHtml(result.url)}" target="_blank" rel="noopener noreferrer">পুরো আর্টিকেল পড়ুন ↗</a>
       </div>
     `;
   });
@@ -2537,8 +2545,17 @@ function filterByTag(tag){
   input.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
+let INDEX_LOADED = false;
+let PENDING_HASH_SLUG = null;
+
 window.addEventListener('hashchange', () => {
   const slug = decodeURIComponent(location.hash.slice(1));
+  if(!INDEX_LOADED){
+    // ALL_TOPICS তখনও খালি, তাই openTopic() ভুলভাবে "পাওয়া যায়নি" দেখাবে —
+    // loadIndex() শেষ না হওয়া পর্যন্ত অপেক্ষা করে পরে প্রসেস করা হবে
+    PENDING_HASH_SLUG = slug;
+    return;
+  }
   if(slug && slug !== ACTIVE_SLUG){
     openTopic(slug, false);
   } else if(!slug && ACTIVE_SLUG){
@@ -2576,7 +2593,13 @@ document.getElementById('top-news-toggle-btn').addEventListener('click', () => {
 });
 
 loadIndex().then(() => {
-  const initialSlug = decodeURIComponent(location.hash.slice(1));
+  INDEX_LOADED = true;
+  // লোডিং চলাকালীন hashchange ইভেন্ট এসে থাকলে সেই স্লাগ ব্যবহার করা হবে,
+  // নাহলে বর্তমান location.hash থেকে ইনিশিয়াল স্লাগ নেওয়া হবে
+  const initialSlug = PENDING_HASH_SLUG !== null
+    ? PENDING_HASH_SLUG
+    : decodeURIComponent(location.hash.slice(1));
+  PENDING_HASH_SLUG = null;
   if(initialSlug){
     openTopic(initialSlug, false);
   } else {
