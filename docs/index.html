@@ -398,7 +398,7 @@
   .floating-search-results{
     position:absolute;
     right:0;
-    bottom:60px;
+    bottom:76px;
     width:min(92vw, 380px);
     max-height:min(58vh, 420px);
     overflow-y:auto;
@@ -1999,11 +1999,13 @@ async function fetchWikipediaSummary(q){
   }
 }
 
-// উইকিপিডিয়া badge-এর ছোট গোল আইকন — নিজস্ব সরল ডিজাইন (globe-grid আদলে),
-// কোনো bitmap বা third-party asset ব্যবহার করা হয়নি।
+// উইকিপিডিয়া badge-এর ছোট গোল আইকন — নিজস্ব সরল ডিজাইন (globe-grid আদলে,
+// আসল লোগোর ধূসর/কালো রঙের সাথে মিলিয়ে বানানো, কোনো bitmap বা
+// third-party asset/ট্রেডমার্কড পাজল-প্যাটার্ন হুবহু কপি করা হয়নি)।
 const WIKIPEDIA_BADGE_ICON = `<svg class="floating-search-wiki-badge-icon" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <circle cx="10" cy="10" r="10" fill="#E8112D"/>
-  <g stroke="#ffffff" stroke-width="1" fill="none" opacity="0.9">
+  <circle cx="10" cy="10" r="10" fill="#f8f9fa"/>
+  <circle cx="10" cy="10" r="9.2" fill="none" stroke="#a2a9b1" stroke-width="0.6"/>
+  <g stroke="#202122" stroke-width="1" fill="none" opacity="0.85">
     <ellipse cx="10" cy="10" rx="4" ry="8"/>
     <line x1="2" y1="10" x2="18" y2="10"/>
     <line x1="3.2" y1="6" x2="16.8" y2="6"/>
