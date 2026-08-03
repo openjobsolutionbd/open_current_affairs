@@ -399,8 +399,8 @@
     position:absolute;
     right:0;
     bottom:60px;
-    width:min(86vw, 310px);
-    max-height:min(50vh, 340px);
+    width:min(92vw, 380px);
+    max-height:min(58vh, 420px);
     overflow-y:auto;
     background:var(--paper-raised);
     background:color-mix(in srgb, var(--paper-raised) 92%, transparent);
@@ -453,31 +453,39 @@
     padding:12px 12px 10px;
   }
   .floating-search-wiki-badge{
-    display:inline-block;
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
     background:var(--accent-light);
     color:var(--accent-deep);
-    font-size:12.6px;
+    font-size:15.1px;
     font-weight:600;
     letter-spacing:0.03em;
-    padding:2px 8px;
+    padding:3px 10px;
     border-radius:999px;
-    margin-bottom:6px;
+    margin-bottom:7px;
+  }
+  .floating-search-wiki-badge-icon{
+    width:14px;
+    height:14px;
+    flex:0 0 auto;
+    border-radius:50%;
   }
   .floating-search-wiki-title{
     font-weight:700;
-    font-size:16.8px;
+    font-size:20.2px;
     color:var(--ink);
-    margin-bottom:4px;
+    margin-bottom:5px;
   }
   .floating-search-wiki-extract{
-    font-size:15.6px;
+    font-size:18.7px;
     line-height:1.55;
     color:var(--ink);
-    margin-bottom:8px;
+    margin-bottom:9px;
   }
   .floating-search-wiki-link{
     display:inline-block;
-    font-size:15px;
+    font-size:18px;
     font-weight:600;
     color:var(--accent-deep);
     text-decoration:none;
@@ -490,8 +498,8 @@
     border-radius:8px;
     padding:16px 18px 14px;
   }
-  .main-wiki-result .floating-search-wiki-title{ font-size:19.2px; }
-  .main-wiki-result .floating-search-wiki-extract{ font-size:17.4px; }
+  .main-wiki-result .floating-search-wiki-title{ font-size:23px; }
+  .main-wiki-result .floating-search-wiki-extract{ font-size:20.9px; }
 
   @media (max-width:720px){
     .floating-search-wrap{ right:14px; bottom:70px; }
@@ -1983,6 +1991,18 @@ async function fetchWikipediaSummary(q){
   }
 }
 
+// উইকিপিডিয়া badge-এর ছোট গোল আইকন — নিজস্ব সরল ডিজাইন (globe-grid আদলে),
+// কোনো bitmap বা third-party asset ব্যবহার করা হয়নি।
+const WIKIPEDIA_BADGE_ICON = `<svg class="floating-search-wiki-badge-icon" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <circle cx="10" cy="10" r="10" fill="#E8112D"/>
+  <g stroke="#ffffff" stroke-width="1" fill="none" opacity="0.9">
+    <ellipse cx="10" cy="10" rx="4" ry="8"/>
+    <line x1="2" y1="10" x2="18" y2="10"/>
+    <line x1="3.2" y1="6" x2="16.8" y2="6"/>
+    <line x1="3.2" y1="14" x2="16.8" y2="14"/>
+  </g>
+</svg>`;
+
 let mainWikiSeq = 0;
 
 function renderList(list, q){
@@ -2012,7 +2032,7 @@ function renderList(list, q){
         }
         wrap.innerHTML = `
           <div class="floating-search-wiki-result main-wiki-result">
-            <div class="floating-search-wiki-badge">উইকিপিডিয়া থেকে</div>
+            <div class="floating-search-wiki-badge">${WIKIPEDIA_BADGE_ICON}উইকিপিডিয়া</div>
             <div class="floating-search-wiki-title">${escapeHtml(result.title)}</div>
             <div class="floating-search-wiki-extract">${escapeHtml(result.extract)}</div>
             <a class="floating-search-wiki-link" href="${result.url}" target="_blank" rel="noopener noreferrer">পুরো আর্টিকেল পড়ুন ↗</a>
@@ -2111,7 +2131,7 @@ function renderWikiFallback(container, q, seq){
     }
     container.innerHTML = `
       <div class="floating-search-wiki-result">
-        <div class="floating-search-wiki-badge">উইকিপিডিয়া থেকে</div>
+        <div class="floating-search-wiki-badge">${WIKIPEDIA_BADGE_ICON}উইকিপিডিয়া</div>
         <div class="floating-search-wiki-title">${escapeHtml(result.title)}</div>
         <div class="floating-search-wiki-extract">${escapeHtml(result.extract)}</div>
         <a class="floating-search-wiki-link" href="${result.url}" target="_blank" rel="noopener noreferrer">পুরো আর্টিকেল পড়ুন ↗</a>
@@ -2167,12 +2187,9 @@ floatInput.addEventListener('keydown', (e)=>{
   }
 });
 
-// বাইরে ক্লিক করলে খোলা থাকলে বন্ধ হয়ে যাবে
-document.addEventListener('click', (e)=>{
-  if(!floatPill.contains(e.target) && floatPill.classList.contains('open')){
-    closeFloatingSearch();
-  }
-});
+// বাইরে ক্লিক করলে বক্স বন্ধ হবে না — শুধু ✕ বাটনে বা Escape চাপলেই বন্ধ হয়,
+// যাতে ফলাফলের টেক্সট সিলেক্ট করা বা বাইরের কিছু দেখার সময় বক্স হুট করে
+// বন্ধ হয়ে না যায়।
 
 // মডাল বন্ধ করা — ক্রস বাটনে, ওভারলের বাইরে ক্লিকে, বা Escape-এ
 topicModalClose.addEventListener('click', closeTopicModal);
