@@ -49,7 +49,7 @@ python3 scripts/build_index.py
 
 ## বর্তমান অবস্থা (সর্বশেষ যাচাই: ২০২৬-০৮-০২)
 
-- VERSION: `1.5.0`
+- VERSION: `1.6.0`
 - টপিক ফাইল সংখ্যা: ২৬
 - `python3 scripts/build_index.py` ক্লিন পাস করছে, কোনো ভ্যালিডেশন এরর নেই
 - `.gitignore` ও `.github/workflows/update-wiki.yml` উভয়ই বিদ্যমান ও কার্যকর
