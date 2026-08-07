@@ -85,14 +85,26 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       caches.match(event.request).then((cached) => {
         if (cached) return cached;
-        return fetch(event.request).then((response) => {
-          // এখানেও একই নিয়ম: শুধু সফল রেসপন্সই ক্যাশে যোগ হয়।
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return response;
-        });
+        return fetch(event.request)
+          .then((response) => {
+            // এখানেও একই নিয়ম: শুধু সফল রেসপন্সই ক্যাশে যোগ হয়।
+            if (response.ok) {
+              const clone = response.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+            }
+            return response;
+          })
+          .catch(() => {
+            // BUG FIX: নেটওয়ার্ক ব্যর্থ হলে (সাময়িক সংযোগ বিচ্ছিন্নতা ইত্যাদি)
+            // নেভিগেশন রিকোয়েস্টের (পেজ ওপেন করা/হোম স্ক্রিন থেকে অ্যাপ চালু করা)
+            // জন্য ব্রাউজারের কাঁচা "সাইট খোলা যাচ্ছে না" এরর দেখানোর বদলে
+            // ক্যাশ করা index.html (অ্যাপ-শেল) ফিরিয়ে দেওয়া হয়, যাতে PWA
+            // অফলাইনেও/সাময়িক নেটওয়ার্ক সমস্যায়ও খুলতে পারে।
+            if (event.request.mode === "navigate") {
+              return caches.match("./index.html");
+            }
+            return undefined;
+          });
       })
     );
   }
