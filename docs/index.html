@@ -2126,6 +2126,21 @@ document.getElementById('bookmark-filter-toggle').addEventListener('click', (e) 
 // একটা মডাল ওভারলেতে দেখায় — বর্তমান মোড/স্ক্রিন বদলায় না।
 // ══════════════════════════════════════════════════════
 const floatWrap = document.getElementById('floating-search-wrap');
+// স্ক্রিন ঘোরালে, উইন্ডো রিসাইজ করলে, বা সার্চ পিল ওপেন করলে (width বেড়ে
+// যাওয়ায়) আগে টেনে সরানো বক্সটা স্ক্রিনের বাইরে চলে যেতে পারে — সেটা
+// ঠেকাতে বক্সটাকে আবার স্ক্রিনের সীমার মধ্যে টেনে আনা হয়। যেসব ক্ষেত্রে
+// বক্স কখনো টানা হয়নি (ডিফল্ট right/bottom পজিশনে আছে), সেখানে কিছু
+// করার দরকার নেই — CSS নিজেই সামলায়।
+function clampFloatingSearchToViewport(){
+  if(!floatWrap.classList.contains('dragged')) return;
+  const rect = floatWrap.getBoundingClientRect();
+  const maxLeft = Math.max(0, window.innerWidth - rect.width);
+  const maxTop = Math.max(0, window.innerHeight - rect.height);
+  const newLeft = Math.min(rect.left, maxLeft);
+  const newTop = Math.min(rect.top, maxTop);
+  floatWrap.style.left = newLeft + 'px';
+  floatWrap.style.top = newTop + 'px';
+}
 const floatPill = document.getElementById('floating-search-pill');
 const floatInput = document.getElementById('floating-search-input');
 const floatResults = document.getElementById('floating-search-results');
@@ -2136,6 +2151,11 @@ const topicModalClose = document.getElementById('topic-modal-close');
 function openFloatingSearch(){
   floatPill.classList.add('open');
   floatInput.focus();
+  // BUG FIX: পিল আগে থেকে টেনে সরানো (dragged) থাকলে এবং ডান কিনারার
+  // কাছাকাছি অবস্থায় থাকলে, ওপেন হওয়ার সময় width বেড়ে গিয়ে বক্সটা
+  // ভিউপোর্টের বাইরে চলে যেত — ইউজারকে হাত দিয়ে টেনে আনতে হতো। এখন
+  // ওপেন হওয়ার সাথে সাথেই ভিউপোর্টের মধ্যে ফিরিয়ে আনা হয়।
+  requestAnimationFrame(clampFloatingSearchToViewport);
 }
 
 function closeFloatingSearch(){
@@ -2315,21 +2335,6 @@ document.addEventListener('keydown', (e)=>{
   floatPill.addEventListener('mousedown', dragStart);
   floatPill.addEventListener('touchstart', dragStart, {passive:true});
 
-  // স্ক্রিন ঘোরালে বা ব্রাউজার উইন্ডো ছোট করলে (রিসাইজ) আগে টেনে
-  // সরানো বক্সটা স্ক্রিনের বাইরে চলে যেতে পারে — সেটা ঠেকাতে
-  // প্রতিবার সাইজ বদলালে বক্সটাকে আবার স্ক্রিনের সীমার মধ্যে টেনে
-  // আনা হয়। যেসব ক্ষেত্রে বক্স কখনো টানা হয়নি (ডিফল্ট right/bottom
-  // পজিশনে আছে), সেখানে কিছু করার দরকার নেই — CSS নিজেই সামলায়।
-  function clampFloatingSearchToViewport(){
-    if(!floatWrap.classList.contains('dragged')) return;
-    const rect = floatWrap.getBoundingClientRect();
-    const maxLeft = Math.max(0, window.innerWidth - rect.width);
-    const maxTop = Math.max(0, window.innerHeight - rect.height);
-    const newLeft = Math.min(rect.left, maxLeft);
-    const newTop = Math.min(rect.top, maxTop);
-    floatWrap.style.left = newLeft + 'px';
-    floatWrap.style.top = newTop + 'px';
-  }
   window.addEventListener('resize', clampFloatingSearchToViewport);
   window.addEventListener('orientationchange', clampFloatingSearchToViewport);
 })();
