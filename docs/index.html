@@ -239,17 +239,22 @@
      সাথে সাথে ভেসে থাকে। ছোট, গোলগাল, একটু কিউট।
      ══════════════════════════════════════════════════════ */
   .floating-search-wrap{
-    position:fixed;
-    right:20px;
-    bottom:22px;
+    position:relative;
     z-index:400;
     display:none; /* শুধু ghotonaprobaho মোডে দেখানো হয় — JS টগল করে */
     font-family:'Kalpurush', sans-serif;
   }
   .floating-search-wrap.visible{ display:block; }
-  /* ড্র্যাগ করে সরানোর সময় left/top দিয়ে পজিশন করা হয় (JS সেট করে);
-     তখন right/bottom বাতিল করে দিতে হয় যাতে দুই দিক থেকে টানাটানি না হয়। */
-  .floating-search-wrap.dragged{ right:auto; bottom:auto; }
+  /* ডিফল্ট অবস্থায় বক্সটা টুলবারে (লাইট/ডার্ক মোড বাটনের পাশে) স্বাভাবিক
+     ফ্লো-তে বসে থাকে (position:relative), যাতে পেজ লোড/রিলোডে সবসময়
+     এই একই জায়গায় দেখা যায়। মাউস দিয়ে টেনে সরালে (dragged ক্লাস) এটা
+     fixed পজিশনে বদলে যায়, যাতে পুরো পেজের যেকোনো জায়গায় নিয়ে যাওয়া
+     যায়, ঠিক আগের মতোই। */
+  .floating-search-wrap.dragged{
+    position:fixed;
+    top:0;
+    left:0;
+  }
 
   /* আধুনিক 3D "embossed button" pill — গভীরতা তৈরি হয় inset হাইলাইট
      (ওপরের কিনারায় আলো) ও নিচের গাঢ় শ্যাডো (ভর/উচ্চতা) মিলিয়ে। */
@@ -410,7 +415,7 @@
   .floating-search-results{
     position:absolute;
     right:0;
-    bottom:76px;
+    top:56px;
     width:min(92vw, 380px);
     max-height:min(58vh, 420px);
     overflow-y:auto;
@@ -427,10 +432,21 @@
     padding:8px;
     display:none;
     opacity:0;
-    transform:translateY(6px) scale(0.98);
+    transform:translateY(-6px) scale(0.98);
     transition:opacity 0.18s ease, transform 0.18s ease;
   }
   .floating-search-results.visible{ display:block; opacity:1; transform:translateY(0) scale(1); }
+  /* বক্সটা টেনে সরানো (dragged) হলে আবার নিচে-ডানে ফিক্সড পজিশনের
+     পুরনো আচরণে ফিরে যায় — তখন রেজাল্ট বক্সটা ওপরের দিকে খোলে, যাতে
+     স্ক্রিনের নিচের কিনারার বাইরে চলে না যায়। */
+  .floating-search-wrap.dragged .floating-search-results{
+    top:auto;
+    bottom:56px;
+    transform:translateY(6px) scale(0.98);
+  }
+  .floating-search-wrap.dragged .floating-search-results.visible{
+    transform:translateY(0) scale(1);
+  }
   .floating-search-result-item{
     display:block;
     width:100%;
@@ -514,7 +530,10 @@
   .main-wiki-result .floating-search-wiki-extract{ font-size:20.9px; }
 
   @media (max-width:720px){
-    .floating-search-wrap{ right:14px; bottom:70px; }
+    /* আগে এখানে .floating-search-wrap-কে right/bottom দিয়ে ফিক্সড পজিশন
+       করা হতো, কিন্তু ডিফল্ট পজিশন এখন টুলবারের ভেতরে (in-flow), তাই এই
+       ওভাররাইডের আর দরকার নেই — clampFloatingSearchToViewport() ইতিমধ্যে
+       ড্র্যাগ করা অবস্থায় ছোট স্ক্রিনেও বক্সটাকে ভিউপোর্টের মধ্যে রাখে। */
   }
 
   /* ভাসমান সার্চ থেকে টপিক খুললে এই মডালে দেখানো হয় — এতে বর্তমান
@@ -1325,6 +1344,38 @@
   </div>
   <div class="toolbar">
     <button id="theme-toggle-btn" class="theme-toggle">🌙 ডার্ক মোড</button>
+    <div class="floating-search-wrap" id="floating-search-wrap">
+      <div class="floating-search-pill" id="floating-search-pill">
+        <span class="floating-search-icon" id="floating-search-icon" aria-hidden="true">
+          <svg class="fsi-svg" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="fsiLensGrad" cx="35%" cy="30%" r="75%">
+                <stop offset="0%" stop-color="#ffffff"/>
+                <stop offset="50%" stop-color="#c9f5e0"/>
+                <stop offset="100%" stop-color="var(--accent)"/>
+              </radialGradient>
+              <linearGradient id="fsiRimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="var(--accent)"/>
+                <stop offset="100%" stop-color="var(--accent-deep)"/>
+              </linearGradient>
+            </defs>
+            <circle cx="22" cy="22" r="21" fill="url(#fsiRimGrad)"/>
+            <circle cx="22" cy="22" r="18" fill="url(#fsiLensGrad)"/>
+            <ellipse class="fsi-glint" cx="15.5" cy="14" rx="6.5" ry="4.2" fill="#ffffff" opacity="0.85" transform="rotate(-30 15.5 14)"/>
+            <g class="fsi-face">
+              <circle class="fsi-eye fsi-eye-l" cx="17.2" cy="23.5" r="3.6" fill="var(--accent-deep)"/>
+              <circle class="fsi-eye fsi-eye-r" cx="27.4" cy="23.5" r="3.6" fill="var(--accent-deep)"/>
+              <circle class="fsi-eye-glint" cx="18.4" cy="22" r="1.15" fill="#ffffff"/>
+              <circle class="fsi-eye-glint" cx="28.6" cy="22" r="1.15" fill="#ffffff"/>
+              <path class="fsi-smile" d="M16.5 29.6 Q22 34.8 27.5 29.6" fill="none" stroke="var(--accent-deep)" stroke-width="2.2" stroke-linecap="round"/>
+            </g>
+          </svg>
+        </span>
+        <input id="floating-search-input" type="text" placeholder="সার্চ..." autocomplete="off">
+        <button type="button" class="floating-search-close" id="floating-search-close" aria-label="সার্চ বন্ধ করুন">✕</button>
+      </div>
+      <div class="floating-search-results" id="floating-search-results"></div>
+    </div>
   </div>
 </div>
 
@@ -1359,39 +1410,6 @@
   <div class="card" id="top-news-card"></div>
 </div>
 
-
-<div class="floating-search-wrap" id="floating-search-wrap">
-  <div class="floating-search-pill" id="floating-search-pill">
-    <span class="floating-search-icon" id="floating-search-icon" aria-hidden="true">
-      <svg class="fsi-svg" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <radialGradient id="fsiLensGrad" cx="35%" cy="30%" r="75%">
-            <stop offset="0%" stop-color="#ffffff"/>
-            <stop offset="50%" stop-color="#c9f5e0"/>
-            <stop offset="100%" stop-color="var(--accent)"/>
-          </radialGradient>
-          <linearGradient id="fsiRimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="var(--accent)"/>
-            <stop offset="100%" stop-color="var(--accent-deep)"/>
-          </linearGradient>
-        </defs>
-        <circle cx="22" cy="22" r="21" fill="url(#fsiRimGrad)"/>
-        <circle cx="22" cy="22" r="18" fill="url(#fsiLensGrad)"/>
-        <ellipse class="fsi-glint" cx="15.5" cy="14" rx="6.5" ry="4.2" fill="#ffffff" opacity="0.85" transform="rotate(-30 15.5 14)"/>
-        <g class="fsi-face">
-          <circle class="fsi-eye fsi-eye-l" cx="17.2" cy="23.5" r="3.6" fill="var(--accent-deep)"/>
-          <circle class="fsi-eye fsi-eye-r" cx="27.4" cy="23.5" r="3.6" fill="var(--accent-deep)"/>
-          <circle class="fsi-eye-glint" cx="18.4" cy="22" r="1.15" fill="#ffffff"/>
-          <circle class="fsi-eye-glint" cx="28.6" cy="22" r="1.15" fill="#ffffff"/>
-          <path class="fsi-smile" d="M16.5 29.6 Q22 34.8 27.5 29.6" fill="none" stroke="var(--accent-deep)" stroke-width="2.2" stroke-linecap="round"/>
-        </g>
-      </svg>
-    </span>
-    <input id="floating-search-input" type="text" placeholder="সার্চ..." autocomplete="off">
-    <button type="button" class="floating-search-close" id="floating-search-close" aria-label="সার্চ বন্ধ করুন">✕</button>
-  </div>
-  <div class="floating-search-results" id="floating-search-results"></div>
-</div>
 
 <div class="topic-modal-overlay" id="topic-modal-overlay">
   <div class="topic-modal" id="topic-modal">
@@ -2249,10 +2267,11 @@ document.addEventListener('keydown', (e)=>{
 
 // ══════════════════════════════════════════════════════
 // ভাসমান সার্চ বক্স মাউস/টাচ দিয়ে টেনে মনিটরের যেকোনো জায়গায় রাখা যায়।
-// পজিশনটা শুধু চলতি সেশনে থাকে — পেজ রিফ্রেশ করলে আবার ডিফল্ট
-// (নিচে-ডানে) জায়গায় ফিরে যায়, তাই কোথাও সংরক্ষণ করার দরকার নেই।
-// পিলের "🔍" আইকন বা বন্ধ-অবস্থার গোল বাটনটাই handle — খোলা অবস্থায়
-// ইনপুট বক্সের ভেতর ক্লিক করলে টাইপ করা যাবে, ড্র্যাগ শুরু হবে না।
+// পজিশনটা শুধু চলতি সেশনে থাকে — পেজ রিফ্রেশ করলে আবার ডিফল্ট জায়গায়
+// (টুলবারে, লাইট/ডার্ক মোড বাটনের পাশে) ফিরে যায়, তাই কোথাও সংরক্ষণ
+// করার দরকার নেই। পিলের "🔍" আইকন বা বন্ধ-অবস্থার গোল বাটনটাই handle —
+// খোলা অবস্থায় ইনপুট বক্সের ভেতর ক্লিক করলে টাইপ করা যাবে, ড্র্যাগ
+// শুরু হবে না।
 // ══════════════════════════════════════════════════════
 (function enableFloatingSearchDrag(){
   let dragging = false;
