@@ -379,11 +379,23 @@
     font-family:'Kalpurush', sans-serif;
   }
   .floating-search-wrap.visible{ display:block; }
-  /* ডিফল্ট অবস্থায় বক্সটা টুলবারে (লাইট/ডার্ক মোড বাটনের পাশে) স্বাভাবিক
-     ফ্লো-তে বসে থাকে (position:relative), যাতে পেজ লোড/রিলোডে সবসময়
-     এই একই জায়গায় দেখা যায়। মাউস দিয়ে টেনে সরালে (dragged ক্লাস) এটা
-     fixed পজিশনে বদলে যায়, যাতে পুরো পেজের যেকোনো জায়গায় নিয়ে যাওয়া
-     যায়, ঠিক আগের মতোই। */
+  /* BUG FIX: আগে পুরো সময় position:relative থাকায় স্ক্রল করলে বক্সটা
+     পেজের বাকি কন্টেন্টের সাথে সাথে ওপরে/নিচে সরে যেত, স্ক্রল করে নিচে
+     গেলে স্ক্রিন থেকে বেরিয়ে যেত। CSS position:sticky এখানে কাজ করে
+     না, কারণ এর প্যারেন্ট (.toolbar) মাত্র একটা সরু সারি — sticky
+     এলিমেন্ট নিজের প্যারেন্টের উচ্চতার বাইরে "ভাসতে" পারে না। তাই JS
+     দিয়ে স্ক্রল-ভিত্তিক টগল করা হচ্ছে: টুলবার ভিউপোর্ট থেকে ওপরে
+     স্ক্রল হয়ে গেলে .scroll-pinned ক্লাস লাগিয়ে position:fixed করা
+     হয় (নিচে ভিডিও/স্ক্রল-হেডিং-এর মতো), আর টুলবার আবার দৃশ্যমান
+     হলে ক্লাসটা সরিয়ে স্বাভাবিক ফ্লোতে ফিরিয়ে আনা হয়। এভাবে বক্সটা
+     সবসময় ভিউপোর্টের একই জায়গায় (top:12px) স্থির দেখা যায়, স্ক্রল
+     ওপরে/নিচে যেকোনো দিকেই করা হোক না কেন — একদম পেজের শুরুতে ফিরলে
+     টুলবারের নিজের জায়গায় ফিরে আসে। */
+  .floating-search-wrap.scroll-pinned{
+    position:fixed;
+    top:12px;
+    right:16px;
+  }
   .floating-search-wrap.dragged{
     position:fixed;
     top:0;
@@ -2499,6 +2511,30 @@ document.getElementById('bookmark-filter-toggle').addEventListener('click', (e) 
 // একটা মডাল ওভারলেতে দেখায় — বর্তমান মোড/স্ক্রিন বদলায় না।
 // ══════════════════════════════════════════════════════
 const floatWrap = document.getElementById('floating-search-wrap');
+
+// ══════════════════════════════════════════════════════
+// স্ক্রল করলে সার্চ বাডি যাতে স্ক্রিনে একটা নির্দিষ্ট জায়গায় (উপরের
+// টুলবার এলাকায়) স্থির থেকে যায় — IntersectionObserver দিয়ে টুলবার
+// (theme-toggle-btn) ভিউপোর্টের ভেতরে আছে কিনা চেক করা হয়। টুলবার
+// দৃশ্যমান থাকলে বাডিটা স্বাভাবিক ফ্লোতে থাকে; স্ক্রল করে টুলবার
+// ভিউপোর্টের বাইরে চলে গেলে (ওপরে বা নিচে, যেকোনো দিকে স্ক্রল করলেই)
+// .scroll-pinned ক্লাস লেগে position:fixed হয়ে যায়, তাই বাডিটা
+// ভিউপোর্টের একই কোণায় (top:12px; right:16px) স্থির দেখা যায়। বক্সটা
+// টেনে সরানো (dragged) অবস্থায় থাকলে এই পিনিং প্রযোজ্য নয় — তখন
+// ড্র্যাগের নিজস্ব পজিশন প্রাধান্য পায়।
+// ══════════════════════════════════════════════════════
+(function enableFloatingSearchScrollPin(){
+  const anchor = document.getElementById('theme-toggle-btn');
+  if(!anchor || !('IntersectionObserver' in window)) return;
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if(floatWrap.classList.contains('dragged')) return; // ড্র্যাগ করা অবস্থায় হস্তক্ষেপ করা হয় না
+      floatWrap.classList.toggle('scroll-pinned', !entry.isIntersecting);
+    });
+  }, { threshold: 0 });
+  observer.observe(anchor);
+})();
+
 // স্ক্রিন ঘোরালে, উইন্ডো রিসাইজ করলে, বা সার্চ পিল ওপেন করলে (width বেড়ে
 // যাওয়ায়) আগে টেনে সরানো বক্সটা স্ক্রিনের বাইরে চলে যেতে পারে — সেটা
 // ঠেকাতে বক্সটাকে আবার স্ক্রিনের সীমার মধ্যে টেনে আনা হয়। যেসব ক্ষেত্রে
@@ -2676,6 +2712,7 @@ document.addEventListener('keydown', (e)=>{
     newTop = Math.max(0, Math.min(newTop, Math.max(0, maxTop)));
 
     floatWrap.classList.add('dragged');
+    floatWrap.classList.remove('scroll-pinned'); // ড্র্যাগ শুরু হলে scroll-pin বাতিল, নাহলে দুই fixed পজিশন সাংঘর্ষিক হতে পারে
     floatWrap.style.left = newLeft + 'px';
     floatWrap.style.top = newTop + 'px';
   }
