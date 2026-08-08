@@ -210,6 +210,11 @@
       justify-content:center;
       margin-top:10px;
     }
+    /* মোবাইলে .header-widgets আর মাসথেডের ডান কোণে fixed/absolute থাকে
+       না (ওপরে static করে দেওয়া হয়েছে), তাই সংঘর্ষ এড়াতে স্ক্রল-পিন
+       করা সার্চ বক্সের top অফসেট এখানে কমানো যেত, কিন্তু মাসথেডের
+       টাইটেল/সাবটাইটেল লেখার সাথে না মেশার জন্য একই 88px রাখা হলো —
+       ছোট স্ক্রিনেও এটা টাইটেলের নিচে, ফাঁকা জায়গায় বসে। */
   }
 
   /* ── Windows 7-স্টাইল ৩-কাঁটা অ্যানালগ ঘড়ি ── */
@@ -393,7 +398,7 @@
      টুলবারের নিজের জায়গায় ফিরে আসে। */
   .floating-search-wrap.scroll-pinned{
     position:fixed;
-    top:12px;
+    top:88px;
     right:16px;
   }
   .floating-search-wrap.dragged{
