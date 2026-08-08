@@ -177,6 +177,7 @@
     text-align:center;
     border-bottom:5px solid var(--masthead-border);
     box-shadow:0 2px 0 var(--seal);
+    position:relative;
   }
   .masthead h1{
     font-family:'Kalpurush', serif;
@@ -189,6 +190,139 @@
     opacity:0.7;
     margin-top:4px;
     font-family:'Kalpurush',sans-serif;
+  }
+
+  /* ══════════════════════════════════════════════════════
+     হেডারের ডান কোণের উইজেট: অ্যানালগ ঘড়ি + স্টাডি টাইমার
+     ══════════════════════════════════════════════════════ */
+  .header-widgets{
+    position:absolute;
+    top:12px;
+    right:16px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    z-index:5;
+  }
+  @media (max-width:640px){
+    .header-widgets{
+      position:static;
+      justify-content:center;
+      margin-top:10px;
+    }
+  }
+
+  /* ── Windows 7-স্টাইল ৩-কাঁটা অ্যানালগ ঘড়ি ── */
+  .analog-clock{
+    width:44px;
+    height:44px;
+    flex-shrink:0;
+  }
+  .analog-clock-face{
+    position:relative;
+    width:100%;
+    height:100%;
+    border-radius:50%;
+    background:radial-gradient(circle at 32% 28%, #4a4a4a, #0a0a0a 70%);
+    border:2px solid #d8d8d8;
+    box-shadow:
+      0 1px 3px rgba(0,0,0,0.4),
+      inset 0 1px 2px rgba(255,255,255,0.25),
+      inset 0 -2px 4px rgba(0,0,0,0.5);
+  }
+  .clock-tick{
+    position:absolute;
+    top:2px;
+    left:50%;
+    width:1.5px;
+    height:4px;
+    background:#e8e8e8;
+    transform-origin:0.75px 20px;
+    margin-left:-0.75px;
+    opacity:0.85;
+  }
+  .clock-hand{
+    position:absolute;
+    left:50%;
+    bottom:50%;
+    transform-origin:50% 100%;
+    border-radius:2px;
+  }
+  .clock-hand-hour{
+    width:2.6px;
+    height:11px;
+    margin-left:-1.3px;
+    background:#f0f0f0;
+  }
+  .clock-hand-minute{
+    width:2px;
+    height:16px;
+    margin-left:-1px;
+    background:#f0f0f0;
+  }
+  .clock-hand-second{
+    width:1px;
+    height:17px;
+    margin-left:-0.5px;
+    background:#e8112d;
+  }
+  .clock-center-dot{
+    position:absolute;
+    top:50%;
+    left:50%;
+    width:4px;
+    height:4px;
+    margin:-2px 0 0 -2px;
+    border-radius:50%;
+    background:#e8112d;
+    box-shadow:0 0 1px rgba(0,0,0,0.6);
+  }
+
+  /* ── স্টাডি টাইমার — পড়ার সময় মাপার জন্য, শুধু ঘণ্টা:মিনিট দেখায় ── */
+  .study-timer{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.25);
+    border-radius:8px;
+    padding:5px 8px;
+  }
+  .study-timer-display{
+    font-family:'Kalpurush',monospace,sans-serif;
+    font-size:15px;
+    font-weight:700;
+    color:var(--on-dark);
+    min-width:2.6em;
+    text-align:center;
+    letter-spacing:0.02em;
+    font-variant-numeric:tabular-nums;
+  }
+  .study-timer-controls{
+    display:flex;
+    gap:4px;
+  }
+  .study-timer-btn{
+    width:22px;
+    height:22px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border:none;
+    border-radius:50%;
+    background:rgba(255,255,255,0.15);
+    color:var(--on-dark);
+    font-size:11px;
+    cursor:pointer;
+    transition:background 0.15s ease, transform 0.15s ease;
+  }
+  .study-timer-btn:hover{
+    background:var(--accent);
+    color:var(--on-accent);
+  }
+  .study-timer.running .study-timer-btn#study-timer-toggle{
+    background:var(--seal);
+    color:#fff;
   }
 
   .search-bar-wrap{
@@ -239,17 +373,34 @@
      সাথে সাথে ভেসে থাকে। ছোট, গোলগাল, একটু কিউট।
      ══════════════════════════════════════════════════════ */
   .floating-search-wrap{
-    position:fixed;
-    right:20px;
-    bottom:22px;
+    position:relative;
     z-index:400;
     display:none; /* শুধু ghotonaprobaho মোডে দেখানো হয় — JS টগল করে */
     font-family:'Kalpurush', sans-serif;
   }
   .floating-search-wrap.visible{ display:block; }
-  /* ড্র্যাগ করে সরানোর সময় left/top দিয়ে পজিশন করা হয় (JS সেট করে);
-     তখন right/bottom বাতিল করে দিতে হয় যাতে দুই দিক থেকে টানাটানি না হয়। */
-  .floating-search-wrap.dragged{ right:auto; bottom:auto; }
+  /* BUG FIX: আগে পুরো সময় position:relative থাকায় স্ক্রল করলে বক্সটা
+     পেজের বাকি কন্টেন্টের সাথে সাথে ওপরে/নিচে সরে যেত, স্ক্রল করে নিচে
+     গেলে স্ক্রিন থেকে বেরিয়ে যেত। CSS position:sticky এখানে কাজ করে
+     না, কারণ এর প্যারেন্ট (.toolbar) মাত্র একটা সরু সারি — sticky
+     এলিমেন্ট নিজের প্যারেন্টের উচ্চতার বাইরে "ভাসতে" পারে না। তাই JS
+     দিয়ে স্ক্রল-ভিত্তিক টগল করা হচ্ছে: টুলবার ভিউপোর্ট থেকে ওপরে
+     স্ক্রল হয়ে গেলে .scroll-pinned ক্লাস লাগিয়ে position:fixed করা
+     হয় (নিচে ভিডিও/স্ক্রল-হেডিং-এর মতো), আর টুলবার আবার দৃশ্যমান
+     হলে ক্লাসটা সরিয়ে স্বাভাবিক ফ্লোতে ফিরিয়ে আনা হয়। এভাবে বক্সটা
+     সবসময় ভিউপোর্টের একই জায়গায় (top:12px) স্থির দেখা যায়, স্ক্রল
+     ওপরে/নিচে যেকোনো দিকেই করা হোক না কেন — একদম পেজের শুরুতে ফিরলে
+     টুলবারের নিজের জায়গায় ফিরে আসে। */
+  .floating-search-wrap.scroll-pinned{
+    position:fixed;
+    top:12px;
+    right:16px;
+  }
+  .floating-search-wrap.dragged{
+    position:fixed;
+    top:0;
+    left:0;
+  }
 
   /* আধুনিক 3D "embossed button" pill — গভীরতা তৈরি হয় inset হাইলাইট
      (ওপরের কিনারায় আলো) ও নিচের গাঢ় শ্যাডো (ভর/উচ্চতা) মিলিয়ে। */
@@ -282,12 +433,24 @@
     cursor:default;
     border-radius:24px;
     padding-left:6px;
+    padding-right:6px;
     background:linear-gradient(160deg, #ffffff 0%, #eafff5 100%);
     border:2px solid var(--accent-deep);
     box-shadow:
       0 2px 0 rgba(0,107,63,0.15),
       0 20px 38px -10px rgba(0,107,63,0.4);
     transform:none;
+  }
+  /* BUG FIX: ডার্ক মোডে সার্চ পিল খোলা অবস্থায় আগে হার্ডকোড করা সাদা/হালকা
+     সবুজ ব্যাকগ্রাউন্ড ব্যবহার হতো, যা টেক্সট কালার (--ink, ডার্ক মোডে প্রায়
+     সাদা) এর সাথে মিশে টাইপ করা লেখা প্রায় অদৃশ্য করে দিত। এখানে থিমের
+     নিজস্ব ডার্ক সারফেস কালার ব্যবহার করা হলো, যাতে কনট্রাস্ট বজায় থাকে। */
+  [data-theme="dark"] .floating-search-pill.open{
+    background:linear-gradient(160deg, var(--paper-raised) 0%, #0d2018 100%);
+    border:2px solid var(--accent);
+    box-shadow:
+      0 2px 0 rgba(0,0,0,0.4),
+      0 20px 38px -10px rgba(0,0,0,0.6);
   }
 
   /* ══════════════════════════════════════════════════════
@@ -398,7 +561,7 @@
   .floating-search-results{
     position:absolute;
     right:0;
-    bottom:76px;
+    top:56px;
     width:min(92vw, 380px);
     max-height:min(58vh, 420px);
     overflow-y:auto;
@@ -415,10 +578,21 @@
     padding:8px;
     display:none;
     opacity:0;
-    transform:translateY(6px) scale(0.98);
+    transform:translateY(-6px) scale(0.98);
     transition:opacity 0.18s ease, transform 0.18s ease;
   }
   .floating-search-results.visible{ display:block; opacity:1; transform:translateY(0) scale(1); }
+  /* বক্সটা টেনে সরানো (dragged) হলে আবার নিচে-ডানে ফিক্সড পজিশনের
+     পুরনো আচরণে ফিরে যায় — তখন রেজাল্ট বক্সটা ওপরের দিকে খোলে, যাতে
+     স্ক্রিনের নিচের কিনারার বাইরে চলে না যায়। */
+  .floating-search-wrap.dragged .floating-search-results{
+    top:auto;
+    bottom:56px;
+    transform:translateY(6px) scale(0.98);
+  }
+  .floating-search-wrap.dragged .floating-search-results.visible{
+    transform:translateY(0) scale(1);
+  }
   .floating-search-result-item{
     display:block;
     width:100%;
@@ -502,7 +676,10 @@
   .main-wiki-result .floating-search-wiki-extract{ font-size:20.9px; }
 
   @media (max-width:720px){
-    .floating-search-wrap{ right:14px; bottom:70px; }
+    /* আগে এখানে .floating-search-wrap-কে right/bottom দিয়ে ফিক্সড পজিশন
+       করা হতো, কিন্তু ডিফল্ট পজিশন এখন টুলবারের ভেতরে (in-flow), তাই এই
+       ওভাররাইডের আর দরকার নেই — clampFloatingSearchToViewport() ইতিমধ্যে
+       ড্র্যাগ করা অবস্থায় ছোট স্ক্রিনেও বক্সটাকে ভিউপোর্টের মধ্যে রাখে। */
   }
 
   /* ভাসমান সার্চ থেকে টপিক খুললে এই মডালে দেখানো হয় — এতে বর্তমান
@@ -995,6 +1172,21 @@
     font-weight:700;
     color:var(--heading);
   }
+  /* "দৈনিক ঘটনাপ্রবাহ" হেডিং-এর লাইভ ক্যালেন্ডার আইকন — SVG-এর ভেতরের
+     সংখ্যাটা JS দিয়ে বাংলাদেশ সময়ের আজকের তারিখ অনুযায়ী বসানো হয়
+     (দেখুন liveCalendarIconHtml())। h1/h2 হেডিং-এর টেক্সটের সাথে
+     উচ্চতা মিলিয়ে vertical-align করা হয়েছে। */
+  .live-calendar-icon{
+    display:inline-block;
+    width:1.05em;
+    height:1.05em;
+    vertical-align:-0.18em;
+  }
+  .live-calendar-icon svg{
+    width:100%;
+    height:100%;
+    display:block;
+  }
   .month-print-btn{
     flex-shrink:0;
   }
@@ -1305,6 +1497,40 @@
 <div class="masthead">
   <h1>কারেন্ট অ্যাফেয়ার্স রেজিস্টার</h1>
   <div class="sub">টপিক অনুযায়ী সাজানো, প্রতি মাসে হালনাগাদ</div>
+
+  <!-- হেডারের ডান কোণে: (১) অ্যানালগ ঘড়ি (বাংলাদেশ সময়, Windows 7-স্টাইল
+       ৩ কাঁটা) এবং (২) পড়ার সময় মাপার স্টাডি টাইমার (স্টার্ট/স্টপ/রিসেট,
+       শুধু ঘণ্টা:মিনিট — সেকেন্ড দেখানো হয় না)। -->
+  <div class="header-widgets" id="header-widgets">
+    <div class="analog-clock" id="analog-clock" aria-hidden="true" title="বাংলাদেশ সময়">
+      <div class="analog-clock-face">
+        <div class="clock-tick" style="transform:rotate(0deg)"></div>
+        <div class="clock-tick" style="transform:rotate(30deg)"></div>
+        <div class="clock-tick" style="transform:rotate(60deg)"></div>
+        <div class="clock-tick" style="transform:rotate(90deg)"></div>
+        <div class="clock-tick" style="transform:rotate(120deg)"></div>
+        <div class="clock-tick" style="transform:rotate(150deg)"></div>
+        <div class="clock-tick" style="transform:rotate(180deg)"></div>
+        <div class="clock-tick" style="transform:rotate(210deg)"></div>
+        <div class="clock-tick" style="transform:rotate(240deg)"></div>
+        <div class="clock-tick" style="transform:rotate(270deg)"></div>
+        <div class="clock-tick" style="transform:rotate(300deg)"></div>
+        <div class="clock-tick" style="transform:rotate(330deg)"></div>
+        <div class="clock-hand clock-hand-hour" id="clock-hand-hour"></div>
+        <div class="clock-hand clock-hand-minute" id="clock-hand-minute"></div>
+        <div class="clock-hand clock-hand-second" id="clock-hand-second"></div>
+        <div class="clock-center-dot"></div>
+      </div>
+    </div>
+
+    <div class="study-timer" id="study-timer">
+      <div class="study-timer-display" id="study-timer-display" title="পড়ার সময়">০:০০</div>
+      <div class="study-timer-controls">
+        <button type="button" id="study-timer-toggle" class="study-timer-btn" aria-label="টাইমার শুরু করুন">▶</button>
+        <button type="button" id="study-timer-reset" class="study-timer-btn" aria-label="টাইমার রিসেট করুন">↺</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="search-bar-wrap">
@@ -1313,6 +1539,38 @@
   </div>
   <div class="toolbar">
     <button id="theme-toggle-btn" class="theme-toggle">🌙 ডার্ক মোড</button>
+    <div class="floating-search-wrap" id="floating-search-wrap">
+      <div class="floating-search-pill" id="floating-search-pill">
+        <span class="floating-search-icon" id="floating-search-icon" aria-hidden="true">
+          <svg class="fsi-svg" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="fsiLensGrad" cx="35%" cy="30%" r="75%">
+                <stop offset="0%" stop-color="#ffffff"/>
+                <stop offset="50%" stop-color="#c9f5e0"/>
+                <stop offset="100%" stop-color="var(--accent)"/>
+              </radialGradient>
+              <linearGradient id="fsiRimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="var(--accent)"/>
+                <stop offset="100%" stop-color="var(--accent-deep)"/>
+              </linearGradient>
+            </defs>
+            <circle cx="22" cy="22" r="21" fill="url(#fsiRimGrad)"/>
+            <circle cx="22" cy="22" r="18" fill="url(#fsiLensGrad)"/>
+            <ellipse class="fsi-glint" cx="15.5" cy="14" rx="6.5" ry="4.2" fill="#ffffff" opacity="0.85" transform="rotate(-30 15.5 14)"/>
+            <g class="fsi-face">
+              <circle class="fsi-eye fsi-eye-l" cx="17.2" cy="23.5" r="3.6" fill="var(--accent-deep)"/>
+              <circle class="fsi-eye fsi-eye-r" cx="27.4" cy="23.5" r="3.6" fill="var(--accent-deep)"/>
+              <circle class="fsi-eye-glint" cx="18.4" cy="22" r="1.15" fill="#ffffff"/>
+              <circle class="fsi-eye-glint" cx="28.6" cy="22" r="1.15" fill="#ffffff"/>
+              <path class="fsi-smile" d="M16.5 29.6 Q22 34.8 27.5 29.6" fill="none" stroke="var(--accent-deep)" stroke-width="2.2" stroke-linecap="round"/>
+            </g>
+          </svg>
+        </span>
+        <input id="floating-search-input" type="text" placeholder="সার্চ..." autocomplete="off">
+        <button type="button" class="floating-search-close" id="floating-search-close" aria-label="সার্চ বন্ধ করুন">✕</button>
+      </div>
+      <div class="floating-search-results" id="floating-search-results"></div>
+    </div>
   </div>
 </div>
 
@@ -1348,39 +1606,6 @@
 </div>
 
 
-<div class="floating-search-wrap" id="floating-search-wrap">
-  <div class="floating-search-pill" id="floating-search-pill">
-    <span class="floating-search-icon" id="floating-search-icon" aria-hidden="true">
-      <svg class="fsi-svg" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <radialGradient id="fsiLensGrad" cx="35%" cy="30%" r="75%">
-            <stop offset="0%" stop-color="#ffffff"/>
-            <stop offset="50%" stop-color="#c9f5e0"/>
-            <stop offset="100%" stop-color="var(--accent)"/>
-          </radialGradient>
-          <linearGradient id="fsiRimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="var(--accent)"/>
-            <stop offset="100%" stop-color="var(--accent-deep)"/>
-          </linearGradient>
-        </defs>
-        <circle cx="22" cy="22" r="21" fill="url(#fsiRimGrad)"/>
-        <circle cx="22" cy="22" r="18" fill="url(#fsiLensGrad)"/>
-        <ellipse class="fsi-glint" cx="15.5" cy="14" rx="6.5" ry="4.2" fill="#ffffff" opacity="0.85" transform="rotate(-30 15.5 14)"/>
-        <g class="fsi-face">
-          <circle class="fsi-eye fsi-eye-l" cx="17.2" cy="23.5" r="3.6" fill="var(--accent-deep)"/>
-          <circle class="fsi-eye fsi-eye-r" cx="27.4" cy="23.5" r="3.6" fill="var(--accent-deep)"/>
-          <circle class="fsi-eye-glint" cx="18.4" cy="22" r="1.15" fill="#ffffff"/>
-          <circle class="fsi-eye-glint" cx="28.6" cy="22" r="1.15" fill="#ffffff"/>
-          <path class="fsi-smile" d="M16.5 29.6 Q22 34.8 27.5 29.6" fill="none" stroke="var(--accent-deep)" stroke-width="2.2" stroke-linecap="round"/>
-        </g>
-      </svg>
-    </span>
-    <input id="floating-search-input" type="text" placeholder="টপিক খোঁজো..." autocomplete="off">
-    <button type="button" class="floating-search-close" id="floating-search-close" aria-label="সার্চ বন্ধ করুন">✕</button>
-  </div>
-  <div class="floating-search-results" id="floating-search-results"></div>
-</div>
-
 <div class="topic-modal-overlay" id="topic-modal-overlay">
   <div class="topic-modal" id="topic-modal">
     <button type="button" class="topic-modal-close" id="topic-modal-close" aria-label="বন্ধ করুন">✕</button>
@@ -1406,6 +1631,177 @@ let GHOTONAPROBAHO_MONTHS = null;
 let GHOTONAPROBAHO_PAGE = 0; // ০ = সবচেয়ে সাম্প্রতিক ৩ মাস; বাড়লে আরও পুরনোর দিকে
 const GHOTONAPROBAHO_PAGE_SIZE = 3; // প্রতি পেজে কয় মাস একসাথে দেখানো হয়
 let TOP_NEWS_ITEMS = null; // "টপ নিউজ" ট্যাবের তারিখ-ভিত্তিক হাইলাইট — একবার লোড হলে ক্যাশ থাকে
+
+// ══════════════════════════════════════════════════════
+// বাংলাদেশ সময় (Asia/Dhaka, UTC+6) — ভিজিটরের ব্রাউজার/ডিভাইস যে
+// টাইমজোনেই থাকুক না কেন, Intl.DateTimeFormat দিয়ে সবসময় সঠিক
+// বাংলাদেশ তারিখ/সময় বের করা হয়। এভাবে রাত ১২টা বাংলাদেশ সময়েই
+// (ভিজিটরের লোকাল মিডনাইটে নয়) দিনের সংখ্যা বদলাবে।
+// ══════════════════════════════════════════════════════
+function getBDDateParts(){
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Dhaka',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false
+  });
+  const parts = {};
+  fmt.formatToParts(new Date()).forEach(p => { if(p.type !== 'literal') parts[p.type] = p.value; });
+  return {
+    day: parseInt(parts.day, 10),
+    month: parseInt(parts.month, 10),
+    year: parseInt(parts.year, 10),
+    hour: parseInt(parts.hour, 10),
+    minute: parseInt(parts.minute, 10)
+  };
+}
+
+// "দৈনিক ঘটনাপ্রবাহ" হেডিং-এর ক্যালেন্ডার আইকন — আগে 🗓️ ইমোজি ব্যবহার
+// হতো, যেটাতে স্থায়ীভাবে "৩১" লেখা থাকে (এটা ইউনিকোড ইমোজির নিজস্ব
+// আর্টওয়ার্ক, বদলানো যায় না)। তার বদলে এই ছোট SVG আইকন ব্যবহার করা
+// হচ্ছে, যেখানে দিনের সংখ্যাটা বাংলাদেশ সময় অনুযায়ী সবসময় হালনাগাদ
+// থাকে (রাত ১২টা বাংলাদেশ সময়ে বদলে যায়)।
+function liveCalendarIconHtml(){
+  const { day } = getBDDateParts();
+  return `<span class="live-calendar-icon" aria-hidden="true">
+    <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="3" width="34" height="34" rx="6" fill="#ffffff" stroke="#c0392b" stroke-width="2"/>
+      <rect x="3" y="3" width="34" height="10" rx="6" fill="#c0392b"/>
+      <rect x="3" y="9" width="34" height="4" fill="#c0392b"/>
+      <rect x="10" y="0" width="3" height="8" rx="1.5" fill="#7a7a7a"/>
+      <rect x="27" y="0" width="3" height="8" rx="1.5" fill="#7a7a7a"/>
+      <text x="20" y="29" text-anchor="middle" font-family="Kalpurush, sans-serif" font-size="16" font-weight="700" fill="#1a1a1a">${day}</text>
+    </svg>
+  </span>`;
+}
+// পেজ খোলা অবস্থায় বাংলাদেশ সময় রাত ১২টা পার হয়ে গেলে (ইউজার ব্রাউজার
+// রিফ্রেশ না করলেও) আইকনের দিনের সংখ্যাটা যাতে নিজে থেকেই বদলে যায়,
+// তাই প্রতি মিনিটে একবার চেক করে শুধু SVG-এর <text> নোডটুকু আপডেট করা
+// হয় — পুরো হেডিং/ভিউ আবার রেন্ডার করা হয় না, যাতে স্ক্রল পজিশন বা
+// অন্য কোনো স্টেট নষ্ট না হয়।
+setInterval(() => {
+  const { day } = getBDDateParts();
+  document.querySelectorAll('.live-calendar-icon svg text').forEach(el => {
+    if(el.textContent !== String(day)) el.textContent = String(day);
+  });
+}, 60000);
+
+// ══════════════════════════════════════════════════════
+// অ্যানালগ ঘড়ি — Windows 7-স্টাইল ৩ কাঁটা (ঘণ্টা/মিনিট/সেকেন্ড),
+// সবসময় বাংলাদেশ সময় (Asia/Dhaka) অনুযায়ী চলে, প্রতি সেকেন্ডে আপডেট হয়।
+// ══════════════════════════════════════════════════════
+(function initAnalogClock(){
+  const hourHand = document.getElementById('clock-hand-hour');
+  const minuteHand = document.getElementById('clock-hand-minute');
+  const secondHand = document.getElementById('clock-hand-second');
+  if(!hourHand || !minuteHand || !secondHand) return;
+
+  function tick(){
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Dhaka', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false
+    });
+    const parts = {};
+    fmt.formatToParts(new Date()).forEach(p => { if(p.type !== 'literal') parts[p.type] = p.value; });
+    const h = parseInt(parts.hour, 10) % 12;
+    const m = parseInt(parts.minute, 10);
+    const s = parseInt(parts.second, 10);
+
+    const secDeg = s * 6;
+    const minDeg = m * 6 + s * 0.1;
+    const hourDeg = h * 30 + m * 0.5;
+
+    hourHand.style.transform = `rotate(${hourDeg}deg)`;
+    minuteHand.style.transform = `rotate(${minDeg}deg)`;
+    secondHand.style.transform = `rotate(${secDeg}deg)`;
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+
+// ══════════════════════════════════════════════════════
+// স্টাডি টাইমার — একজন শিক্ষার্থী কত সময় ধরে পড়ছে তা মাপার জন্য।
+// স্টার্ট/স্টপ/রিসেট বাটন দিয়ে ইউজার নিজে নিয়ন্ত্রণ করে। শুধু
+// ঘণ্টা:মিনিট দেখানো হয় (সেকেন্ড দেখানো হয় না, তবে হিসাব নির্ভুল
+// রাখতে ভেতরে মিলিসেকেন্ড পর্যন্ত ট্র্যাক করা হয়)। চলমান অবস্থা ও
+// সময় localStorage-এ থাকে, তাই পেজ রিফ্রেশ/ট্যাব বদলেও হারায় না।
+// ══════════════════════════════════════════════════════
+(function initStudyTimer(){
+  const display = document.getElementById('study-timer-display');
+  const toggleBtn = document.getElementById('study-timer-toggle');
+  const resetBtn = document.getElementById('study-timer-reset');
+  const wrap = document.getElementById('study-timer');
+  if(!display || !toggleBtn || !resetBtn || !wrap) return;
+
+  const STORAGE_KEY = 'oca_study_timer';
+  let state = { elapsedMs: 0, running: false, startedAt: null };
+  try{
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if(saved && typeof saved.elapsedMs === 'number') state = saved;
+  }catch(e){}
+
+  function persist(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+  }
+
+  function currentElapsedMs(){
+    if(state.running && state.startedAt){
+      return state.elapsedMs + (Date.now() - state.startedAt);
+    }
+    return state.elapsedMs;
+  }
+
+  function toBengaliDigits(str){
+    return str.replace(/[0-9]/g, d => '০১২৩৪৫৬৭৮৯'[d]);
+  }
+  function formatDisplay(ms){
+    const totalMinutes = Math.floor(ms / 60000);
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    const mm = String(m).padStart(2, '0');
+    return toBengaliDigits(`${h}:${mm}`);
+  }
+
+  function render(){
+    display.textContent = formatDisplay(currentElapsedMs());
+    toggleBtn.textContent = state.running ? '⏸' : '▶';
+    toggleBtn.setAttribute('aria-label', state.running ? 'টাইমার থামান' : 'টাইমার শুরু করুন');
+    wrap.classList.toggle('running', state.running);
+  }
+
+  let tickInterval = null;
+  function startTicking(){
+    if(tickInterval) return;
+    tickInterval = setInterval(render, 1000);
+  }
+  function stopTicking(){
+    if(tickInterval){ clearInterval(tickInterval); tickInterval = null; }
+  }
+
+  toggleBtn.addEventListener('click', () => {
+    if(state.running){
+      state.elapsedMs = currentElapsedMs();
+      state.running = false;
+      state.startedAt = null;
+      stopTicking();
+    } else {
+      state.running = true;
+      state.startedAt = Date.now();
+      startTicking();
+    }
+    persist();
+    render();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    state = { elapsedMs: 0, running: false, startedAt: null };
+    stopTicking();
+    persist();
+    render();
+  });
+
+  if(state.running) startTicking();
+  render();
+})();
+
 
 function loadProgress(){
   try{ return JSON.parse(localStorage.getItem('oca_progress') || '{}'); }
@@ -1573,7 +1969,7 @@ function renderGhotonaprobahoView(){
   const start = GHOTONAPROBAHO_PAGE * GHOTONAPROBAHO_PAGE_SIZE;
   const pageMonths = GHOTONAPROBAHO_MONTHS.slice(start, start + GHOTONAPROBAHO_PAGE_SIZE);
 
-  let html = `<h2 style="margin-left:0;">🗓️ দৈনিক ঘটনাপ্রবাহ</h2>`;
+  let html = `<h2 style="margin-left:0;">${liveCalendarIconHtml()} দৈনিক ঘটনাপ্রবাহ</h2>`;
   html += pageMonths.map(month => `
     <div class="ghotonaprobaho-month-block">
       <div class="ghotonaprobaho-month-heading-row">
@@ -2115,6 +2511,45 @@ document.getElementById('bookmark-filter-toggle').addEventListener('click', (e) 
 // একটা মডাল ওভারলেতে দেখায় — বর্তমান মোড/স্ক্রিন বদলায় না।
 // ══════════════════════════════════════════════════════
 const floatWrap = document.getElementById('floating-search-wrap');
+
+// ══════════════════════════════════════════════════════
+// স্ক্রল করলে সার্চ বাডি যাতে স্ক্রিনে একটা নির্দিষ্ট জায়গায় (উপরের
+// টুলবার এলাকায়) স্থির থেকে যায় — IntersectionObserver দিয়ে টুলবার
+// (theme-toggle-btn) ভিউপোর্টের ভেতরে আছে কিনা চেক করা হয়। টুলবার
+// দৃশ্যমান থাকলে বাডিটা স্বাভাবিক ফ্লোতে থাকে; স্ক্রল করে টুলবার
+// ভিউপোর্টের বাইরে চলে গেলে (ওপরে বা নিচে, যেকোনো দিকে স্ক্রল করলেই)
+// .scroll-pinned ক্লাস লেগে position:fixed হয়ে যায়, তাই বাডিটা
+// ভিউপোর্টের একই কোণায় (top:12px; right:16px) স্থির দেখা যায়। বক্সটা
+// টেনে সরানো (dragged) অবস্থায় থাকলে এই পিনিং প্রযোজ্য নয় — তখন
+// ড্র্যাগের নিজস্ব পজিশন প্রাধান্য পায়।
+// ══════════════════════════════════════════════════════
+(function enableFloatingSearchScrollPin(){
+  const anchor = document.getElementById('theme-toggle-btn');
+  if(!anchor || !('IntersectionObserver' in window)) return;
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if(floatWrap.classList.contains('dragged')) return; // ড্র্যাগ করা অবস্থায় হস্তক্ষেপ করা হয় না
+      floatWrap.classList.toggle('scroll-pinned', !entry.isIntersecting);
+    });
+  }, { threshold: 0 });
+  observer.observe(anchor);
+})();
+
+// স্ক্রিন ঘোরালে, উইন্ডো রিসাইজ করলে, বা সার্চ পিল ওপেন করলে (width বেড়ে
+// যাওয়ায়) আগে টেনে সরানো বক্সটা স্ক্রিনের বাইরে চলে যেতে পারে — সেটা
+// ঠেকাতে বক্সটাকে আবার স্ক্রিনের সীমার মধ্যে টেনে আনা হয়। যেসব ক্ষেত্রে
+// বক্স কখনো টানা হয়নি (ডিফল্ট right/bottom পজিশনে আছে), সেখানে কিছু
+// করার দরকার নেই — CSS নিজেই সামলায়।
+function clampFloatingSearchToViewport(){
+  if(!floatWrap.classList.contains('dragged')) return;
+  const rect = floatWrap.getBoundingClientRect();
+  const maxLeft = Math.max(0, window.innerWidth - rect.width);
+  const maxTop = Math.max(0, window.innerHeight - rect.height);
+  const newLeft = Math.min(rect.left, maxLeft);
+  const newTop = Math.min(rect.top, maxTop);
+  floatWrap.style.left = newLeft + 'px';
+  floatWrap.style.top = newTop + 'px';
+}
 const floatPill = document.getElementById('floating-search-pill');
 const floatInput = document.getElementById('floating-search-input');
 const floatResults = document.getElementById('floating-search-results');
@@ -2125,6 +2560,11 @@ const topicModalClose = document.getElementById('topic-modal-close');
 function openFloatingSearch(){
   floatPill.classList.add('open');
   floatInput.focus();
+  // BUG FIX: পিল আগে থেকে টেনে সরানো (dragged) থাকলে এবং ডান কিনারার
+  // কাছাকাছি অবস্থায় থাকলে, ওপেন হওয়ার সময় width বেড়ে গিয়ে বক্সটা
+  // ভিউপোর্টের বাইরে চলে যেত — ইউজারকে হাত দিয়ে টেনে আনতে হতো। এখন
+  // ওপেন হওয়ার সাথে সাথেই ভিউপোর্টের মধ্যে ফিরিয়ে আনা হয়।
+  requestAnimationFrame(clampFloatingSearchToViewport);
 }
 
 function closeFloatingSearch(){
@@ -2217,10 +2657,11 @@ document.addEventListener('keydown', (e)=>{
 
 // ══════════════════════════════════════════════════════
 // ভাসমান সার্চ বক্স মাউস/টাচ দিয়ে টেনে মনিটরের যেকোনো জায়গায় রাখা যায়।
-// পজিশনটা শুধু চলতি সেশনে থাকে — পেজ রিফ্রেশ করলে আবার ডিফল্ট
-// (নিচে-ডানে) জায়গায় ফিরে যায়, তাই কোথাও সংরক্ষণ করার দরকার নেই।
-// পিলের "🔍" আইকন বা বন্ধ-অবস্থার গোল বাটনটাই handle — খোলা অবস্থায়
-// ইনপুট বক্সের ভেতর ক্লিক করলে টাইপ করা যাবে, ড্র্যাগ শুরু হবে না।
+// পজিশনটা শুধু চলতি সেশনে থাকে — পেজ রিফ্রেশ করলে আবার ডিফল্ট জায়গায়
+// (টুলবারে, লাইট/ডার্ক মোড বাটনের পাশে) ফিরে যায়, তাই কোথাও সংরক্ষণ
+// করার দরকার নেই। পিলের "🔍" আইকন বা বন্ধ-অবস্থার গোল বাটনটাই handle —
+// খোলা অবস্থায় ইনপুট বক্সের ভেতর ক্লিক করলে টাইপ করা যাবে, ড্র্যাগ
+// শুরু হবে না।
 // ══════════════════════════════════════════════════════
 (function enableFloatingSearchDrag(){
   let dragging = false;
@@ -2271,6 +2712,7 @@ document.addEventListener('keydown', (e)=>{
     newTop = Math.max(0, Math.min(newTop, Math.max(0, maxTop)));
 
     floatWrap.classList.add('dragged');
+    floatWrap.classList.remove('scroll-pinned'); // ড্র্যাগ শুরু হলে scroll-pin বাতিল, নাহলে দুই fixed পজিশন সাংঘর্ষিক হতে পারে
     floatWrap.style.left = newLeft + 'px';
     floatWrap.style.top = newTop + 'px';
   }
@@ -2304,21 +2746,6 @@ document.addEventListener('keydown', (e)=>{
   floatPill.addEventListener('mousedown', dragStart);
   floatPill.addEventListener('touchstart', dragStart, {passive:true});
 
-  // স্ক্রিন ঘোরালে বা ব্রাউজার উইন্ডো ছোট করলে (রিসাইজ) আগে টেনে
-  // সরানো বক্সটা স্ক্রিনের বাইরে চলে যেতে পারে — সেটা ঠেকাতে
-  // প্রতিবার সাইজ বদলালে বক্সটাকে আবার স্ক্রিনের সীমার মধ্যে টেনে
-  // আনা হয়। যেসব ক্ষেত্রে বক্স কখনো টানা হয়নি (ডিফল্ট right/bottom
-  // পজিশনে আছে), সেখানে কিছু করার দরকার নেই — CSS নিজেই সামলায়।
-  function clampFloatingSearchToViewport(){
-    if(!floatWrap.classList.contains('dragged')) return;
-    const rect = floatWrap.getBoundingClientRect();
-    const maxLeft = Math.max(0, window.innerWidth - rect.width);
-    const maxTop = Math.max(0, window.innerHeight - rect.height);
-    const newLeft = Math.min(rect.left, maxLeft);
-    const newTop = Math.min(rect.top, maxTop);
-    floatWrap.style.left = newLeft + 'px';
-    floatWrap.style.top = newTop + 'px';
-  }
   window.addEventListener('resize', clampFloatingSearchToViewport);
   window.addEventListener('orientationchange', clampFloatingSearchToViewport);
 })();
