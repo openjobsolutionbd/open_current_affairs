@@ -18,7 +18,8 @@
 | `archive/*.md` | মাসিক আসল সোর্স ডকুমেন্ট (রেফারেন্সের জন্য, edit করার দরকার নেই) |
 | `docs/topics-index.json`, `docs/ghotonaprobaho-index.json`, `docs/top-news-index.json`, `docs/sw.js`, `docs/version.json` | **auto-generated** — `scripts/build_index.py` থেকে তৈরি হয়; হাতে edit করবেন না |
 | `scripts/build_index.py` | validate + generate — কনটেন্ট বদলানোর পর এটা চালাতে হবে |
-| `.github/workflows/update-wiki.yml` | push হলে GitHub Actions স্বয়ংক্রিয়ভাবে build চালায় এবং generated output commit করে |
+| `scripts/verify_site.py` | build-এর *পরে* পুরো সাইট জুড়ে ক্রস-চেক করে (টপিক-সংখ্যা মিলছে কিনা, `[[slug]]` ভাঙা লিংক, প্রতিটা টপিকের পাতা/sitemap এন্ট্রি, VERSION সামঞ্জস্য) — `build_index.py`-এর পরপরই এটাও চালাতে হবে |
+| `.github/workflows/update-wiki.yml` | push হলে GitHub Actions স্বয়ংক্রিয়ভাবে build+verify চালায়; verify fail করলে generated output commit হয় না |
 | `CHANGELOG.md` | শুধু **সিস্টেম/কাঠামোর** পরিবর্তনের জন্য (ফিচার, ডিজাইন, ফাইল-কাঠামো বদল) — মাসিক কনটেন্ট আপডেট এখানে লেখা হয় না |
 | `EDITORIAL_MEMORY.md` | কনটেন্ট আপডেটের সময়কার স্থায়ী সম্পাদকীয় সিদ্ধান্তের নিয়ম-খাতা |
 
@@ -34,9 +35,10 @@
 ```bash
 pip install pyyaml --break-system-packages   # প্রয়োজনে
 python3 scripts/build_index.py
+python3 scripts/verify_site.py
 ```
 
-এটা `docs/topics-index.json`, `docs/ghotonaprobaho-index.json`, `docs/top-news-index.json`, `docs/sw.js`, `docs/version.json` রিজেনারেট করে এবং ভ্যালিডেশন এরর থাকলে non-zero exit code দিয়ে থামে। **GitHub push করলে `.github/workflows/update-wiki.yml` এটা স্বয়ংক্রিয়ভাবে চালায়** — কিন্তু push করার আগে লোকালি একবার চালিয়ে দেখাই ভালো অভ্যাস।
+`build_index.py` `docs/topics-index.json`, `docs/ghotonaprobaho-index.json`, `docs/top-news-index.json`, `docs/sw.js`, `docs/version.json` রিজেনারেট করে এবং ভ্যালিডেশন এরর থাকলে non-zero exit code দিয়ে থামে। `verify_site.py` এর পরে চলে এবং পুরো সাইট জুড়ে ক্রস-চেক করে — এই দুটোই push-এর আগে **লোকালি অবশ্যই** চালাতে হবে (ঐচ্ছিক নয়)। **GitHub push করলে `.github/workflows/update-wiki.yml` দুটোই স্বয়ংক্রিয়ভাবে চালায়** এবং `verify_site.py` fail করলে generated output commit/push হয় না — কিন্তু তার মানে এই না যে লোকাল চেক বাদ দেওয়া যাবে, কারণ লোকাল fail ধরা পড়লে ব্যবহারকারীকে ভাঙা diff দেখানো এড়ানো যায়।
 
 ## ওয়ার্কফ্লো: স্ক্যান করা ম্যাগাজিন সংখ্যা থেকে কনটেন্ট যোগ করা
 
@@ -63,7 +65,7 @@ python3 scripts/build_index.py
 - নতুন কোনো টপিক ঘটনাপ্রবাহে উল্লেখ হলে সেটা কোনো existing `docs/topics/*.md`-এর বিষয়ের সাথে মেলে কিনা যাচাই করুন (`[[phrase|slug]]` লিংক করার সুযোগ থাকতে পারে, কিন্তু ভুল slug হলে build ভাঙবে বলে সতর্ক থাকুন)।
 
 **ধাপ ৪ — ভ্যালিডেট, কমিট, পুশ**
-- `python3 scripts/build_index.py` চালিয়ে ক্লিন পাস নিশ্চিত করুন।
+- `python3 scripts/build_index.py` এবং তারপর `python3 scripts/verify_site.py` চালিয়ে দুটোরই ক্লিন পাস নিশ্চিত করুন।
 - `git diff` দেখিয়ে ব্যবহারকারীর অনুমোদন নিন commit করার আগে।
 - অনুমোদন পেলে বাংলায় স্পষ্ট, বিস্তারিত commit message লিখুন (কী যোগ হলো, কোন সোর্স থেকে, সংক্ষেপে) — এটাই এই রিপোর কনভেনশন।
 - push-এর জন্য ব্যবহারকারীর দেওয়া GitHub PAT `http.extraheader`-এ বসিয়ে একবারের জন্য ব্যবহার করুন (কখনো `git remote set-url`-এ বসাবেন না, `.git/config`-এ থেকে যাবে না তা push-এর পর `grep` দিয়ে যাচাই করুন)।
@@ -81,6 +83,6 @@ python3 scripts/build_index.py
 ## বর্তমান অবস্থা (সর্বশেষ যাচাই: ২০২৬-০৮-০২)
 
 - VERSION: `1.6.0`
-- টপিক ফাইল সংখ্যা: ২৬
-- `python3 scripts/build_index.py` ক্লিন পাস করছে, কোনো ভ্যালিডেশন এরর নেই
-- `.gitignore` ও `.github/workflows/update-wiki.yml` উভয়ই বিদ্যমান ও কার্যকর
+- টপিক ফাইল সংখ্যা: ২৮
+- `python3 scripts/build_index.py` ও `python3 scripts/verify_site.py` দুটোই ক্লিন পাস করছে, কোনো এরর নেই
+- `.gitignore` ও `.github/workflows/update-wiki.yml` উভয়ই বিদ্যমান ও কার্যকর; workflow-তে build-এর পর verify স্টেপও যোগ করা হয়েছে (২০২৬-০৮)

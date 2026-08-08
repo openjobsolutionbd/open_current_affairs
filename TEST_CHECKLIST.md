@@ -5,6 +5,7 @@
 ## Build
 
 - [ ] `python3 scripts/build_index.py` exit code 0 দিয়ে শেষ হয়।
+- [ ] `python3 scripts/verify_site.py` exit code 0 দিয়ে শেষ হয় (এটা build-এর পরে পুরো সাইট জুড়ে সব ফাইল একসাথে মিলিয়ে দেখে — টপিক-সংখ্যা মিলছে কিনা, কোনো `[[slug]]` ভাঙা লিংক নেই কিনা, প্রতিটা টপিকের পাতা/sitemap এন্ট্রি তৈরি হয়েছে কিনা, VERSION সব জায়গায় মিলছে কিনা। এটা এখন GitHub Action-এ build-এর পরপরই স্বয়ংক্রিয়ভাবে চলে — fail করলে generated output commit/push হয় না)।
 - [ ] ভুল frontmatter দিয়ে test করলে build non-zero exit দেয়।
 - [ ] `docs/topics/`-এর প্রতিটা valid `.md` ফাইল `docs/topics-index.json`-এ ইনডেক্স হয়েছে (কপি-তুলনার আলাদা `topics/` সোর্স ফোল্ডার আর নেই — single-copy architecture)।
 - [ ] `docs/topics-index.json`-এর topic count, `docs/topics/`-এ থাকা valid `.md` ফাইলের সংখ্যার সঙ্গে মেলে।
