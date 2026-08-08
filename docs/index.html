@@ -177,6 +177,7 @@
     text-align:center;
     border-bottom:5px solid var(--masthead-border);
     box-shadow:0 2px 0 var(--seal);
+    position:relative;
   }
   .masthead h1{
     font-family:'Kalpurush', serif;
@@ -189,6 +190,139 @@
     opacity:0.7;
     margin-top:4px;
     font-family:'Kalpurush',sans-serif;
+  }
+
+  /* ══════════════════════════════════════════════════════
+     হেডারের ডান কোণের উইজেট: অ্যানালগ ঘড়ি + স্টাডি টাইমার
+     ══════════════════════════════════════════════════════ */
+  .header-widgets{
+    position:absolute;
+    top:12px;
+    right:16px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    z-index:5;
+  }
+  @media (max-width:640px){
+    .header-widgets{
+      position:static;
+      justify-content:center;
+      margin-top:10px;
+    }
+  }
+
+  /* ── Windows 7-স্টাইল ৩-কাঁটা অ্যানালগ ঘড়ি ── */
+  .analog-clock{
+    width:44px;
+    height:44px;
+    flex-shrink:0;
+  }
+  .analog-clock-face{
+    position:relative;
+    width:100%;
+    height:100%;
+    border-radius:50%;
+    background:radial-gradient(circle at 32% 28%, #4a4a4a, #0a0a0a 70%);
+    border:2px solid #d8d8d8;
+    box-shadow:
+      0 1px 3px rgba(0,0,0,0.4),
+      inset 0 1px 2px rgba(255,255,255,0.25),
+      inset 0 -2px 4px rgba(0,0,0,0.5);
+  }
+  .clock-tick{
+    position:absolute;
+    top:2px;
+    left:50%;
+    width:1.5px;
+    height:4px;
+    background:#e8e8e8;
+    transform-origin:0.75px 20px;
+    margin-left:-0.75px;
+    opacity:0.85;
+  }
+  .clock-hand{
+    position:absolute;
+    left:50%;
+    bottom:50%;
+    transform-origin:50% 100%;
+    border-radius:2px;
+  }
+  .clock-hand-hour{
+    width:2.6px;
+    height:11px;
+    margin-left:-1.3px;
+    background:#f0f0f0;
+  }
+  .clock-hand-minute{
+    width:2px;
+    height:16px;
+    margin-left:-1px;
+    background:#f0f0f0;
+  }
+  .clock-hand-second{
+    width:1px;
+    height:17px;
+    margin-left:-0.5px;
+    background:#e8112d;
+  }
+  .clock-center-dot{
+    position:absolute;
+    top:50%;
+    left:50%;
+    width:4px;
+    height:4px;
+    margin:-2px 0 0 -2px;
+    border-radius:50%;
+    background:#e8112d;
+    box-shadow:0 0 1px rgba(0,0,0,0.6);
+  }
+
+  /* ── স্টাডি টাইমার — পড়ার সময় মাপার জন্য, শুধু ঘণ্টা:মিনিট দেখায় ── */
+  .study-timer{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.25);
+    border-radius:8px;
+    padding:5px 8px;
+  }
+  .study-timer-display{
+    font-family:'Kalpurush',monospace,sans-serif;
+    font-size:15px;
+    font-weight:700;
+    color:var(--on-dark);
+    min-width:2.6em;
+    text-align:center;
+    letter-spacing:0.02em;
+    font-variant-numeric:tabular-nums;
+  }
+  .study-timer-controls{
+    display:flex;
+    gap:4px;
+  }
+  .study-timer-btn{
+    width:22px;
+    height:22px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border:none;
+    border-radius:50%;
+    background:rgba(255,255,255,0.15);
+    color:var(--on-dark);
+    font-size:11px;
+    cursor:pointer;
+    transition:background 0.15s ease, transform 0.15s ease;
+  }
+  .study-timer-btn:hover{
+    background:var(--accent);
+    color:var(--on-accent);
+  }
+  .study-timer.running .study-timer-btn#study-timer-toggle{
+    background:var(--seal);
+    color:#fff;
   }
 
   .search-bar-wrap{
@@ -1026,6 +1160,21 @@
     font-weight:700;
     color:var(--heading);
   }
+  /* "দৈনিক ঘটনাপ্রবাহ" হেডিং-এর লাইভ ক্যালেন্ডার আইকন — SVG-এর ভেতরের
+     সংখ্যাটা JS দিয়ে বাংলাদেশ সময়ের আজকের তারিখ অনুযায়ী বসানো হয়
+     (দেখুন liveCalendarIconHtml())। h1/h2 হেডিং-এর টেক্সটের সাথে
+     উচ্চতা মিলিয়ে vertical-align করা হয়েছে। */
+  .live-calendar-icon{
+    display:inline-block;
+    width:1.05em;
+    height:1.05em;
+    vertical-align:-0.18em;
+  }
+  .live-calendar-icon svg{
+    width:100%;
+    height:100%;
+    display:block;
+  }
   .month-print-btn{
     flex-shrink:0;
   }
@@ -1336,6 +1485,40 @@
 <div class="masthead">
   <h1>কারেন্ট অ্যাফেয়ার্স রেজিস্টার</h1>
   <div class="sub">টপিক অনুযায়ী সাজানো, প্রতি মাসে হালনাগাদ</div>
+
+  <!-- হেডারের ডান কোণে: (১) অ্যানালগ ঘড়ি (বাংলাদেশ সময়, Windows 7-স্টাইল
+       ৩ কাঁটা) এবং (২) পড়ার সময় মাপার স্টাডি টাইমার (স্টার্ট/স্টপ/রিসেট,
+       শুধু ঘণ্টা:মিনিট — সেকেন্ড দেখানো হয় না)। -->
+  <div class="header-widgets" id="header-widgets">
+    <div class="analog-clock" id="analog-clock" aria-hidden="true" title="বাংলাদেশ সময়">
+      <div class="analog-clock-face">
+        <div class="clock-tick" style="transform:rotate(0deg)"></div>
+        <div class="clock-tick" style="transform:rotate(30deg)"></div>
+        <div class="clock-tick" style="transform:rotate(60deg)"></div>
+        <div class="clock-tick" style="transform:rotate(90deg)"></div>
+        <div class="clock-tick" style="transform:rotate(120deg)"></div>
+        <div class="clock-tick" style="transform:rotate(150deg)"></div>
+        <div class="clock-tick" style="transform:rotate(180deg)"></div>
+        <div class="clock-tick" style="transform:rotate(210deg)"></div>
+        <div class="clock-tick" style="transform:rotate(240deg)"></div>
+        <div class="clock-tick" style="transform:rotate(270deg)"></div>
+        <div class="clock-tick" style="transform:rotate(300deg)"></div>
+        <div class="clock-tick" style="transform:rotate(330deg)"></div>
+        <div class="clock-hand clock-hand-hour" id="clock-hand-hour"></div>
+        <div class="clock-hand clock-hand-minute" id="clock-hand-minute"></div>
+        <div class="clock-hand clock-hand-second" id="clock-hand-second"></div>
+        <div class="clock-center-dot"></div>
+      </div>
+    </div>
+
+    <div class="study-timer" id="study-timer">
+      <div class="study-timer-display" id="study-timer-display" title="পড়ার সময়">০:০০</div>
+      <div class="study-timer-controls">
+        <button type="button" id="study-timer-toggle" class="study-timer-btn" aria-label="টাইমার শুরু করুন">▶</button>
+        <button type="button" id="study-timer-reset" class="study-timer-btn" aria-label="টাইমার রিসেট করুন">↺</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="search-bar-wrap">
@@ -1436,6 +1619,177 @@ let GHOTONAPROBAHO_MONTHS = null;
 let GHOTONAPROBAHO_PAGE = 0; // ০ = সবচেয়ে সাম্প্রতিক ৩ মাস; বাড়লে আরও পুরনোর দিকে
 const GHOTONAPROBAHO_PAGE_SIZE = 3; // প্রতি পেজে কয় মাস একসাথে দেখানো হয়
 let TOP_NEWS_ITEMS = null; // "টপ নিউজ" ট্যাবের তারিখ-ভিত্তিক হাইলাইট — একবার লোড হলে ক্যাশ থাকে
+
+// ══════════════════════════════════════════════════════
+// বাংলাদেশ সময় (Asia/Dhaka, UTC+6) — ভিজিটরের ব্রাউজার/ডিভাইস যে
+// টাইমজোনেই থাকুক না কেন, Intl.DateTimeFormat দিয়ে সবসময় সঠিক
+// বাংলাদেশ তারিখ/সময় বের করা হয়। এভাবে রাত ১২টা বাংলাদেশ সময়েই
+// (ভিজিটরের লোকাল মিডনাইটে নয়) দিনের সংখ্যা বদলাবে।
+// ══════════════════════════════════════════════════════
+function getBDDateParts(){
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Dhaka',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false
+  });
+  const parts = {};
+  fmt.formatToParts(new Date()).forEach(p => { if(p.type !== 'literal') parts[p.type] = p.value; });
+  return {
+    day: parseInt(parts.day, 10),
+    month: parseInt(parts.month, 10),
+    year: parseInt(parts.year, 10),
+    hour: parseInt(parts.hour, 10),
+    minute: parseInt(parts.minute, 10)
+  };
+}
+
+// "দৈনিক ঘটনাপ্রবাহ" হেডিং-এর ক্যালেন্ডার আইকন — আগে 🗓️ ইমোজি ব্যবহার
+// হতো, যেটাতে স্থায়ীভাবে "৩১" লেখা থাকে (এটা ইউনিকোড ইমোজির নিজস্ব
+// আর্টওয়ার্ক, বদলানো যায় না)। তার বদলে এই ছোট SVG আইকন ব্যবহার করা
+// হচ্ছে, যেখানে দিনের সংখ্যাটা বাংলাদেশ সময় অনুযায়ী সবসময় হালনাগাদ
+// থাকে (রাত ১২টা বাংলাদেশ সময়ে বদলে যায়)।
+function liveCalendarIconHtml(){
+  const { day } = getBDDateParts();
+  return `<span class="live-calendar-icon" aria-hidden="true">
+    <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="3" width="34" height="34" rx="6" fill="#ffffff" stroke="#c0392b" stroke-width="2"/>
+      <rect x="3" y="3" width="34" height="10" rx="6" fill="#c0392b"/>
+      <rect x="3" y="9" width="34" height="4" fill="#c0392b"/>
+      <rect x="10" y="0" width="3" height="8" rx="1.5" fill="#7a7a7a"/>
+      <rect x="27" y="0" width="3" height="8" rx="1.5" fill="#7a7a7a"/>
+      <text x="20" y="29" text-anchor="middle" font-family="Kalpurush, sans-serif" font-size="16" font-weight="700" fill="#1a1a1a">${day}</text>
+    </svg>
+  </span>`;
+}
+// পেজ খোলা অবস্থায় বাংলাদেশ সময় রাত ১২টা পার হয়ে গেলে (ইউজার ব্রাউজার
+// রিফ্রেশ না করলেও) আইকনের দিনের সংখ্যাটা যাতে নিজে থেকেই বদলে যায়,
+// তাই প্রতি মিনিটে একবার চেক করে শুধু SVG-এর <text> নোডটুকু আপডেট করা
+// হয় — পুরো হেডিং/ভিউ আবার রেন্ডার করা হয় না, যাতে স্ক্রল পজিশন বা
+// অন্য কোনো স্টেট নষ্ট না হয়।
+setInterval(() => {
+  const { day } = getBDDateParts();
+  document.querySelectorAll('.live-calendar-icon svg text').forEach(el => {
+    if(el.textContent !== String(day)) el.textContent = String(day);
+  });
+}, 60000);
+
+// ══════════════════════════════════════════════════════
+// অ্যানালগ ঘড়ি — Windows 7-স্টাইল ৩ কাঁটা (ঘণ্টা/মিনিট/সেকেন্ড),
+// সবসময় বাংলাদেশ সময় (Asia/Dhaka) অনুযায়ী চলে, প্রতি সেকেন্ডে আপডেট হয়।
+// ══════════════════════════════════════════════════════
+(function initAnalogClock(){
+  const hourHand = document.getElementById('clock-hand-hour');
+  const minuteHand = document.getElementById('clock-hand-minute');
+  const secondHand = document.getElementById('clock-hand-second');
+  if(!hourHand || !minuteHand || !secondHand) return;
+
+  function tick(){
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Dhaka', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false
+    });
+    const parts = {};
+    fmt.formatToParts(new Date()).forEach(p => { if(p.type !== 'literal') parts[p.type] = p.value; });
+    const h = parseInt(parts.hour, 10) % 12;
+    const m = parseInt(parts.minute, 10);
+    const s = parseInt(parts.second, 10);
+
+    const secDeg = s * 6;
+    const minDeg = m * 6 + s * 0.1;
+    const hourDeg = h * 30 + m * 0.5;
+
+    hourHand.style.transform = `rotate(${hourDeg}deg)`;
+    minuteHand.style.transform = `rotate(${minDeg}deg)`;
+    secondHand.style.transform = `rotate(${secDeg}deg)`;
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+
+// ══════════════════════════════════════════════════════
+// স্টাডি টাইমার — একজন শিক্ষার্থী কত সময় ধরে পড়ছে তা মাপার জন্য।
+// স্টার্ট/স্টপ/রিসেট বাটন দিয়ে ইউজার নিজে নিয়ন্ত্রণ করে। শুধু
+// ঘণ্টা:মিনিট দেখানো হয় (সেকেন্ড দেখানো হয় না, তবে হিসাব নির্ভুল
+// রাখতে ভেতরে মিলিসেকেন্ড পর্যন্ত ট্র্যাক করা হয়)। চলমান অবস্থা ও
+// সময় localStorage-এ থাকে, তাই পেজ রিফ্রেশ/ট্যাব বদলেও হারায় না।
+// ══════════════════════════════════════════════════════
+(function initStudyTimer(){
+  const display = document.getElementById('study-timer-display');
+  const toggleBtn = document.getElementById('study-timer-toggle');
+  const resetBtn = document.getElementById('study-timer-reset');
+  const wrap = document.getElementById('study-timer');
+  if(!display || !toggleBtn || !resetBtn || !wrap) return;
+
+  const STORAGE_KEY = 'oca_study_timer';
+  let state = { elapsedMs: 0, running: false, startedAt: null };
+  try{
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if(saved && typeof saved.elapsedMs === 'number') state = saved;
+  }catch(e){}
+
+  function persist(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+  }
+
+  function currentElapsedMs(){
+    if(state.running && state.startedAt){
+      return state.elapsedMs + (Date.now() - state.startedAt);
+    }
+    return state.elapsedMs;
+  }
+
+  function toBengaliDigits(str){
+    return str.replace(/[0-9]/g, d => '০১২৩৪৫৬৭৮৯'[d]);
+  }
+  function formatDisplay(ms){
+    const totalMinutes = Math.floor(ms / 60000);
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    const mm = String(m).padStart(2, '0');
+    return toBengaliDigits(`${h}:${mm}`);
+  }
+
+  function render(){
+    display.textContent = formatDisplay(currentElapsedMs());
+    toggleBtn.textContent = state.running ? '⏸' : '▶';
+    toggleBtn.setAttribute('aria-label', state.running ? 'টাইমার থামান' : 'টাইমার শুরু করুন');
+    wrap.classList.toggle('running', state.running);
+  }
+
+  let tickInterval = null;
+  function startTicking(){
+    if(tickInterval) return;
+    tickInterval = setInterval(render, 1000);
+  }
+  function stopTicking(){
+    if(tickInterval){ clearInterval(tickInterval); tickInterval = null; }
+  }
+
+  toggleBtn.addEventListener('click', () => {
+    if(state.running){
+      state.elapsedMs = currentElapsedMs();
+      state.running = false;
+      state.startedAt = null;
+      stopTicking();
+    } else {
+      state.running = true;
+      state.startedAt = Date.now();
+      startTicking();
+    }
+    persist();
+    render();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    state = { elapsedMs: 0, running: false, startedAt: null };
+    stopTicking();
+    persist();
+    render();
+  });
+
+  if(state.running) startTicking();
+  render();
+})();
+
 
 function loadProgress(){
   try{ return JSON.parse(localStorage.getItem('oca_progress') || '{}'); }
@@ -1603,7 +1957,7 @@ function renderGhotonaprobahoView(){
   const start = GHOTONAPROBAHO_PAGE * GHOTONAPROBAHO_PAGE_SIZE;
   const pageMonths = GHOTONAPROBAHO_MONTHS.slice(start, start + GHOTONAPROBAHO_PAGE_SIZE);
 
-  let html = `<h2 style="margin-left:0;">🗓️ দৈনিক ঘটনাপ্রবাহ</h2>`;
+  let html = `<h2 style="margin-left:0;">${liveCalendarIconHtml()} দৈনিক ঘটনাপ্রবাহ</h2>`;
   html += pageMonths.map(month => `
     <div class="ghotonaprobaho-month-block">
       <div class="ghotonaprobaho-month-heading-row">
