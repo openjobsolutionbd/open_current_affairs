@@ -1633,9 +1633,12 @@ let LAST_TOPIC_PREVIEW_ANCHOR = null; // টপিক-প্রিভিউ প�
 let ACTIVE_SLUG = null;
 let CURRENT_MODE = 'browse';
 let GHOTONAPROBAHO_MONTHS = null;
+let GHOTONAPROBAHO_MONTHS_PROMISE = null; // Bug 7: concurrent call guard
 let GHOTONAPROBAHO_PAGE = 0; // ০ = সবচেয়ে সাম্প্রতিক ৩ মাস; বাড়লে আরও পুরনোর দিকে
 const GHOTONAPROBAHO_PAGE_SIZE = 3; // প্রতি পেজে কয় মাস একসাথে দেখানো হয়
 let TOP_NEWS_ITEMS = null; // "টপ নিউজ" ট্যাবের তারিখ-ভিত্তিক হাইলাইট — একবার লোড হলে ক্যাশ থাকে
+let TOP_NEWS_ITEMS_PROMISE = null; // Bug 7: concurrent call guard
+let RENDER_TOPIC_SEQ = 0; // Bug 1: race condition guard — প্রতিটা renderTopicContent কলে বাড়ে
 
 // ══════════════════════════════════════════════════════
 // বাংলাদেশ সময় (Asia/Dhaka, UTC+6) — ভিজিটরের ব্রাউজার/ডিভাইস যে
@@ -1912,14 +1915,14 @@ function escapeHtml(s){
 
 async function ensureGhotonaprobahoLoaded(){
   if(GHOTONAPROBAHO_MONTHS !== null) return;
-  try{
-    const res = await fetch('./ghotonaprobaho-index.json');
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    GHOTONAPROBAHO_MONTHS = data.months || [];
-  }catch(e){
-    GHOTONAPROBAHO_MONTHS = [];
+  // concurrent কল দুটো একই fetch না পাঠাতে in-flight Promise ক্যাশ করা হয়
+  if(!GHOTONAPROBAHO_MONTHS_PROMISE){
+    GHOTONAPROBAHO_MONTHS_PROMISE = fetch('./ghotonaprobaho-index.json')
+      .then(r => { if(!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(data => { GHOTONAPROBAHO_MONTHS = data.months || []; })
+      .catch(() => { GHOTONAPROBAHO_MONTHS = []; });
   }
+  await GHOTONAPROBAHO_MONTHS_PROMISE;
 }
 
 
@@ -2106,24 +2109,29 @@ async function printMonthlySummary(monthKey, monthLabel){
   const previousCardHtml = card.innerHTML;
   card.innerHTML = html;
 
+  let restored = false;
   const restoreCard = () => {
+    if(restored) return;
+    restored = true;
     card.innerHTML = previousCardHtml;
     window.removeEventListener('afterprint', restoreCard);
   };
   window.addEventListener('afterprint', restoreCard);
+  // কিছু browser (mobile Chrome সহ) print cancel করলে afterprint fire করে না।
+  // ৬০ সেকেন্ড পরেও না হলে fallback-এ card পুনরুদ্ধার করা হয়।
+  setTimeout(restoreCard, 60_000);
   window.print();
 }
 
 async function ensureTopNewsLoaded(){
   if(TOP_NEWS_ITEMS !== null) return;
-  try{
-    const res = await fetch('./top-news-index.json');
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    TOP_NEWS_ITEMS = data.items || [];
-  }catch(e){
-    TOP_NEWS_ITEMS = [];
+  if(!TOP_NEWS_ITEMS_PROMISE){
+    TOP_NEWS_ITEMS_PROMISE = fetch('./top-news-index.json')
+      .then(r => { if(!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(data => { TOP_NEWS_ITEMS = data.items || []; })
+      .catch(() => { TOP_NEWS_ITEMS = []; });
   }
+  await TOP_NEWS_ITEMS_PROMISE;
 }
 
 // "টপ নিউজ" ট্যাব — এক পলকে সবচেয়ে গুরুত্বপূর্ণ হাইলাইটগুলো দেখার জন্য।
@@ -2815,9 +2823,13 @@ function showPlaceholder(){
 // backBtnId দিয়ে "তালিকায় ফিরুন" বাটনের আইডি ঠিক করা যায় (মডালে দরকার নেই),
 // onRelatedClick দিয়ে "এটাও দেখো" চিপে ক্লিক করলে কী হবে তা কলার ঠিক করে দেয়।
 async function renderTopicContent(topic, container, {backBtnId, onRelatedClick} = {}){
+  // প্রতিটা কলে seq বাড়ে। fetch শেষে seq মিলিয়ে দেখা হয় — এর মধ্যে নতুন
+  // কল এলে পুরনোটার ফলাফল container-এ বসানো হয় না (race condition fix)।
+  const mySeq = ++RENDER_TOPIC_SEQ;
   container.innerHTML = '<div class="card-placeholder">লোড হচ্ছে…</div>';
   try{
     const res = await fetch('./' + topic.file);
+    if(mySeq !== RENDER_TOPIC_SEQ) return; // নতুন কল এসে গেছে, এটা বাতিল
     if(!res.ok){
       container.innerHTML = '<div class="card-placeholder">এই টপিক পেজ লোড করা যাচ্ছে না (ফাইল খুঁজে পাওয়া যায়নি)।</div>';
       return;
@@ -2941,12 +2953,14 @@ async function openTopicInModal(slug){
   const topic = ALL_TOPICS.find(t=>t.slug===slug);
   const overlay = document.getElementById('topic-modal-overlay');
   const body = document.getElementById('topic-modal-body');
+  // পুরনো content এখনই মুছে দেওয়া হয় — নইলে overlay দেখানোর সাথে সাথে
+  // আগের topic-এর content flash করে (Bug 3 fix)
+  body.innerHTML = '<div class="card-placeholder">লোড হচ্ছে…</div>';
+  overlay.classList.add('visible');
   if(!topic){
     body.innerHTML = '<div class="card-placeholder">এই টপিকটা খুঁজে পাওয়া যাচ্ছে না — হয়তো নাম বদলেছে বা মুছে গেছে।</div>';
-    overlay.classList.add('visible');
     return;
   }
-  overlay.classList.add('visible');
   await renderTopicContent(topic, body, {
     backBtnId:null,
     onRelatedClick:(relatedSlug) => openTopicInModal(relatedSlug)
@@ -2954,12 +2968,20 @@ async function openTopicInModal(slug){
 }
 
 function closeTopicModal(){
+  // modal-এর ভেতর থেকে topic-preview খোলা থাকলে সেটাও বন্ধ করা হয়,
+  // নইলে overlay DOM-এ আটকে থাকে (Bug 4 fix)
+  closeTopicPreview();
   document.getElementById('topic-modal-overlay').classList.remove('visible');
   document.getElementById('topic-modal-body').innerHTML = '';
 }
 
 function backToList(){
+  // ACTIVE_SLUG clear না করলে sidebar-এ কোনো topic highlighted থাকে অথচ
+  // কোনো article খোলা নেই — UI inconsistency (Bug 6 fix)
+  ACTIVE_SLUG = null;
   document.getElementById('browse-layout').classList.remove('showing-article');
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  renderList(visibleTopics(q), q);
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
@@ -2976,6 +2998,9 @@ function getRelatedTopics(topic, limit=5){
 }
 
 function filterByTag(tag){
+  // browse mode-এ switch না করলে mode tab-এ ঘটনাপ্রবাহ active থাকে
+  // অথচ নিচে browse list দেখায় — UI mismatch (Bug 5 fix)
+  setMode('browse');
   const input = document.getElementById('search');
   input.value = tag;
   input.dispatchEvent(new Event('input'));

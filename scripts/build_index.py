@@ -357,7 +357,7 @@ def strip_markdown(body):
     সার্চের সময় হ্যাশ/পাইপ/তারকা চিহ্নের কারণে মিল খুঁজে পেতে সমস্যা না হয়।"""
     text = body
     text = re.sub(r"^#{1,6}\s*", "", text, flags=re.MULTILINE)      # হেডিং হ্যাশ
-    text = re.sub(r"^\s*\|?(?:\s*:?-{3,}:?\s*\|)+\s*:?-{3,}:?\s*\|?\s*$", " ", text, flags=re.MULTILINE)
+    text = re.sub(r"^\s*\|?(?:\s*:?-{3,}:?\s*\|)+\s*:?-{3,}:?\s*\|?\s*$", "", text, flags=re.MULTILINE)
     text = re.sub(r"\|", " ", text)                                    # টেবিলের পাইপ
     text = re.sub(r"^-{2,}\s*$", " ", text, flags=re.MULTILINE)        # টেবিলের ড্যাশ-লাইন
     text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)                       # বোল্ড

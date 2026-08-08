@@ -22,6 +22,7 @@ const APP_SHELL = [
   // ফন্ট ফাইলগুলোও আগে থেকে ক্যাশ করা হয়, যাতে প্রথম অফলাইন ভিজিটেও
   // সঠিক বাংলা ফন্টে (সিস্টেম ফন্টে ফলব্যাক না করে) পেজ দেখা যায়।
   "./fonts/Kalpurush.woff2",
+  "./fonts/Kalpurush.ttf", // woff2 সাপোর্ট না থাকলে (পুরনো browser) এটাই ব্যবহৃত হয়
   "./fonts/HindSiliguri-Medium.woff2",
   "./fonts/HindSiliguri-SemiBold.woff2",
   "./fonts/NotoSerifBengali-Regular.woff2",
