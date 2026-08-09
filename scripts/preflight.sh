@@ -25,11 +25,14 @@ REMOTE=$(git rev-parse origin/main)
 
 if [ "$LOCAL" != "$REMOTE" ]; then
   AHEAD=$(git rev-list --count HEAD..origin/main)
-  echo "⚠️  remote এগিয়ে আছে — origin/main-এ $AHEAD টা নতুন কমিট আছে যা local-এ নেই।"
-  echo "    সম্ভবত অন্য কোনো Claude সেশন push করেছে। এখনই push করবেন না।"
-  echo "    আগে চালান: git rebase origin/main"
-  echo "    তারপর conflict না থাকলে এই স্ক্রিপ্ট আবার চালান।"
-  exit 2
+  if [ "$AHEAD" -gt 0 ]; then
+    echo "⚠️  remote এগিয়ে আছে — origin/main-এ $AHEAD টা নতুন কমিট আছে যা local-এ নেই।"
+    echo "    সম্ভবত অন্য কোনো Claude সেশন push করেছে। এখনই push করবেন না।"
+    echo "    আগে চালান: git rebase origin/main"
+    echo "    তারপর conflict না থাকলে এই স্ক্রিপ্ট আবার চালান।"
+    exit 2
+  fi
+  # local এগিয়ে, remote না — এটাই স্বাভাবিক push-এর ঠিক আগের অবস্থা, সমস্যা নয়।
 fi
 
 pip install pyyaml --break-system-packages -q 2>/dev/null
