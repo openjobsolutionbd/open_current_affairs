@@ -42,7 +42,9 @@ cd open_current_affairs && bash scripts/session_status.sh
 | `scripts/test_build_index.py` | `build_index.py`-এর ফাংশনের জন্য pure-Python regression টেস্ট (BUGFIX.md-এর bug-ক্লাসগুলো লক করে) — `preflight.sh` সবসময় চালায় |
 | `scripts/js_tests/` (`run.mjs`, `dom_harness.mjs`) | `docs/index.html`-এর app-shell JS-এর জন্য jsdom-ভিত্তিক behavioral regression suite — আসল প্রোডাকশন কোড থেকে ফাংশন বের করে চালায়, কোনো পুনর্লিখিত কপি নয়। `preflight.sh` শুধু তখনই চালায় যখন code ফাইল (topic content নয়) বদলায়। চালানোর নিয়ম: `npm run test:js` |
 | `package.json` | শুধু dev-time JS টেস্টের জন্য (`jsdom`) — লাইভ সাইট runtime-এ কোনো npm dependency লাগে না |
-| `.github/workflows/update-wiki.yml` | push হলে GitHub Actions স্বয়ংক্রিয়ভাবে build+verify চালায়; verify fail করলে generated output commit হয় না |
+| `.github/workflows/update-wiki.yml` | `main`-এ push (অর্থাৎ PR merge) হলে GitHub Actions স্বয়ংক্রিয়ভাবে build+verify চালিয়ে generated output কমিট করে; verify fail করলে generated output commit হয় না |
+| `.github/workflows/pr-check.yml` | কোনো PR খোলা/আপডেট হলে চালায়: generated-ফাইল guard, অন্য খোলা PR-এর সাথে ফাইল-সংঘর্ষ চেক, build+verify — ফলাফল PR-এর কমেন্টে (সমস্যা থাকলে) ও status check-এ |
+| `scripts/pr_checks.py` | উপরের `pr-check.yml`-এর ভেতরে চলে; সরাসরি হাতে চালানোর দরকার নেই |
 | `BUGFIX.md` | আগে ধরা পড়া ও ঠিক করা bug-এর স্থায়ী লগ (কারণ+সমাধান সহ) — প্রতিটার জন্য `scripts/test_build_index.py` বা `scripts/js_tests/`-এ একটা matching regression test থাকা উচিত |
 | `TEST_CHECKLIST.md` | বড় ফিচার/কোড পরিবর্তনের পর ম্যানুয়াল যাচাইয়ের চেকলিস্ট (browser/অফলাইন/mobile — যা automated suite ছুঁতে পারে না) |
 | `CHANGELOG.md` | শুধু **সিস্টেম/কাঠামোর** পরিবর্তনের জন্য (ফিচার, ডিজাইন, ফাইল-কাঠামো বদল) — মাসিক কনটেন্ট আপডেট এখানে লেখা হয় না |
@@ -100,13 +102,17 @@ python3 scripts/verify_site.py
 - প্রশ্নোত্তর, দিবস-প্রতিপাদ্য, পদক-পুরস্কার, রিপোর্ট-সমীক্ষা, ফিচার প্রবন্ধ ইত্যাদির জন্য এখনো কোনো প্রমিত কাঠামো নেই — এগুলো নিয়ে আগানোর আগে ব্যবহারকারীর সাথে গন্তব্য (existing টপিক ফাইল আপডেট? নতুন টপিক? সম্পূর্ণ নতুন `docs/`-কাঠামো?) ঠিক করে নিন। (MCQ-এর জন্য নিয়ম নিচে "MCQ হ্যান্ডলিং" সেকশনে নির্দিষ্ট করা আছে — ওখানে আর জিজ্ঞেস করার দরকার নেই।)
 - নতুন কোনো টপিক ঘটনাপ্রবাহে উল্লেখ হলে সেটা কোনো existing `docs/topics/*.md`-এর বিষয়ের সাথে মেলে কিনা যাচাই করুন (`[[phrase|slug]]` লিংক করার সুযোগ থাকতে পারে, কিন্তু ভুল slug হলে build ভাঙবে বলে সতর্ক থাকুন)।
 
-**ধাপ ৪ — ভ্যালিডেট, কমিট, পুশ**
-- `bash scripts/preflight.sh` চালান — এটা এক কলে fetch + local/remote তুলনা + build + verify সবকিছু করে, শুধু সমস্যা থাকলে বিস্তারিত দেখায়। Exit code 0 না হলে সেই মেসেজ অনুযায়ী ব্যবস্থা নিন (সাধারণত: remote এগিয়ে থাকলে `git rebase origin/main` করে আবার চালান)।
-- `git diff` দেখিয়ে ব্যবহারকারীর অনুমোদন নিন commit করার আগে।
-- অনুমোদন পেলে বাংলায় স্পষ্ট, বিস্তারিত commit message লিখুন (কী যোগ হলো, কোন সোর্স থেকে, সংক্ষেপে) — এটাই এই রিপোর কনভেনশন।
-- কমিটের পর push করার ঠিক আগে **আবার একবার `bash scripts/preflight.sh` চালান** (কমিট করার সময়টুকুতে অন্য সেশন push করে ফেলতে পারে) — পাস করলেই push করুন।
-- push-এর জন্য ব্যবহারকারীর দেওয়া GitHub PAT `http.extraheader`-এ বসিয়ে একবারের জন্য ব্যবহার করুন (কখনো `git remote set-url`-এ বসাবেন না, `.git/config`-এ থেকে যাবে না তা push-এর পর `grep` দিয়ে যাচাই করুন)।
-- একই সেশনে এই ওয়ার্কফ্লো থেকে নতুন কোনো স্থায়ী সম্পাদকীয় সিদ্ধান্ত এলে (যেমন কোনো নতুন বিভাগের গন্তব্য প্রথমবার ঠিক হলো), সেটা `EDITORIAL_MEMORY.md`-এ টুকে রাখুন — অনুমতি না চেয়েই, কনভেনশন অনুযায়ী।
+**ধাপ ৪ — ভ্যালিডেট, কমিট, এবং নতুন branch-এ পুশ করে PR খোলা**
+
+⚠️ **কখনো সরাসরি `main`-এ push করবেন না।** ব্যবহারকারী একই সাথে একাধিক Claude account/চ্যাট থেকে এই রিপোতে কাজ করেন — সরাসরি push করলে একজনের কাজ আরেকজনের কাজ না দেখেই সংঘর্ষ/ওভাররাইট হয়ে যেতে পারে। তাই প্রতিটা সেশন নিজের আলাদা branch-এ কাজ শেষ করে একটা Pull Request (PR) খোলে — main-এ merge (লাইভ) হওয়ার আগে PR-টাই "অপেক্ষার ঘর"। সম্পূর্ণ প্রক্রিয়া নিচের **"PR-ভিত্তিক ওয়ার্কফ্লো"** সেকশনে বিস্তারিত আছে; সংক্ষেপে:
+
+1. `bash scripts/preflight.sh` চালান (`main`-এর বদলে বর্তমান branch-এর ভিত্তিতে build+verify পাস কিনা লোকালি নিশ্চিত করতে)।
+2. `git diff` দেখিয়ে ব্যবহারকারীর অনুমোদন নিন কমিট করার আগে।
+3. অনুমোদন পেলে বাংলায় স্পষ্ট, বিস্তারিত commit message লিখে কমিট করুন।
+4. একটা নতুন branch পুশ করে (main না) GitHub API দিয়ে PR খুলুন — কমান্ড নিচের সেকশনে।
+5. ব্যবহারকারীকে PR নম্বর ও কী বদলেছে সহজ ভাষায় জানান (নিজে ব্যাখ্যা করুন — raw diff দেখাবেন না)। GitHub-এর স্বয়ংক্রিয় চেক (build/verify/সংঘর্ষ) শেষ হতে ~১ মিনিট লাগে।
+6. **ব্যবহারকারী স্পষ্টভাবে "মার্জ করো" না বলা পর্যন্ত merge করবেন না** — সব চেক পাস করলেও না। এটাই ব্যবহারকারীর চাওয়া "শেষ ক্লিক" ধাপ।
+7. নতুন কোনো স্থায়ী সম্পাদকীয় সিদ্ধান্ত এলে `EDITORIAL_MEMORY.md`-এ টুকে রাখুন — অনুমতি না চেয়েই, কনভেনশন অনুযায়ী।
 
 ## MCQ হ্যান্ডলিং (স্থায়ী নিয়ম)
 
@@ -154,20 +160,82 @@ python3 scripts/verify_site.py
 
 1. **রিপোর history নিয়ে কোনো দাবি করার আগে সম্পূর্ণ (non-shallow) clone নিশ্চিত করুন।** `git clone --depth 1` বা কোনো shallow clone দিয়ে পুরনো কমিট মিস হয়ে যেতে পারে, যা থেকে ভুল সিদ্ধান্তে পৌঁছানো সহজ (এই রিপোতেই এমন ঘটনা ঘটেছিল — একটা AI shallow clone দেখে ভুলভাবে দাবি করেছিল একটা ফাইল "কখনোই ছিল না", যেখানে আসলে সেটা মুছে ফেলা হয়েছিল)। যাচাই করতে: `git rev-parse --is-shallow-repository` → `false` হওয়া উচিত। কমিট হ্যাশ/দাবি verify করতে `git log --all --oneline -- <path>` এবং `git merge-base --is-ancestor <sha> origin/main` ব্যবহার করুন।
 2. **অন্য কোনো AI বা আগের চ্যাটের দাবি সরাসরি বিশ্বাস না করে নিজে git history/ফাইল চেক করে যাচাই করুন।** একাধিক AI ইনস্ট্যান্স একই রিপো নিয়ে ভিন্ন ভিন্ন (এমনকি পরস্পরবিরোধী) সিদ্ধান্তে পৌঁছাতে পারে — সবসময় নিজে সরাসরি verify করাই একমাত্র নির্ভরযোগ্য পথ।
-3. **রিপো পাবলিক** — শুধু পড়তে/clone করতে কোনো টোকেন লাগে না। Push করতে টোকেন লাগবে, এবং `.github/workflows/`-এর ভেতরের ফাইল add/edit/push করতে টোকেনে আলাদাভাবে "workflow" স্কোপ/পারমিশন লাগে (শুধু "repo" স্কোপ যথেষ্ট নাও হতে পারে)।
+3. **রিপো পাবলিক** — শুধু পড়তে/clone করতে কোনো টোকেন লাগে না। Push করতে টোকেন লাগবে, এবং `.github/workflows/`-এর ভেতরের ফাইল add/edit/push করতে টোকেনে আলাদাভাবে "workflow" স্কোপ/পারমিশন লাগে (শুধু "repo" স্কোপ যথেষ্ট নাও হতে পারে)। **PR-ভিত্তিক ওয়ার্কফ্লোর জন্য টোকেনে (fine-grained হলে) "Contents: Read and write" ও "Pull requests: Read and write" — দুইটাই লাগবে** (branch push + PR তৈরি/লিস্ট/মার্জ করার জন্য); নিছক push-only টোকেন দিয়ে PR খোলা/মার্জ করা যাবে না।
 4. **`CHANGELOG.md`-এ মাসিক কনটেন্ট আপডেট লিখবেন না** — শুধু সিস্টেম-লেভেল পরিবর্তন (ফিচার, ডিজাইন, ফাইল-কাঠামো)। কনটেন্ট আপডেটের ইতিহাস প্রতিটা টপিক ফাইলের নিজের "পরিবর্তনের ইতিহাস" টেবিলে থাকে।
 5. **কোনো মেজর/সিস্টেম-লেভেল পরিবর্তনের আগে ব্যবহারকারীর অনুমতি নিন**, এবং অনুমতি পেলে `CHANGELOG.md`-এ এন্ট্রি যোগ করুন ও প্রয়োজনে `VERSION` বাড়ান।
-6. **একাধিক Claude সেশন/অ্যাকাউন্ট থেকে একই সাথে এই রিপোতে কাজ করা হয় — এটা এখন স্বাভাবিক অবস্থা, edge case নয়।** দুইটা আলাদা চেকপয়েন্ট মনে রাখুন:
-   - **কাজ শুরুতে** (উপরের "প্রথম ধাপ" দেখুন): `bash scripts/session_status.sh` — বাস্তব অবস্থায় re-orient করার জন্য, কিছু ব্লক করে না।
-   - **push করার ঠিক আগে** (কমিট করার সময়ও, এবং কমিট করার পরে push করার ঠিক আগেও — দুই মুহূর্তের মাঝেই অন্য সেশন push করে ফেলতে পারে): `bash scripts/preflight.sh` — এটা এক কলে git fetch, local/remote তুলনা, build, verify সবকিছু করে এবং সমস্যা থাকলে exit code দিয়ে থামায়।
-   - **পাস (exit 0)** হলে push করা নিরাপদ।
-   - **remote এগিয়ে থাকলে (exit 2)** সরাসরি push করবেন না। প্রথমে `git rebase origin/main` চালান।
-     - **Conflict ছাড়া rebase সফল হলে**: `bash scripts/preflight.sh` আবার চালিয়ে নিশ্চিত হয়ে তারপর push করুন।
-     - **Conflict এলে**: নিজে অনুমান করে কোনদিকের পরিবর্তন রাখবেন তা ঠিক করবেন না। Conflict-এ থাকা ফাইল ও উভয় পক্ষের পরিবর্তন ব্যবহারকারীকে স্পষ্টভাবে দেখিয়ে জিজ্ঞেস করুন — বিশেষ করে `docs/topics-index.json`, `docs/sw.js`, `docs/version.json`-এর মতো auto-generated ফাইলে conflict এলে, হাতে সেগুলো এডিট না করে rebase-এর পরে `python3 scripts/build_index.py` চালিয়ে ফের জেনারেট করাই সঠিক পথ (generated ফাইলের conflict কখনো হাতে merge করবেন না)।
-   - **build/verify ব্যর্থ (exit 1)** হলে সেই এরর ঠিক না করে push করবেন না।
-   - rebase-এর ফলে remote-এর অন্য সেশনের করা কোনো পরিবর্তন হারানো/silently overwrite হচ্ছে কিনা তা `git diff origin/main..HEAD --stat`-এ চোখ বুলিয়ে নিশ্চিত করুন push করার আগে।
-7. **কখনো `git push --force` বা `git push --force-with-lease` ব্যবহার করবেন না**, এমনকি rebase-এর পরেও। শুধু সাধারণ `git push` ব্যবহার করুন — যদি সেটাও reject হয় (মানে rebase করার পরেও আরেকটা সেশন মাঝখানে নতুন কমিট করে ফেলেছে), পুরো preflight→rebase চক্রটা আবার করুন, force করে ভাঙবেন না।
+6. **একাধিক Claude সেশন/অ্যাকাউন্ট থেকে একই সাথে এই রিপোতে কাজ করা হয় — এটা এখন স্বাভাবিক অবস্থা, edge case নয়। ঠিক এই কারণেই ২০২৬-০৮ থেকে সরাসরি `main`-push বাদ দিয়ে branch+PR মডেল চালু হয়েছে** (দেখুন "PR-ভিত্তিক ওয়ার্কফ্লো" সেকশন — এই নিয়ম চালু হওয়ার ঠিক আগমুহূর্তেই আরেকটা সেশন সরাসরি `main`-এ পুশ করে ফেলেছিল, যা থেকেই এই নিয়মের প্রয়োজনীয়তা আরও স্পষ্ট হয়)। দুইটা চেকপয়েন্ট মনে রাখুন:
+   - **কাজ শুরুতে**: `bash scripts/session_status.sh` — বাস্তব অবস্থায় re-orient করার জন্য, কিছু ব্লক করে না।
+   - **নিজের branch পুশ করার আগে**: `bash scripts/preflight.sh` চালান — build+verify পাস করছে কিনা লোকালি নিশ্চিত করতে। build/verify ব্যর্থ হলে সেই এরর ঠিক না করে push করবেন না।
+   - **branch push ও PR তৈরির পর**, বাকি সংঘর্ষ-শনাক্তকরণ (অন্য কোনো খোলা PR একই ফাইলে হাত দিয়েছে কিনা) GitHub Actions (`pr-check.yml`) স্বয়ংক্রিয়ভাবে করে — নিজে থেকে rebase/force-push করে সমাধান করার দরকার নেই, PR-এর কমেন্টে সমস্যা দেখানো হবে।
+   - PR-এর নিজের branch-এ (কখনো `main`-এ না) দরকার হলে সাধারণ `git push` ব্যবহার করুন; `--force`/`--force-with-lease` তখনই ঠিক আছে যদি সেই branch-এ শুধু আপনার নিজের এই সেশনের কমিটই থাকে (অন্য কেউ সেই একই branch-এ push করেনি)। **branch protection চালু হওয়ার পর `main`-এ সরাসরি push এমনিতেই GitHub প্রত্যাখ্যান করবে — কিন্তু তার আগেও এই নিয়ম মেনে চলুন।**
+   - **যদি কখনো `main` protection সাময়িকভাবে বন্ধ থাকা অবস্থায় কোনো সেশন ভুলবশত সরাসরি `main`-এ পুশ করে ফেলে** (ঠিক যেমনটা এই নিয়ম চালুর মুহূর্তেই ঘটেছিল): নিজের চলতি branch-এ `git rebase origin/main` চালান। Conflict এলে নিচের নিয়ম অনুযায়ী।
+7. **rebase-এ conflict এলে নিজে অনুমান করে কোনদিকের পরিবর্তন রাখবেন তা ঠিক করবেন না।** conflict-এ থাকা ফাইল ও উভয় পক্ষের পরিবর্তন ব্যবহারকারীকে স্পষ্টভাবে দেখিয়ে জিজ্ঞেস করুন — **ব্যতিক্রম**: যদি দুই পক্ষের পরিবর্তন সত্যিকারের বিষয়বস্তু-দ্বন্দ্ব না হয়ে শুধু একই জায়গায় ভিন্ন ভিন্ন নতুন সংযোজন হয় (যেমন একই টেবিলে দুই সেশনের আলাদা নতুন row, বা CHANGELOG-এ দুই সেশনের আলাদা নতুন এন্ট্রি) — তখন দুটোই রেখে (তারিখ/ভার্সন অনুযায়ী সাজিয়ে) নিজে মিলিয়ে নেওয়া ঠিক আছে, ব্যবহারকারীকে জিজ্ঞেস করার দরকার নেই। Auto-generated ফাইলে (`docs/topics-index.json`, `docs/sw.js`, `docs/version.json` ইত্যাদি) conflict এলে হাতে এডিট না করে rebase-এর পরে `python3 scripts/build_index.py` চালিয়ে ফের জেনারেট করাই সঠিক পথ।
 8. **কোনো নতুন bug পাওয়া/ঠিক করা হলে, শুধু `BUGFIX.md`-এ এন্ট্রি লিখেই থামবেন না — `scripts/test_build_index.py` বা `scripts/js_tests/run.mjs`-এ একটা matching automated regression test যোগ করুন**, যাতে ঠিক এই bug-টা future কোনো feature/refactor-এ চুপচাপ আবার ফিরে না আসে (`preflight.sh` প্রতি push-এ এগুলো চালায়)। শুধু ডকুমেন্টেশনে লেখা "ঠিক করা হয়েছে" যথেষ্ট নয় — আসল কোডে ফিক্সটা সত্যিই আছে কিনা টেস্ট না থাকলে ভবিষ্যতে কেউ (মানুষ বা AI) যাচাই না করেই ধরে নেবে। bug-টা যদি real browser rendering/layout সংক্রান্ত হয় (jsdom দিয়ে ধরা কঠিন), অন্তত `TEST_CHECKLIST.md`-এ একটা লাইন যোগ করুন এবং কেন automated test সম্ভব হলো না তা `BUGFIX.md` এন্ট্রিতে লিখে রাখুন।
+
+## PR-ভিত্তিক ওয়ার্কফ্লো (একাধিক সমান্তরাল সেশনের জন্য, ২০২৬-০৮ থেকে বাধ্যতামূলক)
+
+ব্যবহারকারী একই সাথে একাধিক Claude account/চ্যাট থেকে এই রিপোতে কাজ করান। তাই `main`-এ সরাসরি push না করে, প্রতিটা সেশন নিজের branch-এ কাজ শেষ করে PR খোলে; GitHub স্বয়ংক্রিয়ভাবে গঠন ও সংঘর্ষ চেক করে; সেই PR-এর পরিবর্তন যে সেশনেই জিজ্ঞেস করা হোক না কেন Claude নিজে পড়ে সহজ বাংলায় ব্যাখ্যা করে; **ব্যবহারকারী নিজে সেটা শুনে "মার্জ করো" বললেই তবে merge হয়** — নাহলে না। নিচে ধাপে ধাপে কমান্ড।
+
+**টোকেন-ব্যবহারের নিয়ম অপরিবর্তিত:** ব্যবহারকারীর দেওয়া অস্থায়ী PAT `http.extraheader`-এ শুধু চলতি কমান্ডের জন্য বসান (কখনো `git remote set-url`-এ না, `.git/config`-এ যেন থেকে না যায় তা প্রতিটা push/API-কলের পর `grep -i authorization .git/config` বা সমতুল্য দিয়ে যাচাই করুন)। এবারের PAT-এ শুধু "Contents" না, **"Pull requests" স্কোপও লাগবে** (branch push, PR তৈরি/লিস্ট/মার্জ — চারটাই)।
+
+**১. নিজের branch বানানো ও কাজ করা**
+```bash
+git checkout -b work/2026-08-11-short-topic-slug   # তারিখ + সংক্ষিপ্ত-বিষয়
+# ... এডিট ...
+bash scripts/preflight.sh   # build+verify পাস কিনা লোকালি নিশ্চিত করুন
+git add -A && git commit -m "বাংলায় স্পষ্ট বার্তা"
+```
+
+**২. branch পুশ করা (main না, নিজের branch)**
+```bash
+git -c http.extraHeader="Authorization: Bearer $PAT" push origin work/2026-08-11-...
+```
+
+**৩. PR খোলা**
+```bash
+curl -s -X POST \
+  -H "Authorization: Bearer $PAT" -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/openjobsolutionbd/open_current_affairs/pulls \
+  -d '{"title":"সংক্ষিপ্ত বাংলা শিরোনাম","head":"work/2026-08-11-...","base":"main","body":"কী বদলেছে — বাংলায় ২-৩ লাইন"}'
+```
+রেসপন্সের `"number"` ফিল্ডটাই PR নম্বর — ব্যবহারকারীকে সেটা জানান।
+
+**৪. ব্যবহারকারীকে জানানো (এই ধাপেই preflight-এর মতো টেকনিক্যাল আউটপুট কপি করবেন না)** — শুধু বলুন: "PR #N খোলা হয়েছে — [সহজ ভাষায় কী বদলেছে]। স্বয়ংক্রিয় চেক শেষ হতে ~১ মিনিট লাগবে। মার্জ করব?"
+
+**৫. যেকোনো সেশনে "কী কাজ পেন্ডিং আছে" জিজ্ঞেস করলে — সব খোলা PR দেখানো**
+```bash
+curl -s -H "Authorization: Bearer $PAT" -H "Accept: application/vnd.github+json" \
+  "https://api.github.com/repos/openjobsolutionbd/open_current_affairs/pulls?state=open"
+```
+প্রতিটার আসল পরিবর্তন দেখতে (raw diff পাওয়া যায়, `.diff` ফরম্যাটে):
+```bash
+curl -s -H "Authorization: Bearer $PAT" -H "Accept: application/vnd.github.v3.diff" \
+  "https://api.github.com/repos/openjobsolutionbd/open_current_affairs/pulls/<PR_NUMBER>"
+```
+স্বয়ংক্রিয় চেক কোনো সমস্যা পেলে সেটা কমেন্ট আকারে থাকে (দেখুন `pr_checks.py`):
+```bash
+curl -s -H "Authorization: Bearer $PAT" -H "Accept: application/vnd.github+json" \
+  "https://api.github.com/repos/openjobsolutionbd/open_current_affairs/issues/<PR_NUMBER>/comments"
+```
+diff নিজে পড়ে ব্যবহারকারীকে সহজ বাংলায় জানান (কোন টপিকে কী যোগ/বদল হলো) — raw diff/JSON কখনো সরাসরি দেখাবেন না।
+
+**৬. ব্যবহারকারী "মার্জ করো" বললে — তবেই merge**
+```bash
+curl -s -X PUT \
+  -H "Authorization: Bearer $PAT" -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/openjobsolutionbd/open_current_affairs/pulls/<PR_NUMBER>/merge \
+  -d '{"merge_method":"squash"}'
+```
+merge ব্যর্থ হলে (checks এখনো শেষ হয়নি, বা conflict) response-এর `"message"` পড়ে ব্যবহারকারীকে সহজ ভাষায় জানান, নিজে থেকে force করার চেষ্টা করবেন না।
+
+**৭. merge সফল হলে branch মুছে ফেলুন (পরিষ্কার রাখতে)**
+```bash
+curl -s -X DELETE -H "Authorization: Bearer $PAT" \
+  https://api.github.com/repos/openjobsolutionbd/open_current_affairs/git/refs/heads/work/2026-08-11-...
+```
+merge-এর পর `main`-এ push হওয়ার কারণে `.github/workflows/update-wiki.yml` নিজে থেকেই generated output রিবিল্ড করে দেবে — সেটা আলাদা করে করতে হবে না।
+
+**যদি PR-এ real git conflict দেখায়** (দুইটা branch একই লাইনে ভিন্ন পরিবর্তন করেছে — GitHub-এর `mergeable: false`): নিজে অনুমান করে কোনটা রাখবেন ঠিক করবেন না, উপরের item 7-এর ব্যতিক্রম-নিয়ম মেনে চলুন। Auto-generated ফাইলে conflict কখনো হাতে মার্জ করবেন না — merge-এর পর `main`-এ `build_index.py` এমনিতেই আবার চালাবে।
 
 ## বর্তমান অবস্থা (সর্বশেষ যাচাই: ২০২৬-০৮-০৮)
 

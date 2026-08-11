@@ -1,0 +1,54 @@
+name: PR চেক (validate + সংঘর্ষ)
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Python সেটআপ
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: dependencies ইনস্টল
+        run: pip install pyyaml
+
+      - name: generated ফাইল guard + অন্য PR-এর সাথে সংঘর্ষ চেক
+        id: prechecks
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: python3 scripts/pr_checks.py
+
+      - name: কনটেন্ট বিল্ড ভ্যালিডেশন
+        id: build
+        continue-on-error: true
+        run: python3 scripts/build_index.py
+
+      - name: সাইট-জুড়ে ভেরিফাই
+        id: verify
+        continue-on-error: true
+        if: steps.build.outcome == 'success'
+        run: python3 scripts/verify_site.py
+
+      - name: চূড়ান্ত ফলাফল
+        if: steps.prechecks.outcome != 'success' || steps.build.outcome != 'success' || steps.verify.outcome != 'success'
+        run: |
+          echo "এক বা একাধিক চেক ব্যর্থ হয়েছে — PR-এর কমেন্টে বিস্তারিত দেখুন।"
+          exit 1
