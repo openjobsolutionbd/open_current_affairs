@@ -37,6 +37,9 @@ GHOTONAPROBAHO_OUTPUT_FILE = DOCS_DIR / "ghotonaprobaho-index.json"
 TOP_NEWS_DIR = DOCS_DIR / "top-news"
 TOP_NEWS_OUTPUT_FILE = DOCS_DIR / "top-news-index.json"
 
+MCQ_DIR = DOCS_DIR / "mcq"
+MCQ_OUTPUT_FILE = DOCS_DIR / "mcq-index.json"
+
 # TASK: প্রতিটা টপিকের জন্য আলাদা, সার্চ-ইঞ্জিন-বান্ধব একটা স্ট্যাটিক HTML
 # পাতা তৈরি হয় docs/topic/<slug>/index.html-এ। কারণ: মূল সাইট একটা single
 # page app (সব কিছু hash-এ, যেমন /#slug) — সার্চ ইঞ্জিন সাধারণত hash-এর
@@ -324,6 +327,127 @@ def compile_top_news(valid_slugs):
         encoding="utf-8",
     )
     print(f"তৈরি হলো: {TOP_NEWS_OUTPUT_FILE} ({len(all_items)} টি হাইলাইট)")
+
+
+BN_LETTER_TO_INDEX = {"ক": 0, "খ": 1, "গ": 2, "ঘ": 3}
+
+MCQ_SECTION_RE = re.compile(r"^##\s+(.+?)\s*$")
+MCQ_QUESTION_RE = re.compile(r"^([০-৯]+)\.\s*(.+?)\s*$")
+MCQ_OPTION_TOKEN_RE = re.compile(r"([কখগঘ])\)\s*(.+?)(?=\s+[কখগঘ]\)|$)")
+MCQ_ANSWER_PAIR_RE = re.compile(r"([০-৯]+)\.([কখগঘ])")
+
+
+def parse_mcq_file(path):
+    """docs/mcq/*.md (raw MCQ আর্কাইভ) থেকে স্ট্রাকচার্ড প্রশ্ন-তালিকা বের করে।
+
+    প্রত্যাশিত ফরম্যাট:
+      ## বিভাগের নাম
+      ১. প্রশ্নের টেক্সট...
+      ক) অপশন১ খ) অপশন২ গ) অপশন৩ ঘ) অপশন৪
+      ...
+      **উত্তর:** ১.গ ২.ক ...
+    কোনো লাইন এই প্যাটার্নে না মিললে সেটা নীরবে উপেক্ষা করা হয় (যেমন
+    ভূমিকা-টেক্সট, ⚠️ নোট, ফ্রন্টম্যাটার-বহির্ভূত মন্তব্য ইত্যাদি) — MCQ
+    আর্কাইভ ফাইল ভ্যালিডেশনের আওতায় পড়ে না, তাই partial parse এখানে
+    ক্ষতিকর নয়, শুধু সেই প্রশ্নটা ওয়েবসাইটের কুইজে দেখাবে না।
+    """
+    text = path.read_text(encoding="utf-8").lstrip("\ufeff")
+    lines = text.splitlines()
+
+    sections = []  # [{name, questions:[{number, text, options:[...], answer_index}]}]
+    current_section = None
+    pending_question = None  # {number, text} — অপশন লাইনের অপেক্ষায়
+    # number(str) -> {section_questions_list, question_dict} — উত্তর-কী মেলানোর জন্য
+    question_lookup = {}
+
+    def ensure_section(name):
+        nonlocal current_section
+        for s in sections:
+            if s["name"] == name:
+                current_section = s
+                return
+        current_section = {"name": name, "questions": []}
+        sections.append(current_section)
+
+    for raw_line in lines:
+        line = raw_line.strip()
+        if not line:
+            continue
+
+        m = MCQ_SECTION_RE.match(line)
+        if m:
+            ensure_section(m.group(1).strip())
+            pending_question = None
+            continue
+
+        m = MCQ_QUESTION_RE.match(line)
+        if m and current_section is not None:
+            pending_question = {"number": m.group(1), "text": m.group(2)}
+            continue
+
+        if pending_question is not None and ("ক)" in line):
+            opts = MCQ_OPTION_TOKEN_RE.findall(line)
+            if len(opts) >= 2:
+                q = {
+                    "number": pending_question["number"],
+                    "text": pending_question["text"],
+                    "options": [o[1].strip() for o in opts],
+                    "answer_index": None,
+                }
+                current_section["questions"].append(q)
+                question_lookup[q["number"]] = q
+            pending_question = None
+            continue
+
+        if line.startswith("**উত্তর"):
+            for num, letter in MCQ_ANSWER_PAIR_RE.findall(line):
+                q = question_lookup.get(num)
+                if q is not None:
+                    q["answer_index"] = BN_LETTER_TO_INDEX.get(letter)
+            continue
+
+    # যেসব প্রশ্নে উত্তর-কী মেলেনি বা অপশন ৪টার কম, সেগুলো বাদ দেওয়া হয়
+    # (ওয়েবসাইটের ইন্টারেক্টিভ কুইজে ভুল/অসম্পূর্ণ প্রশ্ন দেখানো ঠিক না)।
+    for s in sections:
+        s["questions"] = [
+            q for q in s["questions"]
+            if q["answer_index"] is not None and len(q["options"]) >= 2
+        ]
+    sections = [s for s in sections if s["questions"]]
+
+    return sections
+
+
+def compile_mcq():
+    """docs/mcq/ ফোল্ডারের সব .md আর্কাইভ ফাইল থেকে ইন্টারেক্টিভ কুইজের জন্য
+    docs/mcq-index.json বানায়। MCQ আর্কাইভ ফাইল টপিক-ভ্যালিডেশনের আওতায়
+    পড়ে না (আলাদা frontmatter দরকার নেই) — তাই এখানে কোনো পার্স-সমস্যা হলে
+    গোটা বিল্ড থামে না, শুধু সংশ্লিষ্ট প্রশ্ন/ফাইল বাদ পড়ে।
+    """
+    if not MCQ_DIR.exists():
+        print("তথ্য: docs/mcq/ ফোল্ডার নেই, এই ফিচার বাদ দিয়ে বিল্ড চলবে।")
+        return
+
+    quiz_sets = []  # প্রতিটা ফাইল একটা আলাদা "সেট" (সাধারণত এক সংখ্যার MCQ)
+    for path in sorted(MCQ_DIR.glob("*.md")):
+        sections = parse_mcq_file(path)
+        if sections:
+            total_q = sum(len(s["questions"]) for s in sections)
+            quiz_sets.append({
+                "id": path.stem,
+                "label": path.stem,
+                "sections": sections,
+                "question_count": total_q,
+            })
+
+    quiz_sets.sort(key=lambda s: s["id"], reverse=True)
+
+    MCQ_OUTPUT_FILE.write_text(
+        json.dumps({"sets": quiz_sets}, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    total = sum(s["question_count"] for s in quiz_sets)
+    print(f"তৈরি হলো: {MCQ_OUTPUT_FILE} ({len(quiz_sets)} সেট, {total} প্রশ্ন)")
 
 
 def parse_frontmatter_yaml(block, path):
@@ -616,6 +740,8 @@ def _main():
     except BuildError as e:
         print(f"✗ বিল্ড ব্যর্থ — {e}", file=sys.stderr)
         sys.exit(1)
+
+    compile_mcq()
 
     OUTPUT_FILE.write_text(
         json.dumps({"topics": entries}, ensure_ascii=False, indent=2),

@@ -1295,6 +1295,84 @@
       gap:6px;
     }
   }
+  /* "MCQ" ট্যাব — ইন্টারেক্টিভ কুইজ কার্ড: প্রশ্নের নিচে ৪টা অপশন বাটন,
+     ক্লিক করলে সঠিক হলে সবুজ, ভুল হলে লাল + সঠিক উত্তরও সবুজ করে দেখানো হয়।
+     একবার উত্তর দিলে সেই প্রশ্নের বাটনগুলো আর ক্লিকযোগ্য থাকে না। */
+  .mcq-section-heading{
+    font-family:'Kalpurush',sans-serif;
+    font-size:20px;
+    font-weight:700;
+    color:var(--accent);
+    margin:28px 0 14px;
+    padding-bottom:6px;
+    border-bottom:2px solid var(--line);
+  }
+  .mcq-section-heading:first-of-type{ margin-top:8px; }
+  .mcq-question{
+    padding:16px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .mcq-question:last-child{ border-bottom:none; }
+  .mcq-question-text{
+    font-family:'Noto Serif Bengali',serif;
+    font-size:18px;
+    line-height:1.6;
+    color:var(--ink);
+    margin-bottom:12px;
+  }
+  .mcq-question-number{
+    color:var(--accent);
+    font-weight:700;
+    margin-right:6px;
+  }
+  .mcq-options{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+  @media (max-width:560px){
+    .mcq-options{ grid-template-columns:1fr; }
+  }
+  .mcq-option{
+    font-family:'Noto Serif Bengali',serif;
+    font-size:16px;
+    text-align:left;
+    padding:10px 14px;
+    border:1.5px solid var(--line);
+    border-radius:8px;
+    background:var(--card-bg,transparent);
+    color:var(--ink);
+    cursor:pointer;
+    transition:background-color 0.15s ease, border-color 0.15s ease;
+  }
+  .mcq-option:hover:not(:disabled){
+    border-color:var(--accent);
+    background:var(--accent-light);
+  }
+  .mcq-option:disabled{ cursor:default; }
+  .mcq-option.mcq-correct{
+    background:var(--success-bg);
+    border-color:var(--success-border);
+    color:var(--success-text);
+    font-weight:700;
+  }
+  .mcq-option.mcq-wrong{
+    background:var(--error-bg);
+    border-color:var(--error-text);
+    color:var(--error-text);
+    font-weight:700;
+  }
+  .mcq-set-heading{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .mcq-set-progress{
+    font-family:'Kalpurush',sans-serif;
+    font-size:14px;
+    color:var(--muted,#777);
+  }
   /* ঘটনাপ্রবাহ লাইনের ভেতরে টপিক-লিংকযুক্ত নির্দিষ্ট শব্দ/বাক্যাংশ — একই
      লাইনে একাধিক থাকতে পারে (যেমন "WHO" আর "ইবোলা" আলাদা আলাদা), হালকা
      আন্ডারলাইন ডট দিয়ে বোঝানো হয় এগুলো ইন্টারঅ্যাক্টিভ (Wikipedia-স্টাইল) */
@@ -1584,6 +1662,7 @@
   <button id="browse-toggle-btn" class="mode-tab">📋 সকল টপিক</button>
   <button id="ghotonaprobaho-toggle-btn" class="mode-tab">🗓️ দৈনিক ঘটনাপ্রবাহ</button>
   <button id="top-news-toggle-btn" class="mode-tab">⭐ টপ নিউজ</button>
+  <button id="mcq-toggle-btn" class="mode-tab">📝 MCQ</button>
 </div>
 
 <div class="layout" id="browse-layout">
@@ -1609,6 +1688,10 @@
 
 <div class="layout" id="top-news-layout" style="display:none;">
   <div class="card" id="top-news-card"></div>
+</div>
+
+<div class="layout" id="mcq-layout" style="display:none;">
+  <div class="card" id="mcq-card"></div>
 </div>
 
 
@@ -1639,6 +1722,8 @@ let GHOTONAPROBAHO_PAGE = 0; // ০ = সবচেয়ে সাম্প্�
 const GHOTONAPROBAHO_PAGE_SIZE = 3; // প্রতি পেজে কয় মাস একসাথে দেখানো হয়
 let TOP_NEWS_ITEMS = null; // "টপ নিউজ" ট্যাবের তারিখ-ভিত্তিক হাইলাইট — একবার লোড হলে ক্যাশ থাকে
 let TOP_NEWS_ITEMS_PROMISE = null; // Bug 7: concurrent call guard
+let MCQ_SETS = null; // "MCQ" ট্যাবের কুইজ-সেট — একবার লোড হলে ক্যাশ থাকে
+let MCQ_SETS_PROMISE = null; // concurrent call guard
 let RENDER_TOPIC_SEQ = 0; // Bug 1: race condition guard — প্রতিটা renderTopicContent কলে বাড়ে
 
 // ══════════════════════════════════════════════════════
@@ -2176,6 +2261,84 @@ function renderTopNewsView(){
   });
 }
 
+async function ensureMcqLoaded(){
+  if(MCQ_SETS !== null) return;
+  if(!MCQ_SETS_PROMISE){
+    MCQ_SETS_PROMISE = fetch('./mcq-index.json')
+      .then(r => { if(!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(data => { MCQ_SETS = data.sets || []; })
+      .catch(() => { MCQ_SETS = []; });
+  }
+  await MCQ_SETS_PROMISE;
+}
+
+const BN_OPTION_LABELS = ['ক', 'খ', 'গ', 'ঘ'];
+
+// একটা প্রশ্নের অপশন-বাটনে ক্লিক করলে চলে — সঠিক হলে ক্লিক করা বাটনটাই
+// সবুজ হয়ে যায়; ভুল হলে ক্লিক করা বাটন লাল ও সঠিক অপশনটা আলাদাভাবে সবুজ
+// হয়ে দেখানো হয়। একবার উত্তর দেওয়ার পর প্রশ্নটার সব বাটন disable হয়ে যায়,
+// যাতে দ্বিতীয়বার ক্লিক করে উত্তর বদলানো না যায়।
+function handleMcqOptionClick(questionEl, clickedIndex, correctIndex){
+  if(questionEl.dataset.answered === '1') return;
+  questionEl.dataset.answered = '1';
+  const buttons = questionEl.querySelectorAll('.mcq-option');
+  buttons.forEach((btn, idx) => {
+    btn.disabled = true;
+    if(idx === correctIndex){
+      btn.classList.add('mcq-correct');
+    } else if(idx === clickedIndex){
+      btn.classList.add('mcq-wrong');
+    }
+  });
+}
+
+// "MCQ" ট্যাব — ইন্টারেক্টিভ কুইজ। প্রতিটা সেট বিভাগ (বাংলাদেশ/আন্তর্জাতিক/...)
+// অনুযায়ী ভাগ করা প্রশ্নের তালিকা দেখায়; প্রতিটা প্রশ্নের ৪টা অপশন-বাটনে ক্লিক
+// করলেই সাথে সাথে সঠিক/ভুল ফিডব্যাক পাওয়া যায় (সার্ভার/নেটওয়ার্ক ছাড়াই,
+// পুরোটাই লোকাল JS — উত্তর-কী আগে থেকেই mcq-index.json-এ থাকে)।
+function renderMcqView(){
+  closeTopicPreview();
+  const card = document.getElementById('mcq-card');
+  if(!MCQ_SETS || MCQ_SETS.length === 0){
+    card.innerHTML = `
+      <div class="card-placeholder">
+        <div class="big">এখনো কোনো MCQ যোগ হয়নি</div>
+        নতুন প্রশ্ন যোগ হলে এখানে দেখা যাবে
+      </div>`;
+    return;
+  }
+
+  let html = `<h2 style="margin-left:0;">📝 সাম্প্রতিক বিষয়ের MCQ</h2>`;
+  MCQ_SETS.forEach(set => {
+    html += `<div class="mcq-set-heading"><span style="font-family:'Kalpurush',sans-serif;font-weight:700;font-size:16px;">${escapeHtml(set.label)}</span><span class="mcq-set-progress">${set.question_count} টা প্রশ্ন</span></div>`;
+    set.sections.forEach(section => {
+      html += `<div class="mcq-section-heading">${escapeHtml(section.name)}</div>`;
+      section.questions.forEach(q => {
+        html += `<div class="mcq-question" data-answered="0" data-correct-idx="${q.answer_index}">`;
+        html += `<div class="mcq-question-text"><span class="mcq-question-number">${escapeHtml(q.number)}.</span>${escapeHtml(q.text)}</div>`;
+        html += `<div class="mcq-options">`;
+        q.options.forEach((opt, idx) => {
+          html += `<button type="button" class="mcq-option" data-idx="${idx}">${BN_OPTION_LABELS[idx] || ''}) ${escapeHtml(opt)}</button>`;
+        });
+        html += `</div></div>`;
+      });
+    });
+  });
+
+  card.innerHTML = html;
+
+  card.querySelectorAll('.mcq-question').forEach(qEl => {
+    const questionButtons = qEl.querySelectorAll('.mcq-option');
+    questionButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.idx, 10);
+        const correctIdx = parseInt(qEl.dataset.correctIdx, 10);
+        handleMcqOptionClick(qEl, idx, correctIdx);
+      });
+    });
+  });
+}
+
 // Wikipedia-ধাঁচের টপিক প্রিভিউ পপআপ। ডেস্কটপে (>720px ভিউপোর্ট) যে
 // এলিমেন্টে ক্লিক হয়েছে তার কাছাকাছি একটা ছোট অ্যাংকরড কার্ড হিসেবে দেখা যায়;
 // সরু/মোবাইল স্ক্রিনে বরাবরের মতো ডকুমেন্টের নিচ থেকে উঠে আসা শিট হিসেবে দেখা যায়,
@@ -2285,13 +2448,15 @@ function closeTopicPreview(){
 const MODE_TAB_IDS = {
   'browse': 'browse-toggle-btn',
   'ghotonaprobaho': 'ghotonaprobaho-toggle-btn',
-  'top-news': 'top-news-toggle-btn'
+  'top-news': 'top-news-toggle-btn',
+  'mcq': 'mcq-toggle-btn'
 };
 
 function setActiveLayout(mode){
   document.getElementById('browse-layout').style.display = mode === 'browse' ? '' : 'none';
   document.getElementById('ghotonaprobaho-layout').style.display = mode === 'ghotonaprobaho' ? '' : 'none';
   document.getElementById('top-news-layout').style.display = mode === 'top-news' ? '' : 'none';
+  document.getElementById('mcq-layout').style.display = mode === 'mcq' ? '' : 'none';
   // ভাসমান সার্চ বক্স "দৈনিক ঘটনাপ্রবাহ" ও "টপ নিউজ" — দুই মোডেই দেখানো হয়,
   // কারণ এই দুই মোডেই বাম পাশের টপিক-তালিকা থাকে না।
   const fsWrap = document.getElementById('floating-search-wrap');
@@ -2323,6 +2488,9 @@ async function setMode(mode){
   } else if(mode === 'top-news'){
     await ensureTopNewsLoaded();
     renderTopNewsView();
+  } else if(mode === 'mcq'){
+    await ensureMcqLoaded();
+    renderMcqView();
   } else {
     document.getElementById('browse-layout').classList.remove('showing-article');
   }
@@ -3053,6 +3221,9 @@ document.getElementById('ghotonaprobaho-toggle-btn').addEventListener('click', (
 
 document.getElementById('top-news-toggle-btn').addEventListener('click', () => {
   setMode('top-news');
+});
+document.getElementById('mcq-toggle-btn').addEventListener('click', () => {
+  setMode('mcq');
 });
 
 loadIndex().then(() => {

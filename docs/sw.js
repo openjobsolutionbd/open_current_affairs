@@ -18,6 +18,7 @@ const APP_SHELL = [
   "./topics-index.json",
   "./ghotonaprobaho-index.json",
   "./top-news-index.json",
+  "./mcq-index.json",
   "./version.json",
   // ফন্ট ফাইলগুলোও আগে থেকে ক্যাশ করা হয়, যাতে প্রথম অফলাইন ভিজিটেও
   // সঠিক বাংলা ফন্টে (সিস্টেম ফন্টে ফলব্যাক না করে) পেজ দেখা যায়।
@@ -62,6 +63,7 @@ self.addEventListener("fetch", (event) => {
     url.pathname.endsWith("topics-index.json") ||
     url.pathname.endsWith("ghotonaprobaho-index.json") ||
     url.pathname.endsWith("top-news-index.json") ||
+    url.pathname.endsWith("mcq-index.json") ||
     url.pathname.endsWith("version.json") ||
     url.pathname.includes("/topics/") ||
     // SEO রিডাইরেক্ট পাতাগুলো (docs/topic/<slug>/index.html) — শেয়ার করা লিংক
