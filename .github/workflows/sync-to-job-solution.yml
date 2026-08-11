@@ -66,17 +66,24 @@ jobs:
       - name: হোমে ফেরার লিংক যোগ করা (না থাকলে সন্নিবেশ)
         # সংশোধনী: আগে শুধু চেক করা হতো (আছে কিনা), এখন সত্যিই বসিয়ে দেওয়া হয় —
         # open_job_solution-এর বাকি তিনটা সেকশনের নিয়ম মেনে।
-        # (আগের একটা সংস্করণে এখানে multi-line Python heredoc ছিল যা YAML
-        # ইন্ডেন্টেশন ভেঙে পুরো ফাইলের পার্সিং নষ্ট করে দিয়েছিল — এখন একটা
-        # সাধারণ এক-লাইনের sed কমান্ড দিয়ে করা হচ্ছে, এই ভুল এড়াতে।)
+        # গুরুত্বপূর্ণ: `^<body>$` (পুরো লাইনে শুধু <body>) দিয়ে anchor করা,
+        # আর `0,/../` দিয়ে শুধু প্রথম মিল বদলানো হয় — যাতে ফাইলের অন্য কোথাও
+        # (যেমন কোনো JS মন্তব্যে "<body>" শব্দ থাকলে) ভুল করে না বসে যায়।
+        # (আগের একটা সংস্করণে এই সতর্কতা ছাড়া sed ব্যবহার করায় একটা JS
+        # মন্তব্যের ভেতরেও লিংক ঢুকে গিয়েছিল — সেই বাগ এখানে ঠিক করা হলো।)
         run: |
           set -e
           INDEX="destination/current-affairs/docs/index.html"
           if grep -q "হোমে ফিরুন" "$INDEX"; then
             echo "হোমে ফেরার লিংক আগে থেকেই আছে, কিছু করার দরকার নেই।"
           else
-            sed -i 's|<body>|<body>\n<a href="/" style="display:inline-block;margin:10px 16px 0;font-size:14px;text-decoration:none;color:inherit;opacity:0.75;">⬅️ হোমে ফিরুন</a>|' "$INDEX"
-            echo "হোমে ফেরার লিংক সফলভাবে যোগ করা হয়েছে।"
+            sed -i '0,/^<body>$/{s|^<body>$|<body>\n<a href="/" style="display:inline-block;margin:10px 16px 0;font-size:14px;text-decoration:none;color:inherit;opacity:0.75;">⬅️ হোমে ফিরুন</a>|}' "$INDEX"
+            if grep -q "হোমে ফিরুন" "$INDEX"; then
+              echo "হোমে ফেরার লিংক সফলভাবে যোগ করা হয়েছে।"
+            else
+              echo "সতর্কবার্তা: <body> ট্যাগ (একা একটা লাইনে) পাওয়া যায়নি, ম্যানুয়ালি চেক করা দরকার" >&2
+              exit 1
+            fi
           fi
 
       - name: অপ্রয়োজনীয়/লগ ফাইল বাদ দেওয়া
