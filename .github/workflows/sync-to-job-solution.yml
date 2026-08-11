@@ -63,12 +63,41 @@ jobs:
             exit 1
           fi
 
-      - name: হোমে ফেরার লিংক নিশ্চিত করা
+      - name: হোমে ফেরার লিংক যোগ করা (না থাকলে সন্নিবেশ)
+        # সংশোধনী: আগে শুধু চেক করা হতো (আছে কিনা), এখন সত্যিই বসিয়ে দেওয়া হয় —
+        # open_job_solution-এর বাকি তিনটা সেকশনের নিয়ম মেনে।
         run: |
           set -e
           INDEX="destination/current-affairs/docs/index.html"
-          if ! grep -q "হোমে ফিরুন" "$INDEX"; then
-            echo "সতর্কবার্তা: 'হোমে ফিরুন' লিংক পাওয়া যায়নি — ম্যানুয়ালি যোগ করা দরকার" >&2
+          if grep -q "হোমে ফিরুন" "$INDEX"; then
+            echo "হোমে ফেরার লিংক আগে থেকেই আছে, কিছু করার দরকার নেই।"
+          else
+            python3 - "$INDEX" <<'PYEOF'
+import sys
+path = sys.argv[1]
+with open(path, "r", encoding="utf-8") as f:
+    content = f.read()
+
+home_link = (
+    '<a href="/" style="display:inline-block;margin:10px 16px 0;'
+    'font-size:14px;text-decoration:none;color:inherit;opacity:0.75;">'
+    '⬅️ হোমে ফিরুন</a>\n'
+)
+
+marker = "<body>"
+idx = content.find(marker)
+if idx == -1:
+    print("সতর্কবার্তা: <body> ট্যাগ পাওয়া যায়নি", file=sys.stderr)
+    sys.exit(1)
+
+insert_at = idx + len(marker)
+content = content[:insert_at] + "\n" + home_link + content[insert_at:]
+
+with open(path, "w", encoding="utf-8") as f:
+    f.write(content)
+
+print("হোমে ফেরার লিংক সফলভাবে যোগ করা হয়েছে।")
+PYEOF
           fi
 
       - name: অপ্রয়োজনীয়/লগ ফাইল বাদ দেওয়া
