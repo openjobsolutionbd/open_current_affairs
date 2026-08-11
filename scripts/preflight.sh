@@ -5,6 +5,12 @@
 # সব ঠিক থাকলে শুধু একটা সংক্ষিপ্ত ✓ লাইন দেখায় — বিস্তারিত build/verify
 # লগ শুধু তখনই দেখায় যখন কিছু ভুল থাকে।
 #
+# এছাড়াও এখন চালায়: scripts/test_build_index.py (সবসময়, সস্তা/pure-Python),
+# আর scripts/js_tests/ (শুধু docs/index.html বা scripts/sw_template.js-এর
+# মতো code ফাইল বদলালে — নতুন feature/change-এ পুরনো bug (BUGFIX.md) যেন
+# চুপচাপ ফিরে না আসে তার automated regression-lock। content-only টপিক
+# আপডেটে এই ধাপ স্কিপ হয়, তাই খরচ বাড়ে না।
+#
 # push করার ঠিক আগে চালান:
 #   bash scripts/preflight.sh
 #
@@ -51,5 +57,36 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+python3 scripts/test_build_index.py > /tmp/preflight_pytest.log 2>&1
+if [ $? -ne 0 ]; then
+  echo "✗ test_build_index.py ব্যর্থ:"
+  cat /tmp/preflight_pytest.log
+  exit 1
+fi
+
+# app-shell JS bug-regression suite: শুধু তখনই চালানো হয় যখন code ফাইল
+# (content/topic ফাইল নয়) বদলেছে — content-only push-এ এই ধাপ স্কিপ হয়ে
+# টোকেন/সময় বাঁচে। দেখুন scripts/js_tests/run.mjs ও AGENTS.md।
+CODE_CHANGED=$(git diff --name-only origin/main -- docs/index.html scripts/sw_template.js scripts/js_tests/ scripts/build_index.py scripts/test_build_index.py scripts/verify_site.py package.json 2>/dev/null)
+if [ -n "$CODE_CHANGED" ]; then
+  if [ ! -d node_modules ]; then
+    npm install --silent > /tmp/preflight_npm.log 2>&1
+    if [ $? -ne 0 ]; then
+      echo "✗ npm install ব্যর্থ:"
+      cat /tmp/preflight_npm.log
+      exit 1
+    fi
+  fi
+  npm run --silent test:js > /tmp/preflight_jstest.log 2>&1
+  if [ $? -ne 0 ]; then
+    echo "✗ js regression tests ব্যর্থ (code ফাইল বদলেছে: $(echo "$CODE_CHANGED" | tr '\n' ' ')):"
+    cat /tmp/preflight_jstest.log
+    exit 1
+  fi
+  JS_STATUS="js regression: $(echo "$CODE_CHANGED" | wc -l | tr -d ' ')টা code ফাইল বদলেছে, সব টেস্ট পাস"
+else
+  JS_STATUS="js regression: স্কিপ (কোনো code ফাইল বদলায়নি)"
+fi
+
 TOPIC_COUNT=$(ls docs/topics/*.md 2>/dev/null | wc -l | tr -d ' ')
-echo "✓ preflight পাস — local ও remote সমান, build+verify ক্লিন, ${TOPIC_COUNT}টা টপিক। push করা নিরাপদ।"
+echo "✓ preflight পাস — local ও remote সমান, build+verify+py-test ক্লিন, ${TOPIC_COUNT}টা টপিক, ${JS_STATUS}। push করা নিরাপদ।"

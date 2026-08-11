@@ -39,7 +39,12 @@ cd open_current_affairs && bash scripts/session_status.sh
 | `scripts/verify_site.py` | build-এর *পরে* পুরো সাইট জুড়ে ক্রস-চেক করে (টপিক-সংখ্যা মিলছে কিনা, `[[slug]]` ভাঙা লিংক, প্রতিটা টপিকের পাতা/sitemap এন্ট্রি, VERSION সামঞ্জস্য) — `build_index.py`-এর পরপরই এটাও চালাতে হবে |
 | `scripts/preflight.sh` | push-এর ঠিক আগে চালানোর একটাই কনসোলিডেটেড কমান্ড — fetch + local/remote তুলনা + build + verify, সব একসাথে। আলাদা করে ৪টা কমান্ড চালানোর দরকার নেই |
 | `scripts/check_topic.sh "কীওয়ার্ড"` | নতুন টপিক লেখার আগে দ্রুত ডুপ্লিকেট-চেক — `topics-index.json` গ্রেপ করে, বড় archive ফাইল পড়তে হয় না |
+| `scripts/test_build_index.py` | `build_index.py`-এর ফাংশনের জন্য pure-Python regression টেস্ট (BUGFIX.md-এর bug-ক্লাসগুলো লক করে) — `preflight.sh` সবসময় চালায় |
+| `scripts/js_tests/` (`run.mjs`, `dom_harness.mjs`) | `docs/index.html`-এর app-shell JS-এর জন্য jsdom-ভিত্তিক behavioral regression suite — আসল প্রোডাকশন কোড থেকে ফাংশন বের করে চালায়, কোনো পুনর্লিখিত কপি নয়। `preflight.sh` শুধু তখনই চালায় যখন code ফাইল (topic content নয়) বদলায়। চালানোর নিয়ম: `npm run test:js` |
+| `package.json` | শুধু dev-time JS টেস্টের জন্য (`jsdom`) — লাইভ সাইট runtime-এ কোনো npm dependency লাগে না |
 | `.github/workflows/update-wiki.yml` | push হলে GitHub Actions স্বয়ংক্রিয়ভাবে build+verify চালায়; verify fail করলে generated output commit হয় না |
+| `BUGFIX.md` | আগে ধরা পড়া ও ঠিক করা bug-এর স্থায়ী লগ (কারণ+সমাধান সহ) — প্রতিটার জন্য `scripts/test_build_index.py` বা `scripts/js_tests/`-এ একটা matching regression test থাকা উচিত |
+| `TEST_CHECKLIST.md` | বড় ফিচার/কোড পরিবর্তনের পর ম্যানুয়াল যাচাইয়ের চেকলিস্ট (browser/অফলাইন/mobile — যা automated suite ছুঁতে পারে না) |
 | `CHANGELOG.md` | শুধু **সিস্টেম/কাঠামোর** পরিবর্তনের জন্য (ফিচার, ডিজাইন, ফাইল-কাঠামো বদল) — মাসিক কনটেন্ট আপডেট এখানে লেখা হয় না |
 | `EDITORIAL_MEMORY.md` | কনটেন্ট আপডেটের সময়কার স্থায়ী সম্পাদকীয় সিদ্ধান্তের নিয়ম-খাতা |
 
@@ -134,6 +139,7 @@ python3 scripts/verify_site.py
    - **build/verify ব্যর্থ (exit 1)** হলে সেই এরর ঠিক না করে push করবেন না।
    - rebase-এর ফলে remote-এর অন্য সেশনের করা কোনো পরিবর্তন হারানো/silently overwrite হচ্ছে কিনা তা `git diff origin/main..HEAD --stat`-এ চোখ বুলিয়ে নিশ্চিত করুন push করার আগে।
 7. **কখনো `git push --force` বা `git push --force-with-lease` ব্যবহার করবেন না**, এমনকি rebase-এর পরেও। শুধু সাধারণ `git push` ব্যবহার করুন — যদি সেটাও reject হয় (মানে rebase করার পরেও আরেকটা সেশন মাঝখানে নতুন কমিট করে ফেলেছে), পুরো preflight→rebase চক্রটা আবার করুন, force করে ভাঙবেন না।
+8. **কোনো নতুন bug পাওয়া/ঠিক করা হলে, শুধু `BUGFIX.md`-এ এন্ট্রি লিখেই থামবেন না — `scripts/test_build_index.py` বা `scripts/js_tests/run.mjs`-এ একটা matching automated regression test যোগ করুন**, যাতে ঠিক এই bug-টা future কোনো feature/refactor-এ চুপচাপ আবার ফিরে না আসে (`preflight.sh` প্রতি push-এ এগুলো চালায়)। শুধু ডকুমেন্টেশনে লেখা "ঠিক করা হয়েছে" যথেষ্ট নয় — আসল কোডে ফিক্সটা সত্যিই আছে কিনা টেস্ট না থাকলে ভবিষ্যতে কেউ (মানুষ বা AI) যাচাই না করেই ধরে নেবে। bug-টা যদি real browser rendering/layout সংক্রান্ত হয় (jsdom দিয়ে ধরা কঠিন), অন্তত `TEST_CHECKLIST.md`-এ একটা লাইন যোগ করুন এবং কেন automated test সম্ভব হলো না তা `BUGFIX.md` এন্ট্রিতে লিখে রাখুন।
 
 ## বর্তমান অবস্থা (সর্বশেষ যাচাই: ২০২৬-০৮-০৮)
 

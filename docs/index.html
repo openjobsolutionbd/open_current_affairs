@@ -1466,6 +1466,7 @@
     body{ background:#fff; }
     #browse-layout{ display:block !important; max-width:100%; margin:0; padding:0; }
     .card{
+      display:block !important; /* মোবাইলে #browse-layout:not(.showing-article) .card{display:none} থাকে — প্রিন্টের সময় সেটা override না করলে ফাঁকা পেজ আসে (BUGFIX.md BUG-01) */
       box-shadow:none;
       border:none;
       padding:0;
