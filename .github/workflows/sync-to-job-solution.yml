@@ -1,0 +1,114 @@
+name: Sync to open_job_solution (current-affairs section)
+
+# এই workflow টা প্রতি push-এ চলে না — বরং প্রতি ৩ দিন পরপর একবার চলে,
+# আর সেই মুহূর্তে open_current_affairs-এ যা কিছু জমা হয়েছে (এক বা একাধিক push মিলিয়ে)
+# সবটা একসাথে open_job_solution-এর current-affairs সেকশনে পাঠিয়ে দেয়।
+# এতে মূল রিপোতে (open_current_affairs) যত ইচ্ছা ঘন ঘন কাজ করা যায়,
+# কোনো প্রভাব ছাড়াই — সিঙ্ক শুধু নির্ধারিত সময়েই ঘটে।
+on:
+  schedule:
+    # প্রতি ৩ দিন পরপর, UTC সময় রাত ০০:০০ (বাংলাদেশ সময় ভোর ৬টা) —
+    # এই সময়টা বেছে নেওয়া হয়েছে যাতে ইউজারদের ব্যস্ত সময়ে সাইট রিফ্রেশ না হয়
+    - cron: "0 0 */3 * *"
+  # চাইলে GitHub-এর "Run workflow" বাটন দিয়ে যেকোনো সময় ম্যানুয়ালিও চালানো যাবে
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout open_current_affairs (source)
+        uses: actions/checkout@v4
+        with:
+          path: source
+          ref: main
+
+      - name: Checkout open_job_solution (destination)
+        uses: actions/checkout@v4
+        with:
+          repository: openjobsolutionbd/open_job_solution
+          path: destination
+          # নিরাপত্তা-স্তর ৪: এই টোকেন শুধুমাত্র open_job_solution রিপোতে
+          # লেখার অনুমতির জন্য বানানো, নির্দিষ্ট মেয়াদসহ, এবং GitHub Secrets-এ
+          # সংরক্ষিত — কোথাও প্লেইন টেক্সটে দেখা যায় না।
+          token: ${{ secrets.JOB_SOLUTION_SYNC_TOKEN }}
+
+      - name: current-affairs ফোল্ডার হালনাগাদ করা (নিরাপদ replace, বাকি রিপো অক্ষত)
+        run: |
+          set -e
+          echo "পুরনো current-affairs/ ফোল্ডার সরানো হচ্ছে (destination-এর ভেতরে শুধু এইটুকু)..."
+          rm -rf destination/current-affairs
+          mkdir -p destination/current-affairs
+
+          echo "নতুন কনটেন্ট কপি করা হচ্ছে..."
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            source/ destination/current-affairs/
+
+      - name: অ্যাপ-পরিচয় সংঘর্ষ এড়ানো (manifest link বাদ দেওয়া)
+        # সংশোধনী ১: current-affairs নিজেকে আলাদা ইনস্টলযোগ্য অ্যাপ হিসেবে
+        # ঘোষণা করবে না, যাতে open_job_solution-এর "একটাই PWA পরিচয়" নিয়ম বজায় থাকে।
+        run: |
+          set -e
+          INDEX="destination/current-affairs/docs/index.html"
+          if [ -f "$INDEX" ]; then
+            sed -i '/<link rel="manifest"/d' "$INDEX"
+            echo "manifest link বাদ দেওয়া হয়েছে: $INDEX"
+          else
+            echo "সতর্কবার্তা: docs/index.html পাওয়া যায়নি, ম্যানুয়ালি চেক করা দরকার" >&2
+            exit 1
+          fi
+
+      - name: হোমে ফেরার লিংক নিশ্চিত করা
+        run: |
+          set -e
+          INDEX="destination/current-affairs/docs/index.html"
+          if ! grep -q "হোমে ফিরুন" "$INDEX"; then
+            echo "সতর্কবার্তা: 'হোমে ফিরুন' লিংক পাওয়া যায়নি — ম্যানুয়ালি যোগ করা দরকার" >&2
+          fi
+
+      - name: অপ্রয়োজনীয়/লগ ফাইল বাদ দেওয়া
+        run: |
+          find destination/current-affairs -iname "*.log" -delete 2>/dev/null || true
+          find destination/current-affairs -path "*_system*" -exec rm -rf {} + 2>/dev/null || true
+
+      - name: নিরাপত্তা-স্তর ১ — সিঙ্কের যাচাই (ফাইল-সংখ্যা মিলছে কিনা)
+        id: verify
+        run: |
+          set -e
+          SRC_COUNT=$(find source/docs -type f | wc -l)
+          DEST_COUNT=$(find destination/current-affairs/docs -type f | wc -l)
+          echo "উৎস ফাইল-সংখ্যা (docs/): $SRC_COUNT"
+          echo "গন্তব্য ফাইল-সংখ্যা (docs/): $DEST_COUNT"
+          if [ "$SRC_COUNT" -ne "$DEST_COUNT" ]; then
+            echo "sync_ok=false" >> "$GITHUB_OUTPUT"
+            echo "❌ ফাইল-সংখ্যা মিলছে না! সিঙ্ক অসম্পূর্ণ হতে পারে।" >&2
+            exit 1
+          fi
+          echo "sync_ok=true" >> "$GITHUB_OUTPUT"
+          echo "✅ যাচাই সফল — ফাইল-সংখ্যা মিলেছে।"
+
+      - name: পরিবর্তন push করা (শুধু current-affairs/ পাথে)
+        working-directory: destination
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add current-affairs/
+          if git diff --cached --quiet; then
+            echo "কোনো পরিবর্তন নেই, push করার দরকার নেই।"
+            exit 0
+          fi
+          git commit -m "chore: sync current-affairs content from open_current_affairs [skip ci]"
+          git push origin main
+
+      # নিরাপত্তা-স্তর ২: সিঙ্ক ব্যর্থ হলে স্পষ্ট বার্তা তৈরি হবে (উপরের কোনো ধাপ
+      # ব্যর্থ হলে GitHub স্বয়ংক্রিয়ভাবে এই ধাপটা চালাবে)
+      - name: ব্যর্থতার স্পষ্ট বার্তা (কোনো আগের ধাপ ব্যর্থ হলে)
+        if: failure()
+        run: |
+          echo "::error::current-affairs সিঙ্ক ব্যর্থ হয়েছে — open_job_solution-এর কারেন্ট অ্যাফেয়ার্স সেকশনে নতুন তথ্য এখনো পৌঁছায়নি। পুরনো কনটেন্ট অক্ষত আছে (নিরাপত্তা-স্তর ৩), কিন্তু নতুন আপডেট ম্যানুয়ালি চেক করা দরকার।"
