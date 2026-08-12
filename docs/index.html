@@ -459,14 +459,11 @@
   }
 
   /* ══════════════════════════════════════════════════════
-     সার্চ "বাডি" — ম্যাগনিফায়িং গ্লাস আকৃতির একটা সঙ্গী চরিত্র, শুধু
-     আক্ষরিক আতশ কাঁচ না। ডিফল্টে (idle, ইউজার পড়ছে) অত্যন্ত সূক্ষ্ম
+     সার্চ "বাডি" — ম্যাগনিফায়িং গ্লাস চরিত্র। ডিফল্টে অত্যন্ত সূক্ষ্ম
      "breathe" (নিঃশ্বাসের মতো হালকা scale) ছাড়া কিছুই করে না, যাতে
      পড়ার মনোযোগ না কাড়ে। hover/drag-এ ছোট্ট wiggle/bounce দিয়ে
      একটু কিউট প্রতিক্রিয়া দেয়। চোখের পলক (blink) JS থেকে র‍্যান্ডম
-     বিরতিতে ট্রিগার হয়, যাতে যান্ত্রিক/পুনরাবৃত্ত না লাগে। সার্চ-প্যানেল
-     খোলা অবস্থায় (তখনই শুধু, ইউজার সরাসরি ওর দিকে তাকিয়ে) ফলাফলের
-     ভিত্তিতে "মুড" বদলায় — নিচে "বাডির মুড" সেকশন দেখুন।
+     বিরতিতে ট্রিগার হয়, যাতে যান্ত্রিক/পুনরাবৃত্ত না লাগে।
      ══════════════════════════════════════════════════════ */
   .floating-search-icon{
     flex:0 0 auto;
@@ -518,28 +515,6 @@
     0%, 100%{ transform:scaleY(1); }
     50%{ transform:scaleY(0.12); }
   }
-  /* ══════════════════════════════════════════════════════
-     বাডির "মুড" — শুধু সার্চ-প্যানেল খোলা অবস্থায় (তখন এমনিতেই ইউজারের
-     চোখ ওর দিকে, তাই এটা distraction না) ফলাফলের ভিত্তিতে প্রতিক্রিয়া
-     দেয়: ফলাফল পেলে happy (বড় হাসি + ছোট bounce), না পেলে confused
-     (মাথা একটু কাত + ভাবুক ভ্রু + দ্বিধান্বিত মুখ)। নিষ্ক্রিয়/idle অবস্থায়
-     এসবের কিছুই ট্রিগার হয় না — breathe/blink আগের মতোই একা চলে।
-     ══════════════════════════════════════════════════════ */
-  .fsi-charwrap{
-    transform-box:fill-box;
-    transform-origin:center;
-    transition:transform 0.4s cubic-bezier(.34,1.2,.4,1);
-  }
-  .floating-search-icon.fsi-mood-confused .fsi-charwrap{ transform:rotate(-9deg); }
-  .fsi-brow{ transform-box:fill-box; transform-origin:center; transition:transform 0.3s ease; }
-  .floating-search-icon.fsi-mood-happy .fsi-brow{ transform:translateY(-1px); }
-  .floating-search-icon.fsi-mood-confused .fsi-brow-l{ transform:translateY(0.6px) rotate(-3deg); }
-  .floating-search-icon.fsi-mood-confused .fsi-brow-r{ transform:translateY(-0.4px) rotate(3deg); }
-  .fsi-smile-happy, .fsi-smile-confused{ display:none; }
-  .floating-search-icon.fsi-mood-happy .fsi-smile-neutral{ display:none; }
-  .floating-search-icon.fsi-mood-happy .fsi-smile-happy{ display:block; }
-  .floating-search-icon.fsi-mood-confused .fsi-smile-neutral{ display:none; }
-  .floating-search-icon.fsi-mood-confused .fsi-smile-confused{ display:block; }
   /* খোলা অবস্থায় বাডিটা ছোট হয়ে বাম কোণে বসে, breathe থেমে যায় যাতে
      টাইপ করার সময় দৃষ্টি বিক্ষিপ্ত না হয়। */
   .floating-search-pill.open .floating-search-icon{
@@ -547,6 +522,8 @@
     height:26px;
     animation:none;
   }
+  .floating-search-pill.open .fsi-glint,
+  .floating-search-pill.open .fsi-eye-glint{ opacity:0.9; }
   .floating-search-pill #floating-search-input{
     flex:1 1 auto;
     min-width:0;
@@ -1661,21 +1638,15 @@
                 <stop offset="100%" stop-color="var(--accent-deep)"/>
               </linearGradient>
             </defs>
-            <g class="fsi-charwrap">
-              <circle cx="22" cy="22" r="21" fill="url(#fsiRimGrad)"/>
-              <circle cx="22" cy="22" r="18" fill="url(#fsiLensGrad)"/>
-              <ellipse class="fsi-glint" cx="16" cy="14.2" rx="5.2" ry="3.1" fill="#ffffff" opacity="0.45" transform="rotate(-30 16 14.2)"/>
-              <g class="fsi-face">
-                <path class="fsi-brow fsi-brow-l" d="M12.8 19.6 Q17.2 17.1 20.6 19.0" fill="none" stroke="var(--accent-deep)" stroke-width="1.6" stroke-linecap="round" opacity="0.8"/>
-                <path class="fsi-brow fsi-brow-r" d="M23.4 19.0 Q26.8 17.1 31.2 19.6" fill="none" stroke="var(--accent-deep)" stroke-width="1.6" stroke-linecap="round" opacity="0.8"/>
-                <circle class="fsi-eye fsi-eye-l" cx="17.3" cy="24.3" r="4.1" fill="var(--accent-deep)"/>
-                <circle class="fsi-eye fsi-eye-r" cx="26.7" cy="24.3" r="4.1" fill="var(--accent-deep)"/>
-                <circle class="fsi-eye-glint" cx="18.5" cy="22.8" r="1.35" fill="#ffffff"/>
-                <circle class="fsi-eye-glint" cx="25.3" cy="22.8" r="1.35" fill="#ffffff"/>
-                <path class="fsi-smile fsi-smile-neutral" d="M17.5 29.9 Q22 33.0 26.5 29.9" fill="none" stroke="var(--accent-deep)" stroke-width="2.1" stroke-linecap="round"/>
-                <path class="fsi-smile fsi-smile-happy" d="M15.4 29.5 Q22 37.2 28.6 29.5" fill="none" stroke="var(--accent-deep)" stroke-width="2.4" stroke-linecap="round"/>
-                <path class="fsi-smile fsi-smile-confused" d="M18 31.6 Q20.1 30.2 22 31.3 Q23.9 32.4 26 31.1" fill="none" stroke="var(--accent-deep)" stroke-width="2.0" stroke-linecap="round"/>
-              </g>
+            <circle cx="22" cy="22" r="21" fill="url(#fsiRimGrad)"/>
+            <circle cx="22" cy="22" r="18" fill="url(#fsiLensGrad)"/>
+            <ellipse class="fsi-glint" cx="15.5" cy="14" rx="6.5" ry="4.2" fill="#ffffff" opacity="0.85" transform="rotate(-30 15.5 14)"/>
+            <g class="fsi-face">
+              <circle class="fsi-eye fsi-eye-l" cx="17.2" cy="23.5" r="3.6" fill="var(--accent-deep)"/>
+              <circle class="fsi-eye fsi-eye-r" cx="27.4" cy="23.5" r="3.6" fill="var(--accent-deep)"/>
+              <circle class="fsi-eye-glint" cx="18.4" cy="22" r="1.15" fill="#ffffff"/>
+              <circle class="fsi-eye-glint" cx="28.6" cy="22" r="1.15" fill="#ffffff"/>
+              <path class="fsi-smile" d="M16.5 29.6 Q22 34.8 27.5 29.6" fill="none" stroke="var(--accent-deep)" stroke-width="2.2" stroke-linecap="round"/>
             </g>
           </svg>
         </span>
@@ -2771,7 +2742,6 @@ const topicModalClose = document.getElementById('topic-modal-close');
 function openFloatingSearch(){
   floatPill.classList.add('open');
   floatInput.focus();
-  setBuddyMood(); // প্যানেল টাটকা খোলার সময় বাডি নিরপেক্ষ অবস্থা থেকে শুরু করে
   // BUG FIX: পিল আগে থেকে টেনে সরানো (dragged) থাকলে এবং ডান কিনারার
   // কাছাকাছি অবস্থায় থাকলে, ওপেন হওয়ার সময় width বেড়ে গিয়ে বক্সটা
   // ভিউপোর্টের বাইরে চলে যেত — ইউজারকে হাত দিয়ে টেনে আনতে হতো। এখন
@@ -2784,43 +2754,16 @@ function closeFloatingSearch(){
   floatInput.value = '';
   floatResults.classList.remove('visible');
   floatResults.innerHTML = '';
-  setBuddyMood(); // বন্ধ করলে বাডি আবার নিরপেক্ষ/idle অবস্থায় ফিরে যায়
-}
-
-// বাডির "মুড" — 'happy' (ফলাফল পাওয়া গেছে), 'confused' (সত্যিই কিছু
-// পাওয়া যায়নি), বা কোনো আর্গুমেন্ট ছাড়া (নিরপেক্ষ/idle)। শুধু তখনই
-// অর্থপূর্ণ যখন প্যানেল খোলা — বন্ধ অবস্থায় এই ক্লাসগুলো CSS-এ কোনো
-// প্রভাব ফেলে না। বারবার একই মুডে সেট করলে "pop" bounce পুনরায় চালানো
-// হয় না (শুধু মুড বদলালেই) — নাহলে টাইপ করার প্রতিটা অক্ষরে বাউন্স
-// হয়ে বিরক্তিকর/অস্থির লাগত।
-function setBuddyMood(mood){
-  const icon = document.getElementById('floating-search-icon');
-  if(!icon) return;
-  const wasHappy = icon.classList.contains('fsi-mood-happy');
-  icon.classList.remove('fsi-mood-happy', 'fsi-mood-confused');
-  if(mood === 'happy'){
-    icon.classList.add('fsi-mood-happy');
-    if(!wasHappy){
-      icon.classList.remove('fsi-pop');
-      void icon.offsetWidth; // reflow ট্রিগার করে animation পুনরায় চালানো
-      icon.classList.add('fsi-pop');
-    }
-  } else if(mood === 'confused'){
-    icon.classList.add('fsi-mood-confused');
-  }
 }
 
 function renderWikiFallback(container, q, seq){
   container.innerHTML = '<div class="floating-search-empty floating-search-wiki-loading">উইকিপিডিয়ায় খোঁজা হচ্ছে…</div>';
-  setBuddyMood(); // উইকিপিডিয়া থেকে উত্তর আসা পর্যন্ত নিরপেক্ষ — এখনই "না পাওয়া" ধরে নেওয়া ঠিক না
   fetchWikipediaSummary(q).then(result => {
     if(seq !== wikiRequestSeq) return; // এর মধ্যে নতুন সার্চ হয়ে গেলে পুরনো ফলাফল উপেক্ষা করা হয়
     if(!result){
       container.innerHTML = '<div class="floating-search-empty">কোনো টপিক পাওয়া যায়নি</div>';
-      setBuddyMood('confused');
       return;
     }
-    setBuddyMood('happy');
     container.innerHTML = `
       <div class="floating-search-wiki-result">
         <div class="floating-search-wiki-badge">${WIKIPEDIA_BADGE_ICON}উইকিপিডিয়া</div>
@@ -2838,14 +2781,12 @@ function renderFloatingResults(q){
   if(!q){
     floatResults.classList.remove('visible');
     floatResults.innerHTML = '';
-    setBuddyMood(); // খালি সার্চ বক্স — নিরপেক্ষ
     return;
   }
   const list = currentFiltered(q).slice(0, 8);
   if(list.length === 0){
     renderWikiFallback(floatResults, q, seq);
   } else {
-    setBuddyMood('happy');
     floatResults.innerHTML = list.map(t =>
       `<button type="button" class="floating-search-result-item" data-slug="${escapeHtml(t.slug)}">${escapeHtml(t.title)}</button>`
     ).join('');
