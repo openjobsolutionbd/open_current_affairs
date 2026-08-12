@@ -1940,7 +1940,12 @@ function renderGhotonaprobahoItemText(item){
   const text = item.text;
   let out = '';
   let cursor = 0;
-  item.terms.forEach(term => {
+  // terms-কে টেক্সটে যে-ক্রমে আসে সেই ক্রমে সাজিয়ে নেওয়া হয়, যাতে JSON-এ
+  // ভিন্ন ক্রমে থাকলেও cursor-ভিত্তিক indexOf() সঠিকভাবে কাজ করে।
+  const sortedTerms = [...item.terms].sort(
+    (a, b) => text.indexOf(a.phrase) - text.indexOf(b.phrase)
+  );
+  sortedTerms.forEach(term => {
     const idx = text.indexOf(term.phrase, cursor);
     if(idx === -1) return; // ডেটা মিসম্যাচ হলে চুপচাপ স্কিপ করে, ক্র্যাশ না করে
     out += escapeHtml(text.slice(cursor, idx));
@@ -3026,6 +3031,10 @@ window.addEventListener('hashchange', () => {
     document.getElementById('browse-layout').classList.remove('showing-article');
     const q = document.getElementById('search').value.trim().toLowerCase();
     renderList(visibleTopics(q), q);
+  } else if(!slug && CURRENT_MODE !== 'browse'){
+    // ghotonaprobaho/top-news mode-এ ছিল, browser Back চাপে hash মুছে গেছে →
+    // browse mode-এ নিয়ে যাওয়া হয় যাতে UI ও URL একমত থাকে
+    setMode('browse');
   }
 });
 
