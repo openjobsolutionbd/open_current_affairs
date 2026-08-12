@@ -19,6 +19,15 @@ build_index.py প্রতিটা টপিক ফাইল আলাদা �
      দেখাবে
   ৬. version.json আর VERSION ফাইলের সংখ্যা মিলছে কিনা
   ৭. docs/sw.js-এর CACHE_NAME-এ VERSION-এর সংখ্যা বসেছে কিনা
+  ৮. index.html-এর @font-face-এ ব্যবহৃত প্রতিটা local font-url
+     sw_template.js-এর APP_SHELL-এ আছে কিনা (নইলে অফলাইনে ফন্ট ভাঙে)
+  ৯. @media print-এ .card-এর display:block !important আছে কিনা
+     (নইলে মোবাইলে article না খুলে প্রিন্ট করলে ফাঁকা পেজ আসে)
+
+চেক ৮-৯ docs/index.html ও scripts/sw_template.js — এই দুই সোর্স
+ফাইলকেও ছোঁয়, শুধু build_index.py-এর generated output নয়। এগুলো
+BUGFIX.md-এ ইতিমধ্যে ডকুমেন্টেড, একবার-ধরা-পড়া সমস্যা যেন নিঃশব্দে
+আবার ফিরে না আসে তার স্থায়ী regression lock।
 
 কোনো সমস্যা পেলে এই স্ক্রিপ্ট non-zero exit code দিয়ে থামে এবং
 স্পষ্টভাবে কী ভুল আছে তা বাংলায় জানায়। GitHub Action-এ এটা
@@ -48,6 +57,39 @@ LINK_RE = re.compile(r"\[\[([a-z0-9-]+)\]\]")
 
 class VerifyError(Exception):
     pass
+
+
+def extract_braced_block(text, selector, exact_selector=False):
+    """text-এর মধ্যে selector-এর প্রথম '{'-এর ইনডেক্স খুঁজে, brace-balance
+    গুনে সেই ব্লকের content (দুই brace-এর মাঝেরটুকু) রিটার্ন করে। comment-এর
+    ভেতরে { } থাকলেও ঠিকমতো কাজ করে (balanced থাকলে), কারণ এটা regex দিয়ে
+    ভেতরের কনটেন্ট ধরে না — brace গুনে ধরে।
+
+    exact_selector=True হলে selector-এর ঠিক পরে (হোয়াইটস্পেস বাদে) '{'
+    থাকতে হবে — যেমন '.card' দিলে '.card{' মিলবে, কিন্তু '.card-actions{'
+    বা '.card h2{' মিলবে না।
+    """
+    if exact_selector:
+        m = re.search(re.escape(selector) + r"\s*\{", text)
+        if not m:
+            return None
+        start = m.end() - 1
+    else:
+        idx = text.find(selector)
+        if idx == -1:
+            return None
+        start = text.find("{", idx)
+        if start == -1:
+            return None
+    depth = 0
+    for i in range(start, len(text)):
+        if text[i] == "{":
+            depth += 1
+        elif text[i] == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start + 1:i]
+    return None
 
 
 def fail(errors):
@@ -164,6 +206,44 @@ def main():
             )
     elif not SW_JS.exists():
         errors.append(f"{SW_JS} পাওয়া যায়নি")
+
+    # ৮. app-shell asset cross-check: index.html-এর @font-face-এ যত local
+    #    font url() আছে, sw_template.js-এর APP_SHELL-এ প্রতিটা থাকা উচিত —
+    #    নইলে অফলাইনে/পুরনো browser-এ সেই ফন্ট ভাঙবে (BUGFIX.md BUG-02 ক্লাস)
+    INDEX_HTML = DOCS_DIR / "index.html"
+    SW_TEMPLATE = ROOT / "scripts" / "sw_template.js"
+    if INDEX_HTML.exists() and SW_TEMPLATE.exists():
+        html_text = INDEX_HTML.read_text(encoding="utf-8")
+        font_block_match = re.search(r"@font-face\s*\{.*?(?=</style>)", html_text, re.DOTALL)
+        font_block = font_block_match.group(0) if font_block_match else html_text
+        font_urls = set(re.findall(r"url\('(\./fonts/[^']+)'\)", font_block))
+        sw_text = SW_TEMPLATE.read_text(encoding="utf-8")
+        app_shell_match = re.search(r"APP_SHELL\s*=\s*\[(.*?)\]", sw_text, re.DOTALL)
+        app_shell_text = app_shell_match.group(1) if app_shell_match else ""
+        for url in sorted(font_urls):
+            if url not in app_shell_text:
+                errors.append(
+                    f"index.html-এর @font-face-এ '{url}' ব্যবহার হয়, কিন্তু sw_template.js-এর "
+                    "APP_SHELL-এ নেই — অফলাইনে/পুরনো browser-এ এই ফন্ট ভাঙবে (BUGFIX.md BUG-02 ক্লাস)"
+                )
+    else:
+        if not INDEX_HTML.exists():
+            errors.append(f"{INDEX_HTML} পাওয়া যায়নি")
+        if not SW_TEMPLATE.exists():
+            errors.append(f"{SW_TEMPLATE} পাওয়া যায়নি")
+
+    # ৯. print CSS: মোবাইলে কোনো article না খুলেও প্রিন্ট করলে যেন ফাঁকা
+    #    পেজ না আসে — @media print-এ .card অবশ্যই display:block !important
+    #    হতে হবে (BUGFIX.md BUG-01)
+    if INDEX_HTML.exists():
+        html_text = html_text if "html_text" in dir() else INDEX_HTML.read_text(encoding="utf-8")
+        print_block = extract_braced_block(html_text, "@media print")
+        card_rule = extract_braced_block(print_block, ".card", exact_selector=True) if print_block else None
+        if card_rule is None or "display:block!important" not in re.sub(r"\s+", "", card_rule):
+            errors.append(
+                "@media print-এ .card-এর জন্য 'display:block !important' নেই — মোবাইলে কোনো "
+                "article না খুলে প্রিন্ট/PDF করলে সম্পূর্ণ ফাঁকা পেজ আসবে (BUGFIX.md BUG-01)"
+            )
 
     if errors:
         fail(errors)
