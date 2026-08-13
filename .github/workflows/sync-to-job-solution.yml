@@ -13,6 +13,15 @@ on:
   # চাইলে GitHub-এর "Run workflow" বাটন দিয়ে যেকোনো সময় ম্যানুয়ালিও চালানো যাবে
   workflow_dispatch: {}
 
+# বাগ-ফিক্স (concurrency): দুইটা রান একসাথে চললে দুটোই একই সময়ে
+# open_job_solution-এ push করার চেষ্টা করত, আর দ্বিতীয়টা ব্যর্থ (❌) হয়ে
+# যেত (কোনো তথ্য নষ্ট হতো না, কিন্তু বিভ্রান্তিকর লাল রান দেখাত)। এখন
+# একই group-এর নতুন রান শুরু হওয়া মাত্র আগেরটা যদি এখনো চলমান থাকে,
+# GitHub সেটাকে সারিতে (queue) রাখবে — একসাথে চলতে দেবে না।
+concurrency:
+  group: sync-to-job-solution
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
