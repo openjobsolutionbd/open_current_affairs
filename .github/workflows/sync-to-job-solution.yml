@@ -36,22 +36,49 @@ jobs:
           # সংরক্ষিত — কোথাও প্লেইন টেক্সটে দেখা যায় না।
           token: ${{ secrets.JOB_SOLUTION_SYNC_TOKEN }}
 
-      - name: current-affairs ফোল্ডার হালনাগাদ করা (নিরাপদ replace, বাকি রিপো অক্ষত)
+      - name: current-affairs/docs ফোল্ডার হালনাগাদ করা (শুধু ওয়েবসাইট কনটেন্ট, বাকি রিপো নয়)
+        # বাগ-ফিক্স (স্কোপ): আগে পুরো open_current_affairs রিপো — README,
+        # AGENTS.md, ডেভেলপমেন্ট স্ক্রিপ্ট, ভেতরের নোট, package.json ইত্যাদি
+        # সহ (~৩৭০ KB অপ্রয়োজনীয় ফাইল) — কপি হতো। এখন শুধু docs/ ফোল্ডার,
+        # যেটা আসলে ওয়েবসাইট হিসেবে দেখানো হয়, কপি হবে।
         run: |
           set -e
           echo "পুরনো current-affairs/ ফোল্ডার সরানো হচ্ছে (destination-এর ভেতরে শুধু এইটুকু)..."
           rm -rf destination/current-affairs
-          mkdir -p destination/current-affairs
+          mkdir -p destination/current-affairs/docs
 
-          echo "নতুন কনটেন্ট কপি করা হচ্ছে..."
+          echo "নতুন কনটেন্ট কপি করা হচ্ছে (শুধু docs/)..."
           rsync -a \
             --exclude='.git' \
             --exclude='.github' \
-            source/ destination/current-affairs/
+            source/docs/ destination/current-affairs/docs/
+
+      - name: পুরনো ঠিকানার লিংক ঠিক করা (canonical / redirect / sitemap)
+        # বাগ-ফিক্স (সবচেয়ে গুরুত্বপূর্ণ): টপিক পেজ, sitemap.xml, canonical
+        # ট্যাগে আগে থেকেই standalone সাইটের (open-current-affairs.pages.dev)
+        # পূর্ণ ঠিকানা বসানো ছিল। এখানে কপি হওয়ার পর সেটা ভুল হয়ে যায় —
+        # দর্শক টপিক-লিংকে ঢুকলে open_job_solution থেকে বাইরে ছিটকে যেত,
+        # আর গুগলও ভুল "আসল ঠিকানা" (canonical) শিখত। এই ধাপে docs/-এর
+        # ভেতরের সব ফাইলে সেই পুরনো ঠিকানাকে নতুন, সঠিক পাথ দিয়ে বদলে
+        # দেওয়া হচ্ছে, আর শেষে যাচাই করা হচ্ছে যে কিছু বাদ পড়েনি।
+        run: |
+          set -e
+          OLD="https://open-current-affairs.pages.dev"
+          NEW="/current-affairs/docs"
+          COUNT=$(grep -rl "$OLD" destination/current-affairs/docs/ 2>/dev/null | wc -l)
+          echo "পুরনো ঠিকানা পাওয়া গেছে $COUNT টা ফাইলে, ঠিক করা হচ্ছে..."
+          grep -rlZ "$OLD" destination/current-affairs/docs/ 2>/dev/null \
+            | xargs -0 -r sed -i "s|$OLD|$NEW|g"
+          REMAINING=$(grep -rl "$OLD" destination/current-affairs/docs/ 2>/dev/null | wc -l)
+          if [ "$REMAINING" -ne 0 ]; then
+            echo "সতর্কবার্তা: এখনো $REMAINING টা ফাইলে পুরনো ঠিকানা রয়ে গেছে, ম্যানুয়ালি চেক করা দরকার" >&2
+            exit 1
+          fi
+          echo "✅ সব ঠিকানা ঠিক করা হয়েছে ($COUNT টা ফাইলে)।"
 
       - name: অ্যাপ-পরিচয় সংঘর্ষ এড়ানো (manifest link বাদ দেওয়া)
-        # সংশোধনী ১: current-affairs নিজেকে আলাদা ইনস্টলযোগ্য অ্যাপ হিসেবে
-        # ঘোষণা করবে না, যাতে open_job_solution-এর "একটাই PWA পরিচয়" নিয়ম বজায় থাকে।
+        # current-affairs নিজেকে আলাদা ইনস্টলযোগ্য অ্যাপ হিসেবে ঘোষণা করবে
+        # না, যাতে open_job_solution-এর "একটাই PWA পরিচয়" নিয়ম বজায় থাকে।
         run: |
           set -e
           INDEX="destination/current-affairs/docs/index.html"
@@ -64,13 +91,9 @@ jobs:
           fi
 
       - name: হোমে ফেরার লিংক যোগ করা (না থাকলে সন্নিবেশ)
-        # সংশোধনী: আগে শুধু চেক করা হতো (আছে কিনা), এখন সত্যিই বসিয়ে দেওয়া হয় —
-        # open_job_solution-এর বাকি তিনটা সেকশনের নিয়ম মেনে।
-        # গুরুত্বপূর্ণ: `^<body>$` (পুরো লাইনে শুধু <body>) দিয়ে anchor করা,
-        # আর `0,/../` দিয়ে শুধু প্রথম মিল বদলানো হয় — যাতে ফাইলের অন্য কোথাও
-        # (যেমন কোনো JS মন্তব্যে "<body>" শব্দ থাকলে) ভুল করে না বসে যায়।
-        # (আগের একটা সংস্করণে এই সতর্কতা ছাড়া sed ব্যবহার করায় একটা JS
-        # মন্তব্যের ভেতরেও লিংক ঢুকে গিয়েছিল — সেই বাগ এখানে ঠিক করা হলো।)
+        # `^<body>$` (পুরো লাইনে শুধু <body>) দিয়ে anchor করা, আর `0,/../`
+        # দিয়ে শুধু প্রথম মিল বদলানো হয় — যাতে ফাইলের অন্য কোথাও ভুল করে
+        # না বসে যায়।
         run: |
           set -e
           INDEX="destination/current-affairs/docs/index.html"
@@ -91,29 +114,38 @@ jobs:
           find destination/current-affairs -iname "*.log" -delete 2>/dev/null || true
           find destination/current-affairs -path "*_system*" -exec rm -rf {} + 2>/dev/null || true
 
-      - name: নিরাপত্তা-স্তর ১ — সিঙ্কের যাচাই (ফাইল-সংখ্যা মিলছে কিনা)
-        id: verify
-        run: |
-          set -e
-          SRC_COUNT=$(find source/docs -type f | wc -l)
-          DEST_COUNT=$(find destination/current-affairs/docs -type f | wc -l)
-          echo "উৎস ফাইল-সংখ্যা (docs/): $SRC_COUNT"
-          echo "গন্তব্য ফাইল-সংখ্যা (docs/): $DEST_COUNT"
-          if [ "$SRC_COUNT" -ne "$DEST_COUNT" ]; then
-            echo "sync_ok=false" >> "$GITHUB_OUTPUT"
-            echo "❌ ফাইল-সংখ্যা মিলছে না! সিঙ্ক অসম্পূর্ণ হতে পারে।" >&2
-            exit 1
-          fi
-          echo "sync_ok=true" >> "$GITHUB_OUTPUT"
-          echo "✅ যাচাই সফল — ফাইল-সংখ্যা মিলেছে।"
-
-      - name: পরিবর্তন push করা (শুধু current-affairs/ পাথে)
+      - name: পরিবর্তন git-এ যোগ করা (verify আর commit-এর আগে, যাতে verify আসল staged অবস্থা দেখে)
         working-directory: destination
         run: |
           set -e
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add current-affairs/
+
+      - name: নিরাপত্তা-স্তর ১ — সিঙ্কের যাচাই (git-এ আসলে কী জমা হলো তা মিলিয়ে দেখা)
+        # বাগ-ফিক্স: আগে শুধু ডিস্কে কতগুলো ফাইল কপি হয়েছে তা গোনা হতো —
+        # git-এ আসলে জমা (staged) হয়েছে কিনা তা না। destination রিপোর কোনো
+        # .gitignore নিয়মের কারণে ভবিষ্যতে যদি কোনো ফাইল চুপচাপ বাদ পড়ে
+        # যায়, আগের চেক সেটা ধরতেই পারত না (ডিস্কে ফাইল থাকলেও গোনা হতো)।
+        # এখন git ls-files দিয়ে সত্যিই কমিটযোগ্য ফাইল-সংখ্যা গোনা হচ্ছে।
+        run: |
+          set -e
+          SRC_COUNT=$(find source/docs -type f | wc -l)
+          DEST_COUNT=$(git -C destination ls-files current-affairs/docs | wc -l)
+          echo "উৎস ফাইল-সংখ্যা (docs/): $SRC_COUNT"
+          echo "গন্তব্যে git-এ জমা হওয়া ফাইল-সংখ্যা (docs/): $DEST_COUNT"
+          if [ "$SRC_COUNT" -ne "$DEST_COUNT" ]; then
+            echo "sync_ok=false" >> "$GITHUB_OUTPUT"
+            echo "❌ ফাইল-সংখ্যা মিলছে না! সিঙ্ক অসম্পূর্ণ হতে পারে (হয়তো কোনো ফাইল git-এ যোগই হয়নি)।" >&2
+            exit 1
+          fi
+          echo "sync_ok=true" >> "$GITHUB_OUTPUT"
+          echo "✅ যাচাই সফল — ফাইল-সংখ্যা মিলেছে (git-এ জমা হওয়া অনুযায়ী)।"
+
+      - name: পরিবর্তন push করা (শুধু current-affairs/ পাথে)
+        working-directory: destination
+        run: |
+          set -e
           if git diff --cached --quiet; then
             echo "কোনো পরিবর্তন নেই, push করার দরকার নেই।"
             exit 0
