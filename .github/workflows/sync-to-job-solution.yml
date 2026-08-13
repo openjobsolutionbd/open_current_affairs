@@ -92,6 +92,16 @@ jobs:
           BARE_NEW="Open Job Solution"
           grep -rlZ "class=\"print-watermark\">$BARE_OLD<" destination/current-affairs/docs/ 2>/dev/null \
             | xargs -0 -r sed -i "s|class=\"print-watermark\">$BARE_OLD<|class=\"print-watermark\">$BARE_NEW<|g"
+          # বাগ-ফিক্স (যাচাই যোগ করা): আগে এই ধাপে কোনো যাচাই ছিল না — উপরের
+          # sed প্যাটার্নটা ভবিষ্যতে HTML গঠন সামান্য বদলালে (যেমন attribute-এর
+          # ক্রম বদলালে) নিঃশব্দে কিছুই না বদলিয়ে তবু "✅ সফল" দেখাত। এখন
+          # রিপ্লেসমেন্টের পরেও পুরনো প্যাটার্ন থেকে গেলে স্পষ্টভাবে ব্যর্থ (❌) দেখাবে,
+          # href-fix ধাপের মতোই।
+          REMAINING_WATERMARK=$(grep -rl "class=\"print-watermark\">$BARE_OLD<" destination/current-affairs/docs/ 2>/dev/null | wc -l)
+          if [ "$REMAINING_WATERMARK" -ne 0 ]; then
+            echo "সতর্কবার্তা: watermark-এর টেক্সট এখনো $REMAINING_WATERMARK টা ফাইলে বদলানো যায়নি (HTML গঠন বদলে থাকতে পারে), ম্যানুয়ালি চেক করা দরকার" >&2
+            exit 1
+          fi
           echo "✅ watermark টেক্সট ঠিক করা হয়েছে।"
 
       - name: অ্যাপ-পরিচয় সংঘর্ষ এড়ানো (manifest link বাদ দেওয়া)
