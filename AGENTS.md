@@ -42,7 +42,7 @@ cd open_current_affairs && bash scripts/session_status.sh
 | `scripts/test_build_index.py` | `build_index.py`-এর ফাংশনের জন্য pure-Python regression টেস্ট (BUGFIX.md-এর bug-ক্লাসগুলো লক করে) — `preflight.sh` সবসময় চালায় |
 | `scripts/js_tests/` (`run.mjs`, `dom_harness.mjs`) | `docs/index.html`-এর app-shell JS-এর জন্য jsdom-ভিত্তিক behavioral regression suite — আসল প্রোডাকশন কোড থেকে ফাংশন বের করে চালায়, কোনো পুনর্লিখিত কপি নয়। `preflight.sh` শুধু তখনই চালায় যখন code ফাইল (topic content নয়) বদলায়। চালানোর নিয়ম: `npm run test:js` |
 | `package.json` | শুধু dev-time JS টেস্টের জন্য (`jsdom`) — লাইভ সাইট runtime-এ কোনো npm dependency লাগে না |
-| `.github/workflows/update-wiki.yml` | `main`-এ push (অর্থাৎ PR merge) হলে GitHub Actions স্বয়ংক্রিয়ভাবে build+verify চালিয়ে generated output কমিট করে; verify fail করলে generated output commit হয় না |
+| `.github/workflows/update-wiki.yml` | `main`-এ push (অর্থাৎ PR merge) হলে GitHub Actions স্বয়ংক্রিয়ভাবে build+verify চালায়। পরিবর্তন থাকলে `auto/rebuild-output` branch-এ push করে সেখান থেকে একটা PR খোলে/আপডেট করে (branch protection-এর কারণে bot সরাসরি `main`-এ push করতে পারে না — ২০২৬-০৮-১৩ থেকে এই নিয়ম, আগে সরাসরি push করত যা protection চালুর পর প্রতিবার ব্যর্থ হচ্ছিল)। এই bot-PR merge করার আগেও ব্যবহারকারীর স্পষ্ট অনুমতি লাগবে, `scripts/pr_checks.py` শুধু generated-ফাইল guard থেকে এটাকে exempt করে (auto-merge policy আলাদা বিষয়) |
 | `.github/workflows/pr-check.yml` | কোনো PR খোলা/আপডেট হলে চালায়: generated-ফাইল guard, অন্য খোলা PR-এর সাথে ফাইল-সংঘর্ষ চেক, build+verify — ফলাফল PR-এর কমেন্টে (সমস্যা থাকলে) ও status check-এ |
 | `scripts/pr_checks.py` | উপরের `pr-check.yml`-এর ভেতরে চলে; সরাসরি হাতে চালানোর দরকার নেই |
 | `BUGFIX.md` | আগে ধরা পড়া ও ঠিক করা bug-এর স্থায়ী লগ (কারণ+সমাধান সহ) — প্রতিটার জন্য `scripts/test_build_index.py` বা `scripts/js_tests/`-এ একটা matching regression test থাকা উচিত |
@@ -256,7 +256,7 @@ merge ব্যর্থ হলে (checks এখনো শেষ হয়ন�
 curl -s -X DELETE -H "Authorization: Bearer $PAT" \
   https://api.github.com/repos/openjobsolutionbd/open_current_affairs/git/refs/heads/work/2026-08-11-...
 ```
-merge-এর পর `main`-এ push হওয়ার কারণে `.github/workflows/update-wiki.yml` নিজে থেকেই generated output রিবিল্ড করে দেবে — সেটা আলাদা করে করতে হবে না।
+merge-এর পর `main`-এ push হওয়ার কারণে `.github/workflows/update-wiki.yml` নিজে থেকেই generated output রিবিল্ড করার চেষ্টা করবে — কিন্তু branch protection-এর কারণে সরাসরি push না করে `auto/rebuild-output` নামে একটা আলাদা PR খুলবে/আপডেট করবে; **সেই PR-ও merge করতে হবে** (স্বয়ংক্রিয়ভাবে merge হয় না), নাহলে লাইভ সাইটে generated output stale থেকে যাবে।
 
 **যদি PR-এ real git conflict দেখায়** (দুইটা branch একই লাইনে ভিন্ন পরিবর্তন করেছে — GitHub-এর `mergeable: false`): নিজে অনুমান করে কোনটা রাখবেন ঠিক করবেন না, উপরের item 7-এর ব্যতিক্রম-নিয়ম মেনে চলুন। Auto-generated ফাইলে conflict কখনো হাতে মার্জ করবেন না — merge-এর পর `main`-এ `build_index.py` এমনিতেই আবার চালাবে।
 
