@@ -76,6 +76,15 @@ jobs:
           fi
           echo "✅ সব ঠিকানা ঠিক করা হয়েছে ($COUNT টা ফাইলে)।"
 
+          # প্রিন্ট/PDF watermark-এ লিংকের href তো ঠিক হয়ে গেল, কিন্তু
+          # দৃশ্যমান টেক্সটে (protocol ছাড়া বেয়ার ডোমেইন নাম) এখনো পুরনো
+          # নাম থেকে যায় — সেটাও এখানে ঠিক করা হচ্ছে।
+          BARE_OLD="open-current-affairs.pages.dev"
+          BARE_NEW="Open Job Solution"
+          grep -rlZ "class=\"print-watermark\">$BARE_OLD<" destination/current-affairs/docs/ 2>/dev/null \
+            | xargs -0 -r sed -i "s|class=\"print-watermark\">$BARE_OLD<|class=\"print-watermark\">$BARE_NEW<|g"
+          echo "✅ watermark টেক্সট ঠিক করা হয়েছে।"
+
       - name: অ্যাপ-পরিচয় সংঘর্ষ এড়ানো (manifest link বাদ দেওয়া)
         # current-affairs নিজেকে আলাদা ইনস্টলযোগ্য অ্যাপ হিসেবে ঘোষণা করবে
         # না, যাতে open_job_solution-এর "একটাই PWA পরিচয়" নিয়ম বজায় থাকে।
