@@ -2643,7 +2643,7 @@ function renderList(list, q){
     const readMark = progress[t.slug] ? '<span class="read-badge">✓</span>' : '';
     const bookmarkMark = bookmarks[t.slug] ? '<span class="bookmark-badge">⭐</span>' : '';
     return `
-    <button class="tab ${t.slug===ACTIVE_SLUG?'active':''} ${progress[t.slug]?'read-topic':''}" data-slug="${t.slug}">
+    <button class="tab ${t.slug===ACTIVE_SLUG?'active':''} ${progress[t.slug]?'read-topic':''}" data-slug="${escapeHtml(t.slug)}">
       ${escapeHtml(t.title)}${readMark}${bookmarkMark}
       ${sub}
     </button>
@@ -3031,7 +3031,7 @@ async function renderTopicContent(topic, container, {backBtnId, onRelatedClick} 
       ${related.length ? `
         <div class="related-topics">
           <div class="related-title">🔗 এটাও দেখো</div>
-          ${related.map(r => `<span class="related-chip" data-slug="${r.slug}">${escapeHtml(r.title)}</span>`).join('')}
+          ${related.map(r => `<span class="related-chip" data-slug="${escapeHtml(r.slug)}">${escapeHtml(r.title)}</span>`).join('')}
         </div>
       ` : ''}
     `;
