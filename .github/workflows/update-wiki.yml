@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   build:
@@ -13,6 +14,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -28,11 +31,42 @@ jobs:
       - name: Verify site consistency
         run: python3 scripts/verify_site.py
 
-      - name: Commit generated output
-        if: success()
+      - name: পরিবর্তন আছে কিনা যাচাই
+        id: changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/topics-index.json docs/sw.js docs/version.json docs/ghotonaprobaho-index.json docs/top-news-index.json docs/topic/ docs/sitemap.xml docs/robots.txt
-          git diff --cached --quiet || git commit -m "chore: rebuild generated site output [skip ci]"
-          git push
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # branch protection চালু থাকায় bot সরাসরি main-এ push করতে পারে না,
+      # তাই একটা নির্দিষ্ট auto/ branch-এ push করে PR খোলে/আপডেট করে —
+      # scripts/pr_checks.py এই branch-কে generated-ফাইল guard থেকে exempt করে।
+      - name: Rebuild branch push + PR তৈরি/আপডেট
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="auto/rebuild-output"
+          git checkout -B "$BRANCH"
+          git commit -m "chore: rebuild generated site output [skip ci]"
+          git push --force origin "$BRANCH"
+
+          EXISTING=$(curl -s -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls?state=open&per_page=100" \
+            | python3 -c "import sys, json; prs = json.load(sys.stdin); match = [p['number'] for p in prs if p['head']['ref'] == 'auto/rebuild-output']; print(match[0] if match else '')")
+
+          if [ -z "$EXISTING" ]; then
+            curl -s -X POST \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/pulls" \
+              -d '{"title":"chore: generated site output re-sync (auto)","head":"'"$BRANCH"'","base":"main","body":"main-এ push হওয়া সোর্স পরিবর্তনের সাথে generated output (topics-index.json, per-topic HTML, sitemap ইত্যাদি) sync করতে স্বয়ংক্রিয়ভাবে তৈরি হয়েছে। branch protection-এর কারণে bot সরাসরি main-এ push করতে পারে না, তাই এই PR — merge করার আগে চেক পাস করা নিশ্চিত করুন।"}'
+          else
+            echo "ইতিমধ্যে PR #$EXISTING খোলা আছে — নতুন commit push হয়ে গেছে, সেটাই আপডেট হবে।"
+          fi

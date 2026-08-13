@@ -81,37 +81,44 @@ def post_comment(body):
 
 
 def main():
+    pr = gh(f"/repos/{REPO}/pulls/{PR_NUMBER}")
+    # update-wiki.yml-এর স্বয়ংক্রিয় rebuild-PR এখান থেকে আসে (branch protection-এর
+    # কারণে bot সরাসরি main-এ push করতে পারে না) — এই PR-এর জন্য generated-ফাইল
+    # ছোঁয়াটাই স্বাভাবিক ও প্রত্যাশিত, তাই সেই guard থেকে exempt করা হয়।
+    is_bot_rebuild = pr["head"]["ref"] == "auto/rebuild-output"
+
     my_files = gh_files(PR_NUMBER)
     problems = []
 
-    # ১. generated ফাইল guard
-    touched_generated = [
-        f for f in my_files if any(f.startswith(p) for p in GENERATED_PREFIXES)
-    ]
-    if touched_generated:
-        problems.append(
-            "### ⚠️ auto-generated ফাইল সরাসরি বদলানো হয়েছে\n"
-            "এই ফাইলগুলো হাতে edit করা উচিত না — `build_index.py` main-এ merge "
-            "হওয়ার পর নিজে থেকে বানায়:\n"
-            + "\n".join(f"- `{f}`" for f in touched_generated)
-            + "\n\nএগুলো এই PR থেকে বাদ দিন (শুধু `docs/topics/`, "
-            "`docs/ghotonaprobaho/`, `docs/top-news/`-এর মূল ফাইল বদলান)।"
-        )
+    # ১. generated ফাইল guard (bot rebuild PR ছাড়া)
+    if not is_bot_rebuild:
+        touched_generated = [
+            f for f in my_files if any(f.startswith(p) for p in GENERATED_PREFIXES)
+        ]
+        if touched_generated:
+            problems.append(
+                "### ⚠️ auto-generated ফাইল সরাসরি বদলানো হয়েছে\n"
+                "এই ফাইলগুলো হাতে edit করা উচিত না — `build_index.py` main-এ merge "
+                "হওয়ার পর নিজে থেকে বানায়:\n"
+                + "\n".join(f"- `{f}`" for f in touched_generated)
+                + "\n\nএগুলো এই PR থেকে বাদ দিন (শুধু `docs/topics/`, "
+                "`docs/ghotonaprobaho/`, `docs/top-news/`-এর মূল ফাইল বদলান)।"
+            )
 
     # ২. অন্য খোলা PR-এর সাথে ফাইল-সংঘর্ষ
     my_source_files = {f for f in my_files if any(f.startswith(p) for p in SOURCE_PREFIXES)}
     if my_source_files:
         open_prs = gh(f"/repos/{REPO}/pulls?state=open&per_page=100")
-        for pr in open_prs:
-            if str(pr["number"]) == str(PR_NUMBER):
+        for other_pr in open_prs:
+            if str(other_pr["number"]) == str(PR_NUMBER):
                 continue
-            other_files = set(gh_files(pr["number"]))
+            other_files = set(gh_files(other_pr["number"]))
             overlap = my_source_files & other_files
             if overlap:
                 problems.append(
-                    f"### ⚠️ অন্য খোলা কাজের (PR #{pr['number']} — {pr['title']}) "
+                    f"### ⚠️ অন্য খোলা কাজের (PR #{other_pr['number']} — {other_pr['title']}) "
                     "সাথে একই ফাইলে সংঘর্ষের ঝুঁকি\n"
-                    "নিচের ফাইল(গুলো) এই PR আর PR #" + str(pr["number"]) + " — "
+                    "নিচের ফাইল(গুলো) এই PR আর PR #" + str(other_pr["number"]) + " — "
                     "দুইটাতেই একসাথে বদলানো হচ্ছে:\n"
                     + "\n".join(f"- `{f}`" for f in sorted(overlap))
                     + "\n\nদুইটা আলাদা Claude session হয়তো একই বিষয়ে একই সময়ে "

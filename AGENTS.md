@@ -42,7 +42,7 @@ cd open_current_affairs && bash scripts/session_status.sh
 | `scripts/test_build_index.py` | `build_index.py`-এর ফাংশনের জন্য pure-Python regression টেস্ট (BUGFIX.md-এর bug-ক্লাসগুলো লক করে) — `preflight.sh` সবসময় চালায় |
 | `scripts/js_tests/` (`run.mjs`, `dom_harness.mjs`) | `docs/index.html`-এর app-shell JS-এর জন্য jsdom-ভিত্তিক behavioral regression suite — আসল প্রোডাকশন কোড থেকে ফাংশন বের করে চালায়, কোনো পুনর্লিখিত কপি নয়। `preflight.sh` শুধু তখনই চালায় যখন code ফাইল (topic content নয়) বদলায়। চালানোর নিয়ম: `npm run test:js` |
 | `package.json` | শুধু dev-time JS টেস্টের জন্য (`jsdom`) — লাইভ সাইট runtime-এ কোনো npm dependency লাগে না |
-| `.github/workflows/update-wiki.yml` | `main`-এ push (অর্থাৎ PR merge) হলে GitHub Actions স্বয়ংক্রিয়ভাবে build+verify চালিয়ে generated output কমিট করে; verify fail করলে generated output commit হয় না |
+| `.github/workflows/update-wiki.yml` | `main`-এ push (অর্থাৎ PR merge) হলে GitHub Actions স্বয়ংক্রিয়ভাবে build+verify চালায়। পরিবর্তন থাকলে `auto/rebuild-output` branch-এ push করে সেখান থেকে একটা PR খোলে/আপডেট করে (branch protection-এর কারণে bot সরাসরি `main`-এ push করতে পারে না — ২০২৬-০৮-১৩ থেকে এই নিয়ম, আগে সরাসরি push করত যা protection চালুর পর প্রতিবার ব্যর্থ হচ্ছিল)। এই bot-PR merge করার আগেও ব্যবহারকারীর স্পষ্ট অনুমতি লাগবে, `scripts/pr_checks.py` শুধু generated-ফাইল guard থেকে এটাকে exempt করে (auto-merge policy আলাদা বিষয়) |
 | `.github/workflows/pr-check.yml` | কোনো PR খোলা/আপডেট হলে চালায়: generated-ফাইল guard, অন্য খোলা PR-এর সাথে ফাইল-সংঘর্ষ চেক, build+verify — ফলাফল PR-এর কমেন্টে (সমস্যা থাকলে) ও status check-এ |
 | `scripts/pr_checks.py` | উপরের `pr-check.yml`-এর ভেতরে চলে; সরাসরি হাতে চালানোর দরকার নেই |
 | `BUGFIX.md` | আগে ধরা পড়া ও ঠিক করা bug-এর স্থায়ী লগ (কারণ+সমাধান সহ) — প্রতিটার জন্য `scripts/test_build_index.py` বা `scripts/js_tests/`-এ একটা matching regression test থাকা উচিত |
@@ -256,34 +256,33 @@ merge ব্যর্থ হলে (checks এখনো শেষ হয়ন�
 curl -s -X DELETE -H "Authorization: Bearer $PAT" \
   https://api.github.com/repos/openjobsolutionbd/open_current_affairs/git/refs/heads/work/2026-08-11-...
 ```
-merge-এর পর `main`-এ push হওয়ার কারণে `.github/workflows/update-wiki.yml` নিজে থেকেই generated output রিবিল্ড করে দেবে — সেটা আলাদা করে করতে হবে না।
+merge-এর পর `main`-এ push হওয়ার কারণে `.github/workflows/update-wiki.yml` নিজে থেকেই generated output রিবিল্ড করার চেষ্টা করবে — কিন্তু branch protection-এর কারণে সরাসরি push না করে `auto/rebuild-output` নামে একটা আলাদা PR খুলবে/আপডেট করবে; **সেই PR-ও merge করতে হবে** (স্বয়ংক্রিয়ভাবে merge হয় না), নাহলে লাইভ সাইটে generated output stale থেকে যাবে।
 
 **যদি PR-এ real git conflict দেখায়** (দুইটা branch একই লাইনে ভিন্ন পরিবর্তন করেছে — GitHub-এর `mergeable: false`): নিজে অনুমান করে কোনটা রাখবেন ঠিক করবেন না, উপরের item 7-এর ব্যতিক্রম-নিয়ম মেনে চলুন। Auto-generated ফাইলে conflict কখনো হাতে মার্জ করবেন না — merge-এর পর `main`-এ `build_index.py` এমনিতেই আবার চালাবে।
 
-## বর্তমান অবস্থা (সর্বশেষ যাচাই: ২০২৬-০৮-০৮)
+## বর্তমান অবস্থা (সর্বশেষ যাচাই: ২০২৬-০৮-১২)
 
-- সর্বশেষ commit: `b9c32b4` (push হয়ে গেছে, working tree clean)
-- VERSION: `1.6.0`
-- টপিক ফাইল সংখ্যা: ৩৫
+- সর্বশেষ commit: `e599555` (push হয়ে গেছে, working tree clean)
+- VERSION: `1.7.0`
+- টপিক ফাইল সংখ্যা: ৩৭
 - `python3 scripts/build_index.py` ও `python3 scripts/verify_site.py` দুটোই ক্লিন পাস করছে, কোনো এরর নেই
-- `.gitignore` ও `.github/workflows/update-wiki.yml` উভয়ই বিদ্যমান ও কার্যকর; workflow-তে build-এর পর verify স্টেপও যোগ করা হয়েছে (২০২৬-০৮)
+- PR-ভিত্তিক ওয়ার্কফ্লো (branch protection + `pr-check.yml`) এখন কার্যকর — সরাসরি `main`-এ push আর হয় না
+- MCQ ইন্টারেক্টিভ কুইজ ফিচার লাইভ (দেখুন "MCQ হ্যান্ডলিং" সেকশন)
 
 ### চলমান কাজ: প্রফেসর'স কারেন্ট অ্যাফেয়ার্স জুলাই ২০২৬ সংখ্যা থেকে কনটেন্ট যোগ করা
 
-সোর্স: ব্যবহারকারীর দেওয়া `july_2026.zip` (৪৫ পেজ, ম্যাগাজিনের নিজস্ব ছাপা পেজ-নম্বর অনুযায়ী গণনা করতে হবে — ফাইল-ক্রম-নম্বর নয়)। কাজ ধাপে ধাপে চলছে।
+সোর্স: ব্যবহারকারীর দেওয়া `july_2026.zip` (৪৫ পেজ, ম্যাগাজিনের নিজস্ব ছাপা পেজ-নম্বর অনুযায়ী গণনা করতে হবে — ফাইল-ক্রম-নম্বর নয়)। কাজ ধাপে ধাপে চলছে, একাধিক সমান্তরাল সেশন থেকে।
 
-**✅ সম্পন্ন (repo-তে push হয়ে গেছে):**
-- ঘটনাপ্রবাহ + টপ নিউজ (১৮ মে – ২৬ জুন ২০২৬) — `docs/ghotonaprobaho/2026-04-25_2026-06-26.md`, `docs/top-news/2026-04-25_2026-06-21.md`
-- নতুন টপিক: `proshasonik-punorbinnash`, `everest-bijoyi-bangladeshi`, `somudro-gobeshona-kendro`, `samudrik-songrokkhito-elaka`, `gonoporibohone-gps`, `sorkari-bishwobiddaloy-talika`, `gi-ponno-bangladesh`, `notun-shikkhakrom-8-bishoy` — এই ৮টা "দেশ পরিক্রমা" বিভাগ থেকে
-- existing টপিক আপডেট: `podok-purushkar.md` (নজরুল পুরস্কার, বন্যপ্রাণী পুরস্কার, বুকার, পরিবেশ পদক, কান উৎসব যোগ; আগের ভুল অস্কার/স্বাধীনতা পুরস্কার তথ্য সংশোধন)
-- `AGENTS.md`-এ "উচ্চ-সংবেদনশীল / ঘন-পরিবর্তনশীল টপিক" তালিকা যোগ (`report-somikkha.md`, `podok-purushkar.md` অন্তর্ভুক্ত)
+**✅ সম্পন্ন (repo-তে merge হয়ে গেছে):**
+- ঘটনাপ্রবাহ + টপ নিউজ, MCQ raw আর্কাইভ ও ইন্টারেক্টিভ কুইজ ফিচার
+- নতুন টপিক: ৮টা "দেশ পরিক্রমা" (আগের তালিকা দেখুন গিটে), `dibosh-protipaddo-july`, `football-biswakap-2026`
+- existing টপিক আপডেট: `podok-purushkar`, `report-somikkha`, `unga-sovapoti-bangladesh`, `iran-israel-shongkot`
 
-**⏳ বাকি আছে:**
+**⏳ বাকি আছে (২০২৬-০৮-১২ পর্যন্ত `docs/topics-index.json` যাচাই করে হালনাগাদ করা হলো):**
 - "দেশ পরিক্রমা" বিভাগের উন্নয়ন কর্তৃপক্ষের তালিকা অংশ — ব্যবহারকারী নিজে এই পেজের স্পষ্ট ছবি পরে পেস্ট করে দেবেন
-- existing টপিক আপডেট বাকি: `report-somikkha.md`, `unga-sovapoti-bangladesh.md`, `iran-israel-shongkot.md` (জুনের সমঝোতা/যুদ্ধবিরতি অংশ)
-- নতুন টপিক বাকি (current affairs): বিশ্ব পরিক্রমা, CJP ভারতের রাজনীতি, যুক্তরাষ্ট্রের স্বাধীনতা ২৫০ বছর, জাতীয় বাজেট ২০২৬-২৭ ও সৃজনশীল অর্থনীতি, মুক্তিযুদ্ধের সেক্টর ও তিন ফোর্স, খেলাধুলা রাউন্ডআপ, প্রধানমন্ত্রীর প্রথম রাষ্ট্রীয় সফর, ফিফা বিশ্বকাপ ২০২৬
-- নতুন টপিক বাকি (রেফারেন্স/ব্যাখ্যামূলক — ব্যবহারকারী এগুলোও চান, "অনন্তলোকে" ছাড়া): দিবস-প্রতিপাদ্য জুন (শুধু দিবস অংশ), AI থেকে AGI, বাবর মুঘল সাম্রাজ্য, কৃষি বাতায়ন গম, আবিষ্কার মোটর গাড়ি
-- বাদ (সিদ্ধান্ত হয়ে গেছে): MCQ + প্রশ্নোত্তর বিভাগ, "অনন্তলোকে" (প্রয়াত ব্যক্তি স্মরণ)
+- নতুন টপিক বাকি (current affairs): বিশ্ব পরিক্রমা, CJP ভারতের রাজনীতি, যুক্তরাষ্ট্রের স্বাধীনতা ২৫০ বছর, জাতীয় বাজেট ২০২৬-২৭ ও সৃজনশীল অর্থনীতি, মুক্তিযুদ্ধের সেক্টর ও তিন ফোর্স, খেলাধুলা রাউন্ডআপ, প্রধানমন্ত্রীর প্রথম রাষ্ট্রীয় সফর
+- নতুন টপিক বাকি (রেফারেন্স/ব্যাখ্যামূলক, "অনন্তলোকে" ছাড়া): দিবস-প্রতিপাদ্য **জুন** (এখনো নেই — শুধু march ও july হয়েছে), AI থেকে AGI, বাবর মুঘল সাম্রাজ্য, কৃষি বাতায়ন গম, আবিষ্কার মোটর গাড়ি
+- বাদ (সিদ্ধান্ত অপরিবর্তিত): "অনন্তলোকে" (প্রয়াত ব্যক্তি স্মরণ) — MCQ আর বাদ না, উপরে "MCQ হ্যান্ডলিং" সেকশন দেখুন
 
-**কাজের ধরন:** প্রতিটা বাকি আইটেমের জন্য সোর্স পেজ ছবি জুম করে সরাসরি পড়ে (আগে একবার দেখা কনটেন্টের স্মৃতির ভিত্তিতে না লিখে), existing টপিকের সাথে ডুপ্লিকেট চেক করে, নতুন টপিক ফাইল/আপডেট বানিয়ে, build validate করে, ব্যবহারকারীর অনুমোদন নিয়ে commit+push করতে হবে।
+**কাজের ধরন:** প্রতিটা বাকি আইটেমের জন্য সোর্স পেজ ছবি জুম করে সরাসরি পড়ে (আগে একবার দেখা কনটেন্টের স্মৃতির ভিত্তিতে না লিখে), existing টপিকের সাথে ডুপ্লিকেট চেক করে, নতুন টপিক ফাইল/আপডেট বানিয়ে, build validate করে, ব্যবহারকারীর অনুমোদন নিয়ে branch+PR দিয়ে merge করতে হবে।
 
