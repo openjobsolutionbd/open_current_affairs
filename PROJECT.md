@@ -10,7 +10,8 @@ Open Current Affairs একটি static, topic-based current-affairs knowledge-
 open-current-affairs/
 ├── PROJECT.md                 ← এই ফাইল (মাস্টার ডকুমেন্টেশন — সিস্টেম কীভাবে বানানো)
 ├── EDITORIAL_MEMORY.md        ← ক্রমবর্ধমান নিয়ম-খাতা (কনটেন্ট কীভাবে লেখা/গোছানো — প্রতি সেশনে আগে পড়তে হয়)
-├── archive/                   ← মাসিক source/reference documents
+├── archive/                   ← মাসিক source/reference documents (ফাইনাল, প্রসেস-করা)
+├── archive-staging/           ← কাঁচা/আনভেরিফাইড OCR স্টেজিং, archive/-এর থেকে আলাদা (দেখুন ৭নং সেকশন)
 ├── scripts/build_index.py     ← validation ও build script
 ├── scripts/sw_template.js     ← service-worker template
 └── docs/                      ← Cloudflare Pages deploy root — এবং একইসাথে topic content-এর একমাত্র সোর্স
@@ -77,7 +78,17 @@ Cloudflare Pages-এর output directory `docs`। তাই `docs/` path বদ
 
 পুরনো পরিবর্তনের ইতিহাস `CHANGELOG.md`-এ historical record হিসেবে থাকতে পারে, কিন্তু নতুন runtime বা maintenance নির্দেশনা হিসেবে ব্যবহার করা যাবে না।
 
-## ৭. ভবিষ্যৎ পরিকল্পনা (Roadmap)
+## ৭. আর্কাইভ ম্যানেজমেন্ট: স্টেজিং → প্রসেসিং → ফাইনাল আর্কাইভ (৩-ধাপ)
+
+কারেন্ট অ্যাফেয়ার্স তথ্য দ্রুত বদলায়, তাই সঠিক ট্রেসেবিলিটির জন্য আর্কাইভিং তিনটা আলাদা ধাপে হয় — একসাথে না:
+
+1. **স্টেজিং (`archive-staging/YYYY-MM/`)** — ম্যাগাজিন পেজের ছবি → OCR → Claude নিজেই আরেকবার রিচেক → অনিশ্চিত কিছু থাকলে অনুমান না করে ব্যবহারকারীকে জিজ্ঞেস → কনফার্মেশনের পর verbatim `.md` ফাইল হিসেবে জমা (ছাপা পেজ-নম্বর অনুযায়ী নাম, স্ক্যান-ক্রম না)। প্রতিটা সংখ্যার নিজস্ব `STATUS.md` ট্র্যাকার থাকে (pending/confirmed)। বিস্তারিত ফরম্যাট `archive-staging/README.md`-এ।
+2. **প্রসেসিং (আলাদা সেশনে)** — সব পেজ `confirmed` হয়ে গেলে, স্টেজিং থেকে কনটেন্ট `docs/topics/`, `docs/ghotonaprobaho/`, `docs/mcq/`, `docs/top-news/`-এ ভাগ করে distribute করা হয় — `EDITORIAL_MEMORY.md`-এর নিয়ম মেনে। স্টেজিং ফাইল এই সময় এডিট/মুছে ফেলা হয় না — immutable raw রেফারেন্স হিসেবে থেকে যায়।
+3. **ফাইনাল আর্কাইভ (`archive/`)** — প্রসেসিং সম্পূর্ণ ("মীমাংসিত") হলে, তারপর সেই কনটেন্ট চূড়ান্তভাবে `archive/`-এ মাসিক ফাইল হিসেবে যায়।
+
+**কেন `archive/`-এর বদলে আলাদা ফোল্ডার:** raw/আনভেরিফাইড কনটেন্ট আর ফাইনাল মাসিক ফাইলের মধ্যে কনফ্লিক্ট এড়াতে। `archive-staging/` build/deploy pipeline-এর অংশ না — `scripts/build_index.py` এটা স্ক্যান করে না এবং Cloudflare Pages (`docs/` output) এটা ডিপ্লয় করে না, তাই ওয়েবসাইট বা সার্চ ইনডেক্সে এর কোনো প্রভাব নেই। `scripts/verify_site.py`-এর broken-link চেকও শুধু `archive/` পাথ-নির্দিষ্ট (`ROOT / "archive"`), তাই স্টেজিং কনটেন্ট এই ভ্যালিডেশনের বাইরে — মানে প্রসেসিং-এর সময় সঠিক জায়গায় বসানোর দায়িত্ব ম্যানুয়াল, কোনো স্ক্রিপ্ট এটা automatically catch করে না।
+
+## ৮. ভবিষ্যৎ পরিকল্পনা (Roadmap)
 
 **`docs/topics/` স্কেলিং:** টপিক সংখ্যা যখন অনেক বেড়ে যাবে (কয়েকশো ছাড়িয়ে যাওয়ার পর থেকেই বিবেচনা করা উচিত), তখন নিচের দুইটা পরিবর্তন দরকার হবে:
 
