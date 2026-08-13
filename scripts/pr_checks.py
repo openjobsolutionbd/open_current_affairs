@@ -28,12 +28,15 @@ GENERATED_PREFIXES = [
     "docs/sitemap.xml",
     "docs/robots.txt",
     "docs/topic/",  # প্রতিটা টপিকের auto-generated SEO পাতা
+    "docs/mcq-index.json",  # docs/mcq/*.md থেকে compile_mcq() যা বানায় — আগে এখানে বাদ পড়েছিল
 ]
 
 SOURCE_PREFIXES = [
     "docs/topics/",
     "docs/ghotonaprobaho/",
     "docs/top-news/",
+    "docs/mcq/",  # আগে এখানে বাদ পড়েছিল — MCQ ফাইলে সমান্তরাল-সেশন সংঘর্ষ ধরা পড়ত না
+    "docs/proshnottor/",  # সাইটে wire করা না হলেও এটা আসল সোর্স/আর্কাইভ কনটেন্ট, তাই একই কারণে দরকার
 ]
 
 TOKEN = os.environ["GITHUB_TOKEN"]
