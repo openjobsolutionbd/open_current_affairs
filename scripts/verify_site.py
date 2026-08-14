@@ -245,6 +245,16 @@ def main():
                 "article না খুলে প্রিন্ট/PDF করলে সম্পূর্ণ ফাঁকা পেজ আসবে (BUGFIX.md BUG-01)"
             )
 
+    # ১০. print CSS: MCQ ট্যাব খোলা অবস্থায় প্রিন্ট করলে (browse-layout
+    #     print-এ জোর করে দৃশ্যমান হয়, কিন্তু mcq-layout না লুকালে) পুরনো
+    #     টপিক কনটেন্ট + পুরো MCQ কুইজ একসাথে প্রিন্ট হয়ে যেত (BUGFIX.md BUG-12)
+    if print_block is not None and "#mcq-layout" not in print_block:
+        errors.append(
+            "@media print-এ #mcq-layout লুকানোর নিয়ম নেই — MCQ ট্যাব খোলা অবস্থায় প্রিন্ট/PDF "
+            "করলে browse-layout-এর পুরনো টপিক কনটেন্ট ও পুরো MCQ কুইজ একসাথে প্রিন্ট হয়ে যাবে "
+            "(BUGFIX.md BUG-12)"
+        )
+
     if errors:
         fail(errors)
 
