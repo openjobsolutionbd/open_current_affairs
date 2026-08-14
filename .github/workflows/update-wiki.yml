@@ -12,10 +12,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # GITHUB_TOKEN দিয়ে করা push/PR/API-কল কোনো workflow-কেই ট্রিগার করে
+      # না (GitHub-এর ইচ্ছাকৃত loop-প্রতিরোধ নিয়ম, শুধু force-push/synchronize-এ
+      # সীমাবদ্ধ না — PR "opened" ইভেন্টও এর আওতায় পড়ে, যা আগের অনুমান ভুল
+      # প্রমাণ করেছে PR #40-এ zero check-run দেখে)। তাই checkout-এ একটা আলাদা
+      # PAT ব্যবহার করা হচ্ছে যাতে নিচের সব push/PR/close/delete API-কল
+      # সাধারণ ব্যবহারকারীর কাজ হিসেবে গণ্য হয় এবং pr-check.yml সত্যিই চলে।
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.AUTOMATION_PAT }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -47,17 +54,17 @@ jobs:
       # তাই একটা নির্দিষ্ট auto/ branch-এ push করে PR খোলে — scripts/pr_checks.py
       # এই branch-কে generated-ফাইল guard থেকে exempt করে।
       #
-      # গুরুত্বপূর্ণ: আগে একই branch-এ বারবার force-push করে PR আপডেট করা হতো,
-      # কিন্তু GITHUB_TOKEN দিয়ে করা push "synchronize" ইভেন্ট ফায়ার করে না
-      # (পরীক্ষায় প্রমাণিত — PR #31), ফলে pr-check.yml আর রান হয় না এবং
-      # required status check-এর অভাবে branch protection PR-টা চিরতরে
-      # "blocked" অবস্থায় আটকে রাখে। তাই এখন প্রতিবার আগের auto-PR/branch বন্ধ
-      # করে/মুছে ফেলে নতুন branch+PR বানানো হয় — একটা fresh "opened" ইভেন্ট
-      # নির্ভরযোগ্যভাবে check ট্রিগার করে (এটাও পরীক্ষায় প্রমাণিত)।
+      # প্রতিবার আগের auto-PR/branch বন্ধ করে/মুছে ফেলে সম্পূর্ণ নতুন branch+PR
+      # বানানো হয় (repo পরিষ্কার রাখতে, পুরনো bot-PR জমে থাকা এড়াতে)। আসল
+      # fix হলো নিচের GH_TOKEN — এখন এটা GITHUB_TOKEN না, একটা PAT
+      # (secrets.AUTOMATION_PAT) — কারণ GITHUB_TOKEN দিয়ে করা যেকোনো push/PR
+      # (force-push, নতুন PR "opened" সহ সবকিছু) অন্য কোনো workflow-কে ট্রিগার
+      # করে না, ফলে pr-check.yml কখনো চলত না এবং required check না পেয়ে PR
+      # চিরতরে blocked থাকত।
       - name: Rebuild branch push + PR তৈরি
         if: steps.changes.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.AUTOMATION_PAT }}
         run: |
           BRANCH="auto/rebuild-output"
 
