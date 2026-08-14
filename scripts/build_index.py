@@ -726,8 +726,12 @@ def _main():
     # topics/*.md এখন সরাসরি docs/topics/-এই থাকে (আলাদা root-level সোর্স
     # ফোল্ডার নেই), তাই আগের মতো docs/topics/-এ আলাদা করে কপি করার দরকার নেই।
 
-    stamp_service_worker()
-    write_version_json()
+    # বাগ-ফিক্স: stamp_service_worker()/write_version_json() আগে এখানেই
+    # (compile_ghotonaprobaho/compile_top_news-এর ভ্যালিডেশনের *আগে*) চলত।
+    # তাদের কেউ ব্যর্থ হলে sw.js/version.json ততক্ষণে নতুন ভার্সনে লেখা হয়ে
+    # যেত, অথচ topics-index.json পুরনোই থেকে যেত — ঠিক যে "আংশিক আউটপুট"
+    # এড়ানোর কথা এই ফাংশনের ডকস্ট্রিং-এ বলা আছে। এখন এই দুটো সবার শেষে,
+    # সব compile_* সফল হওয়ার পরই চলবে।
 
     try:
         compile_ghotonaprobaho({e["slug"] for e in entries})
@@ -742,6 +746,9 @@ def _main():
         sys.exit(1)
 
     compile_mcq()
+
+    stamp_service_worker()
+    write_version_json()
 
     OUTPUT_FILE.write_text(
         json.dumps({"topics": entries}, ensure_ascii=False, indent=2),
