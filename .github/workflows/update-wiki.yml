@@ -44,29 +44,44 @@ jobs:
           fi
 
       # branch protection চালু থাকায় bot সরাসরি main-এ push করতে পারে না,
-      # তাই একটা নির্দিষ্ট auto/ branch-এ push করে PR খোলে/আপডেট করে —
-      # scripts/pr_checks.py এই branch-কে generated-ফাইল guard থেকে exempt করে।
-      - name: Rebuild branch push + PR তৈরি/আপডেট
+      # তাই একটা নির্দিষ্ট auto/ branch-এ push করে PR খোলে — scripts/pr_checks.py
+      # এই branch-কে generated-ফাইল guard থেকে exempt করে।
+      #
+      # গুরুত্বপূর্ণ: আগে একই branch-এ বারবার force-push করে PR আপডেট করা হতো,
+      # কিন্তু GITHUB_TOKEN দিয়ে করা push "synchronize" ইভেন্ট ফায়ার করে না
+      # (পরীক্ষায় প্রমাণিত — PR #31), ফলে pr-check.yml আর রান হয় না এবং
+      # required status check-এর অভাবে branch protection PR-টা চিরতরে
+      # "blocked" অবস্থায় আটকে রাখে। তাই এখন প্রতিবার আগের auto-PR/branch বন্ধ
+      # করে/মুছে ফেলে নতুন branch+PR বানানো হয় — একটা fresh "opened" ইভেন্ট
+      # নির্ভরযোগ্যভাবে check ট্রিগার করে (এটাও পরীক্ষায় প্রমাণিত)।
+      - name: Rebuild branch push + PR তৈরি
         if: steps.changes.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           BRANCH="auto/rebuild-output"
-          git checkout -B "$BRANCH"
-          git commit -m "chore: rebuild generated site output [skip ci]"
-          git push --force origin "$BRANCH"
 
           EXISTING=$(curl -s -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${{ github.repository }}/pulls?state=open&per_page=100" \
             | python3 -c "import sys, json; prs = json.load(sys.stdin); match = [p['number'] for p in prs if p['head']['ref'] == 'auto/rebuild-output']; print(match[0] if match else '')")
 
-          if [ -z "$EXISTING" ]; then
-            curl -s -X POST \
-              -H "Authorization: Bearer $GH_TOKEN" \
-              -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/repos/${{ github.repository }}/pulls" \
-              -d '{"title":"chore: generated site output re-sync (auto)","head":"'"$BRANCH"'","base":"main","body":"main-এ push হওয়া সোর্স পরিবর্তনের সাথে generated output (topics-index.json, per-topic HTML, sitemap ইত্যাদি) sync করতে স্বয়ংক্রিয়ভাবে তৈরি হয়েছে। branch protection-এর কারণে bot সরাসরি main-এ push করতে পারে না, তাই এই PR — merge করার আগে চেক পাস করা নিশ্চিত করুন।"}'
-          else
-            echo "ইতিমধ্যে PR #$EXISTING খোলা আছে — নতুন commit push হয়ে গেছে, সেটাই আপডেট হবে।"
+          if [ -n "$EXISTING" ]; then
+            curl -s -X PATCH -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/pulls/$EXISTING" -d '{"state":"closed"}' > /dev/null
+            curl -s -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/issues/$EXISTING/comments" \
+              -d '{"body":"নতুন rebuild এসেছে — এই branch fresh করে নতুন PR খোলা হচ্ছে (পুরনো branch-এ force-push status check re-trigger করে না)।"}' > /dev/null
           fi
+          curl -s -X DELETE -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/git/refs/heads/$BRANCH" > /dev/null
+
+          git checkout -B "$BRANCH"
+          git commit -m "chore: rebuild generated site output [skip ci]"
+          git push origin "$BRANCH"
+
+          curl -s -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls" \
+            -d '{"title":"chore: generated site output re-sync (auto)","head":"'"$BRANCH"'","base":"main","body":"main-এ push হওয়া সোর্স পরিবর্তনের সাথে generated output (topics-index.json, per-topic HTML, sitemap ইত্যাদি) sync করতে স্বয়ংক্রিয়ভাবে তৈরি হয়েছে। branch protection-এর কারণে bot সরাসরি main-এ push করতে পারে না, তাই এই PR — merge করার আগে চেক পাস করা নিশ্চিত করুন।"}'
