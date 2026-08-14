@@ -47,7 +47,7 @@ MCQ_OUTPUT_FILE = DOCS_DIR / "mcq-index.json"
 # আসতে পারে না। এই ছোট পাতাগুলোতে টাইটেল ও বিবরণ আগে থেকেই লেখা থাকে
 # (গুগল সরাসরি পড়তে পারে), আর পাতাটা লোড হওয়ার সাথে সাথেই মূল অ্যাপে
 # (/#slug) নিয়ে যায় — তাই সাধারণ ভিজিটরের অভিজ্ঞতা অপরিবর্তিত থাকে।
-SITE_BASE_URL = "https://open-current-affairs.pages.dev"
+SITE_BASE_URL = "/current-affairs/docs"
 TOPIC_PAGES_DIR = DOCS_DIR / "topic"
 SITEMAP_OUTPUT = DOCS_DIR / "sitemap.xml"
 ROBOTS_OUTPUT = DOCS_DIR / "robots.txt"
