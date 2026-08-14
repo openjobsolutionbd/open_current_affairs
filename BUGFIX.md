@@ -309,3 +309,19 @@ text = re.sub(r"^\s*\|?(?:\s*:?-{3,}:?\s*\|)+...$", "", text, ...) # space → e
 **টেস্ট:** `scripts/js_tests/run.mjs` — "renderList ও related-topics chip — slug-এ থাকা বিশেষ ক্যারেক্টার attribute থেকে বের হয়ে নতুন attribute বানাতে পারা উচিত না" (একটা ইচ্ছাকৃতভাবে `"` যুক্ত slug দিয়ে সরাসরি রেন্ডার করে attribute-breakout না হওয়া নিশ্চিত করে — real slug validation বাইপাস করে ফাংশনের নিজস্ব escaping-ই যাচাই করা হয়)।
 
 ---
+
+### BUG-12 🟡 — MCQ ট্যাব খোলা অবস্থায় প্রিন্ট করলে পুরনো টপিক + পুরো কুইজ একসাথে প্রিন্ট হতো
+
+**ফাইল:** `docs/index.html` — `@media print` CSS
+
+**সমস্যা:**
+সাইটে ৪টা "লেআউট" আছে (browse/ghotonaprobaho/top-news/mcq), যেকোনো একটা সময়ে একটাই দৃশ্যমান থাকে। `@media print` CSS-এ `#browse-layout`-কে জোর করে `display:block !important` করা হয় (টপিক প্রিন্টের জন্য), আর `#ghotonaprobaho-layout`/`#top-news-layout`-কে `display:none !important` দিয়ে লুকানো হয় — কিন্তু **`#mcq-layout` এই লুকানোর তালিকায় ছিল না**।
+
+ফলে ব্যবহারকারী যদি "MCQ" ট্যাবে থেকে ব্রাউজারের প্রিন্ট (Ctrl+P) চালাতেন — যেটা প্রিন্ট-বাটন ছাড়াই যেকোনো সময় সম্ভব — তাহলে `#browse-layout` (কোনো টপিক আগে দেখা থাকলে তার পুরনো কনটেন্ট, নাহলে প্লেসহোল্ডার) জোর করে দেখা যেত, **আর তার সাথে পুরো MCQ কুইজও** — কারণ `#mcq-layout` কখনো লুকানো হতো না। প্রিন্ট/PDF আউটপুট এলোমেলো ও অপ্রত্যাশিত হতো।
+
+**সমাধান:**
+`#mcq-layout`-কে `#ghotonaprobaho-layout`/`#top-news-layout`-এর সাথেই একই `display:none !important` তালিকায় যোগ করা হলো।
+
+**টেস্ট:** `scripts/verify_site.py`-তে নতুন চেক #১০ — `@media print` ব্লকে `#mcq-layout` উল্লেখ আছে কিনা স্ট্যাটিকভাবে যাচাই করে (BUG-01-এর মতোই প্যাটার্ন)। যাচাই করা হয়েছে: ফিক্স সাময়িকভাবে উল্টে দিলে `verify_site.py` সত্যিই ব্যর্থ হয়, ফিরিয়ে আনলে পাস করে।
+
+---
