@@ -243,6 +243,48 @@ test("printMonthlySummary — afterprint দুইবার fire করলেও
   );
 });
 
+// ── BUG-11 ক্লাস: data-slug attribute-এ escapeHtml() না থাকা ────────────────
+test("renderList ও related-topics chip — slug-এ থাকা বিশেষ ক্যারেক্টার attribute থেকে বের হয়ে নতুন attribute বানাতে পারা উচিত না", async () => {
+  const evilSlug = 'evil" onmouseover="alert(1)';
+  const fetchImpl = mockFetchByUrl({
+    "topics/topic-a.md": textResponse("---\ntitle: A\n---\nবডি"),
+  });
+  const dom = await createTestWindow({ fetchImpl });
+  const { window } = dom;
+  const { document } = window;
+  // slug ইচ্ছাকৃতভাবে build_index.py-এর SLUG_RE বাইপাস করে সেট করা হচ্ছে —
+  // এই টেস্ট real slug validation না, renderList()/related-chip-এর নিজস্ব
+  // escaping যাচাই করছে (defense-in-depth, BUGFIX.md BUG-11)।
+  setGlobal(dom, "ALL_TOPICS", [
+    makeTopic({ slug: "topic-a", file: "topics/topic-a.md", title: "A", tags: ["tag1"] }),
+    makeTopic({ slug: evilSlug, file: "topics/evil.md", title: "Evil", tags: ["tag1"] }),
+  ]);
+
+  await window.openTopic("topic-a", false);
+
+  const brokenInList = [...document.querySelectorAll("#tab-list [data-slug]")].some((el) =>
+    el.hasAttribute("onmouseover")
+  );
+  assert(
+    !brokenInList,
+    "renderList()-এ slug escape না হওয়ায় attribute breakout হয়েছে — data-slug-এ escapeHtml() বাদ পড়েছে কিনা দেখুন। (BUGFIX.md BUG-11)"
+  );
+
+  const brokenInRelated = [...document.querySelectorAll(".related-chip")].some((el) =>
+    el.hasAttribute("onmouseover")
+  );
+  assert(
+    !brokenInRelated,
+    "related-topics chip-এ slug escape না হওয়ায় attribute breakout হয়েছে। (BUGFIX.md BUG-11)"
+  );
+
+  const relatedChip = document.querySelector(".related-chip");
+  assert(
+    relatedChip && relatedChip.dataset.slug === evilSlug,
+    "escape করার পরেও dataset.slug আসল মান ফেরত দিচ্ছে না — escaping ভুল জায়গায় হচ্ছে।"
+  );
+});
+
 // ── রানার ─────────────────────────────────────────────────────────────────
 async function main() {
   let passed = 0;
