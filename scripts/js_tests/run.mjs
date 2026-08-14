@@ -18,6 +18,7 @@ import {
   textResponse,
   delayedResponse,
   setGlobal,
+  getGlobal,
   makeTopic,
 } from "./dom_harness.mjs";
 
@@ -282,6 +283,41 @@ test("renderList ও related-topics chip — slug-এ থাকা বিশে�
   assert(
     relatedChip && relatedChip.dataset.slug === evilSlug,
     "escape করার পরেও dataset.slug আসল মান ফেরত দিচ্ছে না — escaping ভুল জায়গায় হচ্ছে।"
+  );
+});
+
+// ── BUG-13 ক্লাস: MCQ মোড থেকে openTopic() করলে mode-switch হতো না ─────────
+test("openTopic — MCQ মোডে থাকা অবস্থায় hashchange-এ অন্য টপিক খুললে browse-layout দৃশ্যমান হওয়া উচিত", async () => {
+  const fetchImpl = mockFetchByUrl({
+    "topics/topic-a.md": textResponse("---\ntitle: A\n---\nবডি"),
+  });
+  const dom = await createTestWindow({ fetchImpl });
+  const { window } = dom;
+  const { document } = window;
+  setGlobal(dom, "ALL_TOPICS", [
+    makeTopic({ slug: "topic-a", file: "topics/topic-a.md", title: "A" }),
+  ]);
+  // MCQ মোডে থাকার ভান — setMode('mcq') পুরোপুরি চালানোর (ensureMcqLoaded
+  // ইত্যাদি) দরকার নেই, শুধু সেই মোডের ফলাফল (CURRENT_MODE + লেআউট
+  // visibility) সরাসরি বসিয়ে দিলেই openTopic()-এর mode-switch লজিক
+  // পরীক্ষা করা যায়।
+  setGlobal(dom, "CURRENT_MODE", "mcq");
+  document.getElementById("browse-layout").style.display = "none";
+  document.getElementById("mcq-layout").style.display = "";
+
+  await window.openTopic("topic-a", false);
+
+  assert(
+    document.getElementById("browse-layout").style.display !== "none",
+    "MCQ মোড থেকে openTopic() কল হলেও browse-layout display:none-ই থেকে যাচ্ছে — টপিক লোড হলেও স্ক্রিনে দেখা যাবে না। (BUGFIX.md BUG-13)"
+  );
+  assert(
+    document.getElementById("mcq-layout").style.display === "none",
+    "MCQ মোড থেকে অন্য টপিকে গেলেও mcq-layout এখনো দেখানো হচ্ছে। (BUGFIX.md BUG-13)"
+  );
+  assert(
+    getGlobal(dom, "CURRENT_MODE") === "browse",
+    "CURRENT_MODE এখনো 'mcq'-ই আছে, 'browse'-এ ফেরেনি।"
   );
 });
 
