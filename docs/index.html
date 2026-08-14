@@ -3087,7 +3087,12 @@ async function renderTopicContent(topic, container, {backBtnId, onRelatedClick} 
 }
 
 async function openTopic(slug, updateHash=true){
-  if(CURRENT_MODE === 'ghotonaprobaho' || CURRENT_MODE === 'top-news'){
+  // 'browse' ছাড়া বাকি যেকোনো মোডে থাকলে আগে browse-এ ফিরিয়ে আনতে হবে —
+  // নাহলে সেই মোডের লেআউট (ঘটনাপ্রবাহ/টপ-নিউজ/MCQ) দৃশ্যমান থেকে যায় আর
+  // browse-layout display:none-ই থেকে যায়, টপিক লোড হলেও স্ক্রিনে দেখা
+  // যায় না (আগে এখানে শুধু ghotonaprobaho/top-news চেক করা হতো, mcq বাদ
+  // পড়ে গিয়েছিল — BUGFIX.md BUG-13)
+  if(CURRENT_MODE !== 'browse'){
     await setGhotonaprobahoMode(false);
   }
   const topic = ALL_TOPICS.find(t=>t.slug===slug);
