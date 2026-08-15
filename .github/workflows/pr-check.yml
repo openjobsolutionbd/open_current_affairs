@@ -27,6 +27,15 @@ jobs:
       - name: dependencies ইনস্টল
         run: pip install pyyaml
 
+      - name: Node সেটআপ
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: npm dependencies ইনস্টল
+        run: npm ci
+
       - name: generated ফাইল guard + অন্য PR-এর সাথে সংঘর্ষ চেক
         id: prechecks
         continue-on-error: true
@@ -47,8 +56,29 @@ jobs:
         if: steps.build.outcome == 'success'
         run: python3 scripts/verify_site.py
 
+      - name: sync/cache-scope/domain রিগ্রেশন-গার্ড
+        id: integration_guard
+        continue-on-error: true
+        if: steps.build.outcome == 'success'
+        run: python3 scripts/verify_integration_bugs.py
+
+      # নোট: নিচের দুইটা regression suite আগে থেকেই রিপোতে ছিল
+      # (BUGFIX.md ব্যাচ ২, ২০২৬-০৮-১০) কিন্তু এই workflow-এ কখনো যুক্ত
+      # করা হয়নি — এই PR-এর নিজের CI-রানেই (দেখুন PR বর্ণনা) দুটোই
+      # পরিষ্কার পাস করেছে বলে যাচাই হয়ে গেছে, তাই এখন সরাসরি blocking
+      # শর্তে যুক্ত করা হলো।
+      - name: JS regression suite (jsdom)
+        id: js_tests
+        continue-on-error: true
+        run: npm run test:js
+
+      - name: build_index.py regression suite
+        id: py_build_tests
+        continue-on-error: true
+        run: python3 scripts/test_build_index.py
+
       - name: চূড়ান্ত ফলাফল
-        if: steps.prechecks.outcome != 'success' || steps.build.outcome != 'success' || steps.verify.outcome != 'success'
+        if: steps.prechecks.outcome != 'success' || steps.build.outcome != 'success' || steps.verify.outcome != 'success' || steps.integration_guard.outcome != 'success' || steps.js_tests.outcome != 'success' || steps.py_build_tests.outcome != 'success'
         run: |
           echo "এক বা একাধিক চেক ব্যর্থ হয়েছে — PR-এর কমেন্টে বিস্তারিত দেখুন।"
           exit 1
