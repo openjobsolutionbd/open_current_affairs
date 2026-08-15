@@ -2,8 +2,8 @@
 issue: 2026-01
 printed_page: 04
 topic: সাম্প্রতিক প্রশ্নোত্তর
-status: pending
-notes: ""
+status: confirmed
+notes: "ONEX কনফার্ম করেছে।"
 ---
 
 # সাম্প্রতিক প্রশ্নোত্তর
