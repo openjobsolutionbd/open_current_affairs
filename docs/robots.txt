@@ -25,4 +25,4 @@ Disallow: /
 User-agent: *
 Allow: /
 
-Sitemap: /current-affairs/docs/sitemap.xml
+Sitemap: https://open-current-affairs.pages.dev/sitemap.xml
