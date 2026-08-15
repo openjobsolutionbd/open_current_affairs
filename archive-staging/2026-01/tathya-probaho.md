@@ -2,8 +2,8 @@
 issue: 2026-01
 printed_page: 05
 topic: তথ্য প্রবাহ (নভেম্বর মাসের বাকি অংশ)
-status: pending
-notes: ""
+status: confirmed
+notes: "ONEX কনফার্ম করেছে।"
 ---
 
 # তথ্য প্রবাহ
