@@ -268,6 +268,21 @@ merge-এর পর `main`-এ push হওয়ার কারণে `.github/
 
 **যদি PR-এ real git conflict দেখায়** (দুইটা branch একই লাইনে ভিন্ন পরিবর্তন করেছে — GitHub-এর `mergeable: false`): নিজে অনুমান করে কোনটা রাখবেন ঠিক করবেন না, উপরের item 7-এর ব্যতিক্রম-নিয়ম মেনে চলুন। Auto-generated ফাইলে conflict কখনো হাতে মার্জ করবেন না — merge-এর পর `main`-এ `build_index.py` এমনিতেই আবার চালাবে।
 
+**৮. পুরনো/জমে-থাকা branch পর্যায়ক্রমিক পরিষ্কার (session_status.sh-এর পাশাপাশি, নিয়মিত করণীয়):** আইটেম ৭-এ প্রতিটা merge-এর পরপরই branch মুছার কথা থাকলেও, ব্যস্ত সময়ে বা একাধিক সমান্তরাল সেশনে এই ধাপ মিস হয়ে যেতে পারে, ফলে merged হয়ে যাওয়া অনেক branch remote-এ জমে থাকতে পারে। তাই মাঝেমধ্যে (ব্যবহারকারী নিজে জিজ্ঞেস করলে, বা `git branch -r`-এ বেশ কিছু অপ্রত্যাশিত branch দেখলে) এই সুইপ চালান:
+```bash
+git fetch --all --prune
+git branch -r | grep -v "HEAD\|main\|auto/rebuild-output"
+```
+প্রতিটা বাকি branch-এর জন্য GitHub API দিয়ে সংশ্লিষ্ট PR-এর `merged_at` সত্যিই পূরণ (null না) কিনা যাচাই করে তবেই মুছুন:
+```bash
+curl -s -H "Authorization: Bearer $PAT" -H "Accept: application/vnd.github+json" \
+  "https://api.github.com/repos/openjobsolutionbd/open_current_affairs/pulls?state=closed&per_page=50"
+```
+- `merged_at` থাকলে (সত্যিই merge হয়েছে) → branch মুছে ফেলুন (আইটেম ৭-এর DELETE কমান্ড)।
+- `merged_at` null থাকলে (PR বন্ধ হয়েছে কিন্তু merge হয়নি) → মুছবেন না, ব্যবহারকারীকে জানিয়ে জিজ্ঞেস করুন কী করতে চান।
+- `auto/rebuild-output` কখনো এই সুইপে মুছবেন না — এটা bot-এর repeatedly-ব্যবহৃত রিবিল্ড branch, merged হওয়া সত্ত্বেও ভবিষ্যতে আবার ব্যবহার হবে।
+- মুছার পর প্রতিবার leak-check চালান: `grep -i "ghp_\|Authorization" .git/config`।
+
 ## বর্তমান অবস্থা (সর্বশেষ যাচাই: ২০২৬-০৮-১২)
 
 - সর্বশেষ commit: `e599555` (push হয়ে গেছে, working tree clean)
