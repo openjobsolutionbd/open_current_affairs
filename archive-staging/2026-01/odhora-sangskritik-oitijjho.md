@@ -2,8 +2,8 @@
 issue: 2026-01
 printed_page: 20
 topic: অধরা সাংস্কৃতিক ঐতিহ্য
-status: pending
-notes: ""
+status: confirmed
+notes: "ONEX কনফার্ম করেছে।"
 ---
 
 # অধরা সাংস্কৃতিক ঐতিহ্য
