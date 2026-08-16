@@ -54,6 +54,12 @@ jobs:
       # তাই এখানে repo secret BOT_PAT (একটা সাধারণ personal access token)
       # ব্যবহার করা হয় — human-token-চালিত push/PR ইভেন্ট নির্ভরযোগ্যভাবে
       # check ট্রিগার করে, তাই আবার সরল force-push+reuse পদ্ধতিতে ফেরা গেছে।
+      #
+      # সতর্কতা: commit message-এ "[skip ci]" (বা যেকোনো skip-ci ভ্যারিয়েন্ট)
+      # কখনো যোগ করবেন না — এতে শুধু এই push-ট্রিগার্ড workflow না, একই
+      # commit-এর pull_request (synchronize) ইভেন্টও স্কিপ হয়ে যায়, ফলে
+      # pr-check.yml কখনো চলে না আর auto/rebuild-output PR চিরস্থায়ীভাবে
+      # mergeable_state: blocked থেকে যায় (২০২৬-০৮-১৬ পর্যন্ত এভাবেই ছিল)।
       - name: Rebuild branch push + PR তৈরি/আপডেট
         if: steps.changes.outputs.changed == 'true'
         env:
@@ -61,7 +67,7 @@ jobs:
         run: |
           BRANCH="auto/rebuild-output"
           git checkout -B "$BRANCH"
-          git commit -m "chore: rebuild generated site output [skip ci]"
+          git commit -m "chore: rebuild generated site output"
           git push "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" "$BRANCH" --force
 
           EXISTING=$(curl -s -H "Authorization: Bearer $GH_TOKEN" \
