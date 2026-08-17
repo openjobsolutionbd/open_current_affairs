@@ -43,6 +43,31 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
+      # সত্যিকারের কনটেন্ট পরিবর্তন হলেই (changed==true) কেবল ভার্সন বাড়ানো হয় —
+      # নাহলে প্রতিটা push-এই ভার্সন বাড়তে থাকত, আর এই ওয়ার্কফ্লোর নিজের
+      # rebuild-PR merge-ও তো main-এ একটা push, ফলে অসীম লুপ তৈরি হতো।
+      # যেহেতু "Build index" ধাপ আগেই পুরোনো VERSION দিয়ে চলেছে, তাই এই
+      # diff-check নিজেই ভার্সন-নিরপেক্ষভাবে প্রকৃত কনটেন্ট পরিবর্তন ধরে —
+      # merge-এর পরের রানে নতুন কিছু না পেলে changed=false হবে, লুপ থামবে।
+      - name: ভার্সন বাড়ানো (শুধু প্রকৃত কনটেন্ট পরিবর্তন থাকলে)
+        if: steps.changes.outputs.changed == 'true'
+        id: bump
+        run: |
+          CURRENT=$(cat VERSION)
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+          echo "$NEW_VERSION" > VERSION
+          echo "ভার্সন বাড়ানো হলো: $CURRENT → $NEW_VERSION"
+          echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: নতুন ভার্সন দিয়ে আবার বিল্ড (sw.js/version.json স্ট্যাম্প করতে)
+        if: steps.changes.outputs.changed == 'true'
+        run: python3 scripts/build_index.py
+
+      - name: বাম্প হওয়া ফাইল আবার stage করা
+        if: steps.changes.outputs.changed == 'true'
+        run: git add VERSION docs/topics-index.json docs/mcq-index.json docs/sw.js docs/version.json docs/ghotonaprobaho-index.json docs/top-news-index.json docs/topic/ docs/sitemap.xml docs/robots.txt
+
       # branch protection চালু থাকায় bot সরাসরি main-এ push করতে পারে না,
       # তাই একটা নির্দিষ্ট auto/ branch-এ push করে PR খোলে/আপডেট করে —
       # scripts/pr_checks.py এই branch-কে generated-ফাইল guard থেকে exempt করে।
@@ -61,7 +86,12 @@ jobs:
         run: |
           BRANCH="auto/rebuild-output"
           git checkout -B "$BRANCH"
-          git commit -m "chore: rebuild generated site output [skip ci]"
+          NEW_VERSION="${{ steps.bump.outputs.new_version }}"
+          if [ -n "$NEW_VERSION" ]; then
+            git commit -m "chore: rebuild generated site output + bump version to $NEW_VERSION [skip ci]"
+          else
+            git commit -m "chore: rebuild generated site output [skip ci]"
+          fi
           git push "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" "$BRANCH" --force
 
           EXISTING=$(curl -s -H "Authorization: Bearer $GH_TOKEN" \
