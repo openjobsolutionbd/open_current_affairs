@@ -321,6 +321,54 @@ test("openTopic — MCQ মোডে থাকা অবস্থায় hashc
   );
 });
 
+// ── BUG-14 ক্লাস: MCQ ট্যাব ছেড়ে ফিরে এলে উত্তর দেওয়া প্রশ্নের progress হারিয়ে যেত ──
+test("renderMcqView — MCQ মোড থেকে বেরিয়ে আবার ঢুকলে আগে উত্তর দেওয়া প্রশ্নের অবস্থা থেকে যাওয়া উচিত", async () => {
+  const dom = await createTestWindow({});
+  const { window } = dom;
+  const { document } = window;
+
+  // MCQ_SETS সরাসরি বসিয়ে দেওয়া হচ্ছে — ensureMcqLoaded()-এর fetch-মক লাগবে না,
+  // শুধু renderMcqView()-এর re-render আচরণটাই পরীক্ষার বিষয়।
+  setGlobal(dom, "MCQ_SETS", [
+    {
+      label: "টেস্ট সেট",
+      question_count: 1,
+      sections: [
+        {
+          name: "টেস্ট সেকশন",
+          questions: [
+            { number: "১", text: "প্রশ্ন ১?", options: ["ক", "খ", "গ", "ঘ"], answer_index: 2 },
+          ],
+        },
+      ],
+    },
+  ]);
+
+  window.renderMcqView(); // প্রথমবার MCQ ট্যাবে ঢোকা
+  const firstOptionBtn = document.querySelector(".mcq-question .mcq-option");
+  firstOptionBtn.click(); // ব্যবহারকারী একটা অপশনে ক্লিক করে উত্তর দিলেন (ভুল অপশন, idx 0 ≠ answer_index 2)
+
+  const answeredBefore = document.querySelector(".mcq-question").dataset.answered;
+  assert(answeredBefore === "1", "ক্লিকের পরও data-answered '1' হয়নি — টেস্ট-সেটআপেই সমস্যা।");
+
+  window.renderMcqView(); // ব্যবহারকারী অন্য ট্যাবে গিয়ে আবার MCQ-তে ফিরে এলেন (setMode('mcq') প্রতিবার এটাই কল করে)
+
+  const questionElAfter = document.querySelector(".mcq-question");
+  assert(
+    questionElAfter.dataset.answered === "1",
+    "MCQ ট্যাব ছেড়ে আবার ফিরলে data-answered রিসেট হয়ে '0' হয়ে যাচ্ছে — আগের উত্তরের প্রমাণ হারিয়ে গেছে। (BUGFIX.md BUG-14)"
+  );
+  const buttonsAfter = questionElAfter.querySelectorAll(".mcq-option");
+  assert(
+    Array.from(buttonsAfter).every((b) => b.disabled),
+    "আগে উত্তর দেওয়া প্রশ্নের বাটনগুলো আবার enabled হয়ে গেছে — দ্বিতীয়বার উত্তর বদলানো যাচ্ছে। (BUGFIX.md BUG-14)"
+  );
+  assert(
+    buttonsAfter[0].classList.contains("mcq-wrong") && buttonsAfter[2].classList.contains("mcq-correct"),
+    "আগের সঠিক/ভুল ফিডব্যাক (রং) রি-রেন্ডারের পর দেখা যাচ্ছে না। (BUGFIX.md BUG-14)"
+  );
+});
+
 // ── রানার ─────────────────────────────────────────────────────────────────
 async function main() {
   let passed = 0;
