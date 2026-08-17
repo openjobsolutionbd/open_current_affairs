@@ -1724,6 +1724,12 @@ let TOP_NEWS_ITEMS = null; // "টপ নিউজ" ট্যাবের তা
 let TOP_NEWS_ITEMS_PROMISE = null; // Bug 7: concurrent call guard
 let MCQ_SETS = null; // "MCQ" ট্যাবের কুইজ-সেট — একবার লোড হলে ক্যাশ থাকে
 let MCQ_SETS_PROMISE = null; // concurrent call guard
+// Bug 14: ব্যবহারকারী কোন প্রশ্নে কোন অপশনে ক্লিক করেছেন তার স্মৃতি — renderMcqView()
+// প্রতিবার MCQ ট্যাবে ঢোকার সময় (setMode('mcq')) DOM পুরোপুরি নতুন করে বানায়, তাই এই
+// state ছাড়া অন্য ট্যাবে গিয়ে ফিরলেই উত্তর দেওয়া প্রশ্নগুলো আবার "un-answered" দেখাত।
+// key: `${set.label}||${q.number}` (একই সেটের ভেতর number ইউনিক, একাধিক সেট এলে
+// আলাদা সেট-লেবেল দিয়ে সংঘর্ষ এড়ানো হয়)। value: ক্লিক করা option-এর index।
+let MCQ_ANSWERED = {};
 let RENDER_TOPIC_SEQ = 0; // Bug 1: race condition guard — প্রতিটা renderTopicContent কলে বাড়ে
 
 // ══════════════════════════════════════════════════════
@@ -2281,6 +2287,9 @@ const BN_OPTION_LABELS = ['ক', 'খ', 'গ', 'ঘ'];
 function handleMcqOptionClick(questionEl, clickedIndex, correctIndex){
   if(questionEl.dataset.answered === '1') return;
   questionEl.dataset.answered = '1';
+  if(questionEl.dataset.mcqKey){
+    MCQ_ANSWERED[questionEl.dataset.mcqKey] = clickedIndex; // Bug 14: পরের রি-রেন্ডারে ফেরত আনার জন্য মনে রাখা
+  }
   const buttons = questionEl.querySelectorAll('.mcq-option');
   buttons.forEach((btn, idx) => {
     btn.disabled = true;
@@ -2314,7 +2323,8 @@ function renderMcqView(){
     set.sections.forEach(section => {
       html += `<div class="mcq-section-heading">${escapeHtml(section.name)}</div>`;
       section.questions.forEach(q => {
-        html += `<div class="mcq-question" data-answered="0" data-correct-idx="${q.answer_index}">`;
+        const mcqKey = `${set.label}||${q.number}`; // Bug 14: MCQ_ANSWERED-এ লুকআপের জন্য ইউনিক key
+        html += `<div class="mcq-question" data-answered="0" data-correct-idx="${q.answer_index}" data-mcq-key="${escapeHtml(mcqKey)}">`;
         html += `<div class="mcq-question-text"><span class="mcq-question-number">${escapeHtml(q.number)}.</span>${escapeHtml(q.text)}</div>`;
         html += `<div class="mcq-options">`;
         q.options.forEach((opt, idx) => {
@@ -2336,6 +2346,14 @@ function renderMcqView(){
         handleMcqOptionClick(qEl, idx, correctIdx);
       });
     });
+    // Bug 14: এই প্রশ্ন আগে কোনো এক render-এ উত্তর দেওয়া হয়ে থাকলে (MCQ_ANSWERED-এ
+    // পাওয়া গেলে) সেই অবস্থা এখনই ফিরিয়ে আনা হচ্ছে, যাতে ট্যাব বদলে ফিরে এলেও
+    // আগের সবুজ/লাল ফিডব্যাক ও disabled বাটন বহাল থাকে।
+    const previousClick = MCQ_ANSWERED[qEl.dataset.mcqKey];
+    if(previousClick !== undefined){
+      const correctIdx = parseInt(qEl.dataset.correctIdx, 10);
+      handleMcqOptionClick(qEl, previousClick, correctIdx);
+    }
   });
 }
 
