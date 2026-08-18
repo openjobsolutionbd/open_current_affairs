@@ -3058,11 +3058,20 @@ async function renderTopicContent(topic, container, {backBtnId, onRelatedClick} 
       document.getElementById(backBtnId).addEventListener('click', backToList);
     }
 
-    document.getElementById(`print-topic-btn-${topic.slug}`).addEventListener('click', () => {
+    // BUG-15 ফিক্স: এই ৪টা বাটনের id-তে শুধু topic.slug থাকে, container-স্কোপড
+    // কোনো prefix নেই — তাই একই টপিক একসাথে মূল কার্ড ও মডাল দুই জায়গায় থাকলে
+    // (যেমন কার্ডে টপিক খোলা রেখে ভাসমান সার্চ দিয়ে সেই একই টপিক মডালেও খোলা হলে)
+    // DOM-এ একই id দুইবার তৈরি হয়। document.getElementById() তখন সবসময় DOM-এ
+    // প্রথম মিলে যাওয়া এলিমেন্টই ফেরত দেয় (এখানে card-এরটা, যেহেতু card
+    // topic-modal-body-এর আগে আসে) — ফলে modal-এর নিজের বাটনে কোনো listener
+    // বাঁধা পড়ে না, ক্লিক করলে কিছুই হয় না। container.querySelector() দিয়ে
+    // ঠিক এই renderTopicContent()-কলের container-এর ভেতরের এলিমেন্টটাই
+    // নিশ্চিতভাবে বাছাই করা হচ্ছে।
+    container.querySelector(`#print-topic-btn-${topic.slug}`).addEventListener('click', () => {
       window.print();
     });
 
-    document.getElementById(`copy-link-btn-${topic.slug}`).addEventListener('click', async (e) => {
+    container.querySelector(`#copy-link-btn-${topic.slug}`).addEventListener('click', async (e) => {
       const url = window.location.origin + window.location.pathname + '#' + topic.slug;
       try{
         await navigator.clipboard.writeText(url);
@@ -3073,7 +3082,7 @@ async function renderTopicContent(topic, container, {backBtnId, onRelatedClick} 
       setTimeout(()=>{ e.target.textContent = '🔗 লিংক কপি'; }, 1800);
     });
 
-    document.getElementById(`mark-read-btn-${topic.slug}`).addEventListener('click', (e) => {
+    container.querySelector(`#mark-read-btn-${topic.slug}`).addEventListener('click', (e) => {
       const nowRead = toggleRead(topic.slug);
       e.target.classList.toggle('done', nowRead);
       e.target.textContent = nowRead ? '✓ পড়া হয়েছে' : '⬜ পড়া হয়েছে?';
@@ -3081,7 +3090,7 @@ async function renderTopicContent(topic, container, {backBtnId, onRelatedClick} 
       renderList(visibleTopics(qNow), qNow);
     });
 
-    document.getElementById(`bookmark-btn-${topic.slug}`).addEventListener('click', (e) => {
+    container.querySelector(`#bookmark-btn-${topic.slug}`).addEventListener('click', (e) => {
       const nowBookmarked = toggleBookmark(topic.slug);
       e.target.classList.toggle('active', nowBookmarked);
       e.target.textContent = nowBookmarked ? '⭐ প্রিয়' : '☆ প্রিয়';
