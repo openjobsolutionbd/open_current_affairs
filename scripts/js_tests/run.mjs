@@ -322,6 +322,37 @@ test("openTopic — MCQ মোডে থাকা অবস্থায় hashc
 });
 
 // ── BUG-14 ক্লাস: MCQ ট্যাব ছেড়ে ফিরে এলে উত্তর দেওয়া প্রশ্নের progress হারিয়ে যেত ──
+// ── BUG-15 ক্লাস: একই টপিক card ও modal দুই জায়গায় থাকলে duplicate id ────────
+test("renderTopicContent — মূল কার্ড ও মডালে একই টপিক থাকলে মডালের অ্যাকশন-বাটন কাজ করা উচিত", async () => {
+  const fetchImpl = mockFetchByUrl({
+    "topics/dup.md": textResponse("---\ntitle: Dup\n---\nContent"),
+  });
+  const dom = await createTestWindow({ fetchImpl });
+  const { window } = dom;
+  const topic = makeTopic({ slug: "dup", file: "topics/dup.md" });
+  setGlobal(dom, "ALL_TOPICS", [topic]);
+
+  const card = window.document.getElementById("card");
+  const modalBody = window.document.getElementById("topic-modal-body");
+
+  // আগে মূল কার্ডে টপিকটা খোলা আছে (ব্যাকগ্রাউন্ডে, অন্য মোডে সুইচ করার পরও
+  // #card-এর content DOM-এ থেকে যায়) — তারপর ভাসমান সার্চ দিয়ে একই টপিক
+  // মডালেও খোলা হলো।
+  await window.renderTopicContent(topic, card, { backBtnId: "mobile-back-btn" });
+  await window.openTopicInModal("dup");
+
+  const modalBtn = modalBody.querySelector("#mark-read-btn-dup");
+  assert(modalBtn, "মডালে 'পড়া হয়েছে' বাটন খুঁজে পাওয়া যায়নি — টেস্ট সেটআপ ভুল হতে পারে।");
+  modalBtn.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
+
+  assert(
+    window.isRead("dup") === true,
+    "মূল কার্ড ও মডালে একই টপিক (duplicate id `mark-read-btn-dup`) থাকা অবস্থায় মডালের 'পড়া " +
+      "হয়েছে' বাটনে ক্লিক করলে কিছু হচ্ছে না — document.getElementById() ডকুমেন্টে প্রথম মিলে যাওয়া " +
+      "(card-এর) এলিমেন্টে listener বেঁধে দিচ্ছে, container-scoped querySelector ব্যবহার হচ্ছে না। (BUGFIX.md BUG-15)"
+  );
+});
+
 test("renderMcqView — MCQ মোড থেকে বেরিয়ে আবার ঢুকলে আগে উত্তর দেওয়া প্রশ্নের অবস্থা থেকে যাওয়া উচিত", async () => {
   const dom = await createTestWindow({});
   const { window } = dom;
