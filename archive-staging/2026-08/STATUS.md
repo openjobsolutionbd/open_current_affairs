@@ -17,9 +17,9 @@
 | 26 | page-26.md | confirmed | ONEX কনফার্ম করেছে |
 | — | short-notes-gvc-brain-circulation-bangla-qr.md | 85 | pending | ব্যবহারকারীর টেক্সট অনুলিপি থেকে, ছবি-verification প্রযোজ্য না |
 | — | self-reliance-and-social-security.md | 86-87 | pending | ব্যবহারকারীর টেক্সট অনুলিপি থেকে |
-| — | abiskar-porbo-18-ac.md | 84 | pending | ⚠️ "সিটি বার্স"→"সিটি বাস" সংশোধন করা হয়েছে (নিচে দ্রষ্টব্য) |
-| — | bisshobiddaloy-o-ucchoshikkha.md | 82-83 | pending | ⚠️ "রোডেসিয়া" স্কলারশিপ নাম সন্দেহজনক, "ECAS"→"UCAS" সংশোধন করা হয়েছে |
+| — | abiskar-porbo-18-ac.md | 84 | confirmed | 'সিটি বার্স'→'সিটি বাস' সংশোধন ONEX কনফার্ম করেছেন |
+| — | bisshobiddaloy-o-ucchoshikkha.md | 82-83 | confirmed | 'রোডেসিয়া' ও 'UCAS' সংশোধন ONEX কনফার্ম করেছেন |
 | — | porishonkhan-o-hisabbiggan-proshnottor.md | 79 | pending | — |
-| — | krishi-porishonkhan-2025.md | 32 | pending | ⚠️ ফুটার ট্রিভিয়া "ইথিওপিয়া...লিউপোল্ড II" প্যাটার্নের সাথে অসামঞ্জস্যপূর্ণ মনে হচ্ছে |
+| — | krishi-porishonkhan-2025.md | 32 | confirmed | ফুটার ট্রিভিয়া বাদ দেওয়া হয়েছে, ONEX কনফার্ম করেছেন |
 
 **পরবর্তী ধাপ:** সব পেজ `confirmed` হলে প্রসেসিং সেশন শুরু করা যাবে।
