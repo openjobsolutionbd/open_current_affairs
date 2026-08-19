@@ -245,6 +245,35 @@ test("printMonthlySummary — afterprint দুইবার fire করলেও
 });
 
 // ── BUG-11 ক্লাস: data-slug attribute-এ escapeHtml() না থাকা ────────────────
+// ── BUG-16 ক্লাস: বুকমার্ক ফিল্টার + সার্চ কম্বিনেশনে বিভ্রান্তিকর "পাওয়া যায়নি" বার্তা ──
+test("renderList — বুকমার্ক ফিল্টার চালু অবস্থায় সার্চ করলে, সাইটে-থাকা-কিন্তু-বুকমার্ক-না-করা টপিকের জন্য 'পাওয়া যায়নি'/উইকিপিডিয়া fallback দেখানো উচিত না", async () => {
+  const fetchImpl = mockFetchByUrl({});
+  const dom = await createTestWindow({ fetchImpl });
+  const { window } = dom;
+
+  // football-topic বুকমার্ক করা, cricket-topic করা নেই — কিন্তু দুটোই
+  // সাইটে বিদ্যমান।
+  setGlobal(dom, "ALL_TOPICS", [
+    makeTopic({ slug: "football-topic", title: "ফুটবল টপিক", tags: ["football"] }),
+    makeTopic({ slug: "cricket-topic", title: "ক্রিকেট টপিক", tags: ["cricket"] }),
+  ]);
+  window.localStorage.setItem("oca_bookmarks", JSON.stringify({ "football-topic": true }));
+  setGlobal(dom, "BOOKMARK_FILTER_ACTIVE", true);
+
+  // "cricket" সার্চ করা হলো — সাইটে cricket-topic আছে, কিন্তু সেটা
+  // বুকমার্ক করা না থাকায় বুকমার্ক-ফিল্টার করা তালিকা খালি আসবে।
+  window.renderList(window.visibleTopics("cricket"), "cricket");
+  await new Promise((resolve) => window.setTimeout(resolve, 30));
+
+  const html = window.document.getElementById("tab-list").innerHTML;
+  assert(
+    !html.includes("কোনো টপিক পাওয়া যায়নি") && !html.includes("উইকিপিডিয়া"),
+    "বুকমার্ক ফিল্টার চালু অবস্থায় সার্চ করলে, cricket-topic আসলে সাইটে থাকা সত্ত্বেও " +
+      "'কোনো টপিক পাওয়া যায়নি' বা উইকিপিডিয়া fallback দেখানো হচ্ছে — এটা বিভ্রান্তিকর, কারণ " +
+      "টপিকটা শুধু বুকমার্ক করা নেই বলে ফিল্টার হয়ে গেছে, সাইটে অনুপস্থিত না। (BUGFIX.md BUG-16)"
+  );
+});
+
 test("renderList ও related-topics chip — slug-এ থাকা বিশেষ ক্যারেক্টার attribute থেকে বের হয়ে নতুন attribute বানাতে পারা উচিত না", async () => {
   const evilSlug = 'evil" onmouseover="alert(1)';
   const fetchImpl = mockFetchByUrl({
