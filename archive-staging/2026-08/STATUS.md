@@ -15,5 +15,11 @@
 | 16 | page-16.md | confirmed | অন্তলোকে — শুধু আবুল কাসেম ফজলুল হক ও মুস্তাফা মনোয়ার (ব্যবহারকারীর নির্দেশে ব্যতিক্রম, বাকি ৩ জন ইচ্ছাকৃতভাবে বাদ, স্থায়ী নিয়ম অপরিবর্তিত) |
 | 17 | page-17.md | confirmed | বিশ্বকাপ ফুটবল চ্যাম্পিয়ন ২০২৬ টেবিল, ব্যবহারকারী দুটো বানান (ফ্রিৎজ ওয়াল্টার, কার্লোস ডুঙ্গা) যাচাই করেছেন |
 | 26 | page-26.md | confirmed | ONEX কনফার্ম করেছে |
+| — | short-notes-gvc-brain-circulation-bangla-qr.md | 85 | pending | ব্যবহারকারীর টেক্সট অনুলিপি থেকে, ছবি-verification প্রযোজ্য না |
+| — | self-reliance-and-social-security.md | 86-87 | pending | ব্যবহারকারীর টেক্সট অনুলিপি থেকে |
+| — | abiskar-porbo-18-ac.md | 84 | pending | ⚠️ "সিটি বার্স"→"সিটি বাস" সংশোধন করা হয়েছে (নিচে দ্রষ্টব্য) |
+| — | bisshobiddaloy-o-ucchoshikkha.md | 82-83 | pending | ⚠️ "রোডেসিয়া" স্কলারশিপ নাম সন্দেহজনক, "ECAS"→"UCAS" সংশোধন করা হয়েছে |
+| — | porishonkhan-o-hisabbiggan-proshnottor.md | 79 | pending | — |
+| — | krishi-porishonkhan-2025.md | 32 | pending | ⚠️ ফুটার ট্রিভিয়া "ইথিওপিয়া...লিউপোল্ড II" প্যাটার্নের সাথে অসামঞ্জস্যপূর্ণ মনে হচ্ছে |
 
 **পরবর্তী ধাপ:** সব পেজ `confirmed` হলে প্রসেসিং সেশন শুরু করা যাবে।
