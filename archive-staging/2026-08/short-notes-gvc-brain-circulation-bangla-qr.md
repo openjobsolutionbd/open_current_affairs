@@ -2,7 +2,7 @@
 issue: 2026-08
 printed_page: 85
 topic: Short Notes (Global Value Chain, Brain Circulation, Bangla QR)
-status: pending
+status: confirmed
 notes: "উৎস: ব্যবহারকারীর দেওয়া একীভূত টেক্সট অনুলিপি (ছবি থেকে OCR না, তাই zoom-verification প্রযোজ্য না)। ইংরেজি কনটেন্ট, verbatim রাখা হয়েছে।"
 ---
 
