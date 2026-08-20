@@ -2,7 +2,7 @@
 issue: 2026-08
 printed_page: 86-87
 topic: Self-Reliance & Social Security
-status: pending
+status: confirmed
 notes: "উৎস: ব্যবহারকারীর দেওয়া একীভূত টেক্সট অনুলিপি। ইংরেজি কনটেন্ট, verbatim। মূল পাতাক্রম ৮৬ (ভূমিকা+Self-Reliance+Social Security+Key Features) → ৮৭ (Social Security in Budget+Priority Challenges+Vision+Wordbook), reading order অনুযায়ী সাজানো হলো।"
 ---
 
