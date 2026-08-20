@@ -5,6 +5,14 @@
 # প্রতিটা টপিকের slug/title/tags আগে থেকেই কমপ্যাক্ট আকারে আছে, তাই
 # শুধু সেটা গ্রেপ করলেই যথেষ্ট — অনেক কম টেক্সট পড়তে হয়।
 #
+# docs/topics-index.json auto-generated এবং কখনো সরাসরি commit করা হয় না
+# (CI push-এর পরে রিবিল্ড করে) — তাই committed কপি স্টেল থাকতে পারে,
+# বিশেষ করে খুব সম্প্রতি merge হওয়া টপিক এতে না-ও থাকতে পারে (২০২৬-০৮-১৭তে
+# এভাবেই একবার ভুলভাবে "নতুন টপিক" বলে রিপোর্ট হয়েছিল)। তাই চেক করার আগে
+# প্রতিবার লোকালি নিঃশব্দে রিবিল্ড করে নেওয়া হয় (এই রিবিল্ড কখনো commit হয় না,
+# শুধু লোকাল চেকের জন্য) — নিশ্চিত করতে যে ইনডেক্স আসল docs/topics/*.md
+# ফাইলগুলোর সাথেই সবসময় মিলছে।
+#
 # ব্যবহার: bash scripts/check_topic.sh "কীওয়ার্ড"
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -14,7 +22,12 @@ if [ $# -eq 0 ]; then
   exit 1
 fi
 
-echo "== docs/topics-index.json-এ '$1' খোঁজা হচ্ছে (title/tags/slug) =="
+if ! python3 scripts/build_index.py > /tmp/check_topic_rebuild.log 2>&1; then
+  echo "⚠️  ইনডেক্স রিবিল্ড ব্যর্থ হয়েছে (স্টেল ইনডেক্স দিয়েই চেক চলছে, ফলাফল ভুল হতে পারে):"
+  cat /tmp/check_topic_rebuild.log
+fi
+
+echo "== docs/topics-index.json-এ '$1' খোঁজা হচ্ছে (title/tags/slug) [রিবিল্ড করা, commit হবে না] =="
 python3 -c "
 import json, sys
 q = sys.argv[1].lower()

@@ -62,6 +62,11 @@ Validation ব্যর্থ হলে build non-zero exit করে এবং 
 
 Cloudflare Pages-এর output directory `docs`। তাই `docs/` path বদলালে Cloudflare configuration-ও বদলাতে হবে। push-এর পর `.github/workflows/update-wiki.yml` build script চালিয়ে generated output commit বা deploy-এর জন্য প্রস্তুত করবে। তবে Workflow-এর actual behavior যাচাই না করে generated output fresh হয়েছে ধরে নেওয়া যাবে না।
 
+**Git push/PR workflow ও কনফার্মেশন ফরম্যাট (ব্যবহারকারীর নির্দেশে):**
+- main branch protected — সরাসরি push যাবে না। প্রতিটা push আলাদা ব্রাঞ্চ থেকে PR খুলে, CI চেক pass করলে merge করতে হবে।
+- GitHub token ব্যবহারকারী পেস্ট করলে শুধু ওই সেশনেই ব্যবহার হবে, কোথাও সংরক্ষণ করা যাবে না। Push/PR কাজ শেষে token revoke করার রিমাইন্ডার দেওয়া যাবে না — ব্যবহারকারী নিজেই সেটা সামলাবেন।
+- প্রতিটা সফল push/PR-merge-এর কনফার্মেশন বার্তার শেষে বোল্ড করে **"✅ পুশ সম্পূর্ণ"** লাইনটা লিখতে হবে (চ্যাট ইন্টারফেসে রঙিন টেক্সট দেখানো যায় না, তাই বোল্ড+চেকমার্ক সবুজ রঙের বিকল্প হিসেবে ব্যবহৃত হয়)।
+
 ## ৫. নিরাপত্তা ও রক্ষণাবেক্ষণ
 
 - Markdown rendering-এর আগে sanitizer ব্যবহার করতে হবে।
