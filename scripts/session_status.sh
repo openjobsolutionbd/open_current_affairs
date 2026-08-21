@@ -61,3 +61,81 @@ TOPIC_COUNT=$(ls docs/topics/*.md 2>/dev/null | wc -l | tr -d ' ')
 echo "মোট টপিক: ${TOPIC_COUNT}টা"
 echo "সর্বশেষ ৩টা কমিট:"
 git log --oneline -3
+
+echo ""
+echo "== অন্য সেশন/অ্যাকাউন্ট ইতিমধ্যে কোন কাজ করে রেখেছে কিনা (GitHub-এর লাইভ অবস্থা) =="
+echo "কোনো নতুন কাজ শুরুর আগে নিচের তালিকায় মিলিয়ে দেখুন — একই বিষয়ে branch/PR"
+echo "আগে থেকে থাকলে বা merge হয়ে গিয়ে থাকলে পুনরাবৃত্তি করবেন না।"
+echo ""
+
+REPO="openjobsolutionbd/open_current_affairs"
+AUTH_HEADER=()
+if [ -n "${GH_TOKEN:-}" ]; then
+  AUTH_HEADER=(-H "Authorization: Bearer ${GH_TOKEN}")
+fi
+
+echo "--- খোলা branch (main বাদে) ---"
+curl -s "${AUTH_HEADER[@]}" -H "Accept: application/vnd.github+json" \
+  "https://api.github.com/repos/${REPO}/branches?per_page=100" \
+  | python3 -c "
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    branches = [b['name'] for b in data if b.get('name') != 'main']
+    if not branches:
+        print('  (main ছাড়া কোনো branch নেই)')
+    for b in branches:
+        print(f'  - {b}')
+except Exception as e:
+    print(f'  ✗ পড়া যায়নি: {e}')
+"
+
+echo ""
+echo "--- খোলা Pull Request ---"
+curl -s "${AUTH_HEADER[@]}" -H "Accept: application/vnd.github+json" \
+  "https://api.github.com/repos/${REPO}/pulls?state=open&per_page=30" \
+  | python3 -c "
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    if not data:
+        print('  (কোনো খোলা PR নেই)')
+    for pr in data:
+        print(f\"  #{pr['number']} [{pr['head']['ref']}] {pr['title']}  (খোলা হয়েছে: {pr['created_at'][:10]})\")
+except Exception as e:
+    print(f'  ✗ পড়া যায়নি: {e}')
+"
+
+echo ""
+echo "--- সর্বশেষ ১০টা merge হওয়া PR (সম্পন্ন কাজ) ---"
+curl -s "${AUTH_HEADER[@]}" -H "Accept: application/vnd.github+json" \
+  "https://api.github.com/repos/${REPO}/pulls?state=closed&sort=updated&direction=desc&per_page=15" \
+  | python3 -c "
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    merged = [pr for pr in data if pr.get('merged_at')][:10]
+    if not merged:
+        print('  (তথ্য নেই)')
+    for pr in merged:
+        print(f\"  #{pr['number']} {pr['title']}  (merge: {pr['merged_at'][:10]})\")
+except Exception as e:
+    print(f'  ✗ পড়া যায়নি: {e}')
+"
+
+echo ""
+echo "--- সাম্প্রতিক বাতিল/abandoned PR (merge হয়নি) ---"
+curl -s "${AUTH_HEADER[@]}" -H "Accept: application/vnd.github+json" \
+  "https://api.github.com/repos/${REPO}/pulls?state=closed&sort=updated&direction=desc&per_page=15" \
+  | python3 -c "
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    closed_unmerged = [pr for pr in data if not pr.get('merged_at')][:5]
+    if not closed_unmerged:
+        print('  (কোনো abandoned PR নেই)')
+    for pr in closed_unmerged:
+        print(f\"  #{pr['number']} [{pr['head']['ref']}] {pr['title']}  (বন্ধ: {pr['closed_at'][:10]})\")
+except Exception as e:
+    print(f'  ✗ পড়া যায়নি: {e}')
+"
