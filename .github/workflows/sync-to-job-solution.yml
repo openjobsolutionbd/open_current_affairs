@@ -170,16 +170,87 @@ jobs:
           echo "sync_ok=true" >> "$GITHUB_OUTPUT"
           echo "✅ যাচাই সফল — ফাইল-সংখ্যা মিলেছে (git-এ জমা হওয়া অনুযায়ী)।"
 
-      - name: পরিবর্তন push করা (শুধু current-affairs/ পাথে)
+      - name: পরিবর্তন branch+PR দিয়ে merge করা (main protected, সরাসরি push অসম্ভব)
+        # বাগ-ফিক্স (২০২৬-০৮-২১): open_job_solution-এর main branch এখন
+        # protected (required status check "validate") — required-status-check
+        # থাকা branch-এ সরাসরি push করার কোনো পথ নেই (কোনো PR-ই তৈরি হয় না
+        # যার সাথে check attach হবে)। আগে এখানে সরাসরি `git push origin main`
+        # করা হতো, যা protection চালুর সাথে সাথেই ব্যর্থ হতে শুরু করে
+        # ("Required status check \"validate\" is expected")। এখন থেকে
+        # বাকি রিপোর মতোই branch → PR → check পাস → merge — কোনো বাইপাস-হোল
+        # ছাড়াই, উল্টো "validate" check সিঙ্ক-করা কনটেন্টও যাচাই করে দেবে
+        # (কোনো bcs-mcq/data/*.js ফাইল স্পর্শ না হওয়ায় এই check সবসময় পাস
+        # করবে — শুধু current-affairs/docs/ বদলায়)।
         working-directory: destination
+        env:
+          GH_TOKEN: ${{ secrets.JOB_SOLUTION_SYNC_TOKEN }}
         run: |
           set -e
           if git diff --cached --quiet; then
-            echo "কোনো পরিবর্তন নেই, push করার দরকার নেই।"
+            echo "কোনো পরিবর্তন নেই, PR/merge করার দরকার নেই।"
             exit 0
           fi
+
+          BRANCH="bot/sync-current-affairs"
           git commit -m "chore: sync current-affairs content from open_current_affairs [skip ci]"
-          git push origin main
+
+          # স্থায়ী bot-branch পুনর্ব্যবহার করা হয় (force-push) — এটা মানুষের
+          # কাজের branch না, তাই প্রতিবার নতুন কনটেন্ট দিয়ে replace করাই ঠিক।
+          # merge হওয়ার পর repo-র delete_branch_on_merge সেটিং এটা মুছে দেয়,
+          # তাই সাধারণত পরের রানে branch নতুন করেই তৈরি হয়।
+          git push origin "HEAD:refs/heads/${BRANCH}" --force
+
+          API="https://api.github.com/repos/openjobsolutionbd/open_job_solution"
+
+          # একই branch-এ আগে থেকে খোলা PR থাকলে (আগের রান merge/check-এ আটকে
+          # থাকলে) সেটাই পুনর্ব্যবহার করা হয় — নাহলে GitHub নতুন PR খুলতে
+          # দেবে না ("A pull request already exists") আর নতুন কনটেন্ট এমনিতেই
+          # ওই PR-এ যোগ হয়ে গেছে উপরের force-push-এ।
+          EXISTING_PR=$(curl -s -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "$API/pulls?head=openjobsolutionbd:${BRANCH}&state=open" \
+            | python3 -c "import json,sys; d=json.load(sys.stdin); print(d[0]['number'] if d else '')")
+
+          if [ -n "$EXISTING_PR" ]; then
+            PR_NUMBER="$EXISTING_PR"
+            echo "বিদ্যমান PR পুনর্ব্যবহার করা হচ্ছে: #$PR_NUMBER"
+          else
+            PR_NUMBER=$(curl -s -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+              "$API/pulls" \
+              -d "{\"title\":\"chore: sync current-affairs content ($(date -u +%Y-%m-%d))\",\"head\":\"${BRANCH}\",\"base\":\"main\",\"body\":\"open_current_affairs থেকে স্বয়ংক্রিয় সিঙ্ক (sync-to-job-solution.yml)।\"}" \
+              | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['number'])")
+            echo "নতুন PR খোলা হলো: #$PR_NUMBER"
+          fi
+
+          # check সম্পূর্ণ ও mergeable_state 'clean' হওয়ার অপেক্ষা (সর্বোচ্চ ~৫ মিনিট)
+          MERGEABLE_STATE=""
+          for i in $(seq 1 20); do
+            sleep 15
+            MERGEABLE_STATE=$(curl -s -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+              "$API/pulls/$PR_NUMBER" | python3 -c "import json,sys; print(json.load(sys.stdin).get('mergeable_state'))")
+            echo "চেষ্টা $i — mergeable_state: $MERGEABLE_STATE"
+            if [ "$MERGEABLE_STATE" = "clean" ]; then
+              break
+            fi
+            if [ "$MERGEABLE_STATE" = "behind" ]; then
+              curl -s -X PUT -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+                "$API/pulls/$PR_NUMBER/update-branch" > /dev/null
+            fi
+          done
+
+          if [ "$MERGEABLE_STATE" != "clean" ]; then
+            echo "::error::PR #$PR_NUMBER ৫ মিনিটেও merge-উপযোগী (clean) হয়নি — শেষ অবস্থা: $MERGEABLE_STATE। PR-টা খোলা রাখা হলো, ম্যানুয়ালি https://github.com/openjobsolutionbd/open_job_solution/pull/$PR_NUMBER চেক করা দরকার।"
+            exit 1
+          fi
+
+          MERGE_RESULT=$(curl -s -X PUT -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "$API/pulls/$PR_NUMBER/merge" -d '{"merge_method":"squash"}')
+          echo "$MERGE_RESULT"
+          MERGED=$(echo "$MERGE_RESULT" | python3 -c "import json,sys; print(json.load(sys.stdin).get('merged', False))")
+          if [ "$MERGED" != "True" ]; then
+            echo "::error::PR #$PR_NUMBER merge ব্যর্থ হয়েছে — ম্যানুয়ালি চেক করা দরকার: https://github.com/openjobsolutionbd/open_job_solution/pull/$PR_NUMBER"
+            exit 1
+          fi
+          echo "✅ PR #$PR_NUMBER সফলভাবে merge হয়েছে।"
 
       # নিরাপত্তা-স্তর ২: সিঙ্ক ব্যর্থ হলে স্পষ্ট বার্তা তৈরি হবে (উপরের কোনো ধাপ
       # ব্যর্থ হলে GitHub স্বয়ংক্রিয়ভাবে এই ধাপটা চালাবে)
