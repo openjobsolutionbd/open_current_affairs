@@ -245,6 +245,35 @@ test("printMonthlySummary — afterprint দুইবার fire করলেও
 });
 
 // ── BUG-11 ক্লাস: data-slug attribute-এ escapeHtml() না থাকা ────────────────
+// ── BUG-16 ক্লাস: বুকমার্ক ফিল্টার + সার্চ কম্বিনেশনে বিভ্রান্তিকর "পাওয়া যায়নি" বার্তা ──
+test("renderList — বুকমার্ক ফিল্টার চালু অবস্থায় সার্চ করলে, সাইটে-থাকা-কিন্তু-বুকমার্ক-না-করা টপিকের জন্য 'পাওয়া যায়নি'/উইকিপিডিয়া fallback দেখানো উচিত না", async () => {
+  const fetchImpl = mockFetchByUrl({});
+  const dom = await createTestWindow({ fetchImpl });
+  const { window } = dom;
+
+  // football-topic বুকমার্ক করা, cricket-topic করা নেই — কিন্তু দুটোই
+  // সাইটে বিদ্যমান।
+  setGlobal(dom, "ALL_TOPICS", [
+    makeTopic({ slug: "football-topic", title: "ফুটবল টপিক", tags: ["football"] }),
+    makeTopic({ slug: "cricket-topic", title: "ক্রিকেট টপিক", tags: ["cricket"] }),
+  ]);
+  window.localStorage.setItem("oca_bookmarks", JSON.stringify({ "football-topic": true }));
+  setGlobal(dom, "BOOKMARK_FILTER_ACTIVE", true);
+
+  // "cricket" সার্চ করা হলো — সাইটে cricket-topic আছে, কিন্তু সেটা
+  // বুকমার্ক করা না থাকায় বুকমার্ক-ফিল্টার করা তালিকা খালি আসবে।
+  window.renderList(window.visibleTopics("cricket"), "cricket");
+  await new Promise((resolve) => window.setTimeout(resolve, 30));
+
+  const html = window.document.getElementById("tab-list").innerHTML;
+  assert(
+    !html.includes("কোনো টপিক পাওয়া যায়নি") && !html.includes("উইকিপিডিয়া"),
+    "বুকমার্ক ফিল্টার চালু অবস্থায় সার্চ করলে, cricket-topic আসলে সাইটে থাকা সত্ত্বেও " +
+      "'কোনো টপিক পাওয়া যায়নি' বা উইকিপিডিয়া fallback দেখানো হচ্ছে — এটা বিভ্রান্তিকর, কারণ " +
+      "টপিকটা শুধু বুকমার্ক করা নেই বলে ফিল্টার হয়ে গেছে, সাইটে অনুপস্থিত না। (BUGFIX.md BUG-16)"
+  );
+});
+
 test("renderList ও related-topics chip — slug-এ থাকা বিশেষ ক্যারেক্টার attribute থেকে বের হয়ে নতুন attribute বানাতে পারা উচিত না", async () => {
   const evilSlug = 'evil" onmouseover="alert(1)';
   const fetchImpl = mockFetchByUrl({
@@ -322,6 +351,37 @@ test("openTopic — MCQ মোডে থাকা অবস্থায় hashc
 });
 
 // ── BUG-14 ক্লাস: MCQ ট্যাব ছেড়ে ফিরে এলে উত্তর দেওয়া প্রশ্নের progress হারিয়ে যেত ──
+// ── BUG-15 ক্লাস: একই টপিক card ও modal দুই জায়গায় থাকলে duplicate id ────────
+test("renderTopicContent — মূল কার্ড ও মডালে একই টপিক থাকলে মডালের অ্যাকশন-বাটন কাজ করা উচিত", async () => {
+  const fetchImpl = mockFetchByUrl({
+    "topics/dup.md": textResponse("---\ntitle: Dup\n---\nContent"),
+  });
+  const dom = await createTestWindow({ fetchImpl });
+  const { window } = dom;
+  const topic = makeTopic({ slug: "dup", file: "topics/dup.md" });
+  setGlobal(dom, "ALL_TOPICS", [topic]);
+
+  const card = window.document.getElementById("card");
+  const modalBody = window.document.getElementById("topic-modal-body");
+
+  // আগে মূল কার্ডে টপিকটা খোলা আছে (ব্যাকগ্রাউন্ডে, অন্য মোডে সুইচ করার পরও
+  // #card-এর content DOM-এ থেকে যায়) — তারপর ভাসমান সার্চ দিয়ে একই টপিক
+  // মডালেও খোলা হলো।
+  await window.renderTopicContent(topic, card, { backBtnId: "mobile-back-btn" });
+  await window.openTopicInModal("dup");
+
+  const modalBtn = modalBody.querySelector("#mark-read-btn-dup");
+  assert(modalBtn, "মডালে 'পড়া হয়েছে' বাটন খুঁজে পাওয়া যায়নি — টেস্ট সেটআপ ভুল হতে পারে।");
+  modalBtn.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
+
+  assert(
+    window.isRead("dup") === true,
+    "মূল কার্ড ও মডালে একই টপিক (duplicate id `mark-read-btn-dup`) থাকা অবস্থায় মডালের 'পড়া " +
+      "হয়েছে' বাটনে ক্লিক করলে কিছু হচ্ছে না — document.getElementById() ডকুমেন্টে প্রথম মিলে যাওয়া " +
+      "(card-এর) এলিমেন্টে listener বেঁধে দিচ্ছে, container-scoped querySelector ব্যবহার হচ্ছে না। (BUGFIX.md BUG-15)"
+  );
+});
+
 test("renderMcqView — MCQ মোড থেকে বেরিয়ে আবার ঢুকলে আগে উত্তর দেওয়া প্রশ্নের অবস্থা থেকে যাওয়া উচিত", async () => {
   const dom = await createTestWindow({});
   const { window } = dom;

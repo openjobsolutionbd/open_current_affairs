@@ -357,8 +357,21 @@ def parse_mcq_file(path):
     sections = []  # [{name, questions:[{number, text, options:[...], answer_index}]}]
     current_section = None
     pending_question = None  # {number, text} — অপশন লাইনের অপেক্ষায়
-    # number(str) -> {section_questions_list, question_dict} — উত্তর-কী মেলানোর জন্য
-    question_lookup = {}
+    # BUG-17 ফিক্স: আগে question_lookup পুরো ফাইল জুড়ে একটাই শেয়ার্ড dict
+    # ছিল, শুধু সর্বশেষ প্রশ্নটাই রাখত (num -> q)। বাস্তব ফাইলে প্রতিটা
+    # "## বিভাগ"-এর ঠিক পরেই তার নিজস্ব "**উত্তর:**" লাইন থাকায় এটা কাজ
+    # চলে যেত। কিন্তু MCQ_GUIDE.md অনুযায়ী মূল ম্যাগাজিনের গঠন "প্রায়
+    # হুবহু" রাখতে হয় — কোনো ম্যাগাজিনে যদি সব বিভাগের উত্তর-কী একসাথে
+    # ফাইলের শেষে consolidated থাকে (এটা বাস্তব ম্যাগাজিন/পত্রিকায়
+    # প্রচলিত একটা কনভেনশন) এবং দুই সেকশনে একই নাম্বার (১, ২...) থাকে,
+    # তাহলে শেয়ার্ড dict-এ আগের সেকশনের entry নীরবে overwrite হয়ে যেত —
+    # ফলে আগের সেকশনের প্রশ্নে কখনো উত্তর না মিলে গোটা সেকশনই নীরবে বাদ
+    # পড়ে যেত। এখন প্রতিটা নাম্বারের জন্য একটা queue রাখা হচ্ছে (এক ফাইলে
+    # একই নাম্বার একাধিকবার এলে সবগুলোই), আর উত্তর-কী মিললে সেই queue-এর
+    # সবচেয়ে পুরনো (এখনো-অসমাধিত) প্রশ্নটাতে বসে — ফাইলে যে ক্রমে প্রশ্ন
+    # এসেছে সেই ক্রমেই উত্তর বসে, তাই বিভাগ-ভিত্তিক ইন্টারলিভড এবং
+    # ফাইল-শেষে-consolidated — দুই কনভেনশনেই সঠিকভাবে কাজ করে।
+    pending_by_number = {}  # number(str) -> [q, q, ...] (deque, প্রথমটা সবচেয়ে পুরনো)
 
     def ensure_section(name):
         nonlocal current_section
@@ -395,14 +408,15 @@ def parse_mcq_file(path):
                     "answer_index": None,
                 }
                 current_section["questions"].append(q)
-                question_lookup[q["number"]] = q
+                pending_by_number.setdefault(q["number"], []).append(q)
             pending_question = None
             continue
 
         if line.startswith("**উত্তর"):
             for num, letter in MCQ_ANSWER_PAIR_RE.findall(line):
-                q = question_lookup.get(num)
-                if q is not None:
+                queue = pending_by_number.get(num)
+                if queue:
+                    q = queue.pop(0)  # সবচেয়ে পুরনো অসমাধিত প্রশ্নটাতে বসে
                     q["answer_index"] = BN_LETTER_TO_INDEX.get(letter)
             continue
 
