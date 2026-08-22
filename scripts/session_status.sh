@@ -96,12 +96,32 @@ curl -s "${AUTH_HEADER[@]}" -H "Accept: application/vnd.github+json" \
   "https://api.github.com/repos/${REPO}/pulls?state=open&per_page=30" \
   | python3 -c "
 import json, sys
+from datetime import datetime, timezone
 try:
     data = json.load(sys.stdin)
     if not data:
         print('  (কোনো খোলা PR নেই)')
+    now = datetime.now(timezone.utc)
+    stuck_bot_prs = []
     for pr in data:
-        print(f\"  #{pr['number']} [{pr['head']['ref']}] {pr['title']}  (খোলা হয়েছে: {pr['created_at'][:10]})\")
+        ref = pr['head']['ref']
+        created = datetime.fromisoformat(pr['created_at'].replace('Z', '+00:00'))
+        age_hours = (now - created).total_seconds() / 3600
+        print(f\"  #{pr['number']} [{ref}] {pr['title']}  (খোলা হয়েছে: {pr['created_at'][:10]})\")
+        # bot/auto branch ২৪ ঘণ্টার বেশি খোলা থাকলে সন্দেহজনক — এই ধরনের
+        # branch normally একই দিনে merge হয়ে যাওয়ার কথা (২০২৬-০৮-২১-এ
+        # PR #64 এভাবে না ধরা পড়ে ৬ দিন আটকে ছিল, ১৫টা টপিক সাইট থেকে
+        # অদৃশ্য ছিল)।
+        if (ref.startswith('bot/') or ref.startswith('auto/')) and age_hours > 24:
+            stuck_bot_prs.append((pr['number'], ref, round(age_hours/24, 1)))
+    if stuck_bot_prs:
+        print('')
+        print('  🚨 সতর্কতা — নিচের bot/auto PR ২৪ ঘণ্টার বেশি খোলা আছে, সম্ভবত check')
+        print('     ট্রিগার হচ্ছে না (BOT_PAT/JOB_SOLUTION_SYNC_TOKEN-জাতীয় টোকেনের')
+        print('     পুরনো পরিচিত সমস্যা) — ম্যানুয়ালি নিজের টোকেন দিয়ে ওই branch-এ')
+        print('     একটা push করে check ট্রিগার করে merge করা দরকার:')
+        for num, ref, days in stuck_bot_prs:
+            print(f'     - PR #{num} [{ref}] — {days} দিন ধরে আটকে')
 except Exception as e:
     print(f'  ✗ পড়া যায়নি: {e}')
 "

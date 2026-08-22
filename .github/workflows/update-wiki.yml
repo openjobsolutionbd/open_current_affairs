@@ -79,6 +79,16 @@ jobs:
       # তাই এখানে repo secret BOT_PAT (একটা সাধারণ personal access token)
       # ব্যবহার করা হয় — human-token-চালিত push/PR ইভেন্ট নির্ভরযোগ্যভাবে
       # check ট্রিগার করে, তাই আবার সরল force-push+reuse পদ্ধতিতে ফেরা গেছে।
+      #
+      # ⚠️ সতর্কতা (রুট-কজ, ২০২৬-০৮-২১-এ ধরা পড়েছে, PR #64 ৬ দিন আটকে ছিল):
+      # commit message-এ "[skip ci]" (বা যেকোনো skip-ci ভ্যারিয়েন্ট) কখনো
+      # যোগ করবেন না — এতে শুধু push-ট্রিগার্ড এই workflow না, একই commit-এর
+      # pull_request (synchronize) ইভেন্টও স্কিপ হয়ে যায়, ফলে pr-check.yml
+      # কখনো চলে না আর auto/rebuild-output PR চিরস্থায়ীভাবে
+      # mergeable_state: blocked থেকে যায় (BOT_PAT-এর দোষ না, এটা GitHub-এর
+      # নিজস্ব skip-ci আচরণ, যা push ও pull_request উভয় ইভেন্টেই প্রযোজ্য)।
+      # recursion-guard-এর জন্য [skip ci] দরকারও নেই — নিচের diff-check
+      # (changed==false পরের রানে) নিজেই infinite-loop ঠেকায়।
       - name: Rebuild branch push + PR তৈরি/আপডেট
         if: steps.changes.outputs.changed == 'true'
         env:
@@ -88,9 +98,9 @@ jobs:
           git checkout -B "$BRANCH"
           NEW_VERSION="${{ steps.bump.outputs.new_version }}"
           if [ -n "$NEW_VERSION" ]; then
-            git commit -m "chore: rebuild generated site output + bump version to $NEW_VERSION [skip ci]"
+            git commit -m "chore: rebuild generated site output + bump version to $NEW_VERSION"
           else
-            git commit -m "chore: rebuild generated site output [skip ci]"
+            git commit -m "chore: rebuild generated site output"
           fi
           git push "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" "$BRANCH" --force
 
