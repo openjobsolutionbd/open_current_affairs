@@ -15,11 +15,11 @@
 | 16 | page-16.md | confirmed | অন্তলোকে — শুধু আবুল কাসেম ফজলুল হক ও মুস্তাফা মনোয়ার (ব্যবহারকারীর নির্দেশে ব্যতিক্রম, বাকি ৩ জন ইচ্ছাকৃতভাবে বাদ, স্থায়ী নিয়ম অপরিবর্তিত) |
 | 17 | page-17.md | confirmed | বিশ্বকাপ ফুটবল চ্যাম্পিয়ন ২০২৬ টেবিল, ব্যবহারকারী দুটো বানান (ফ্রিৎজ ওয়াল্টার, কার্লোস ডুঙ্গা) যাচাই করেছেন |
 | 26 | page-26.md | confirmed | ONEX কনফার্ম করেছে; **প্রসেস সম্পন্ন** — `docs/topics/kpi-gurutopurno-sthapona.md` (নতুন টপিক) + `docs/ghotonaprobaho/2026-04-25_2026-07-27.md`-এ ১৬ জুন এন্ট্রি হিসেবে যোগ হয়েছে |
-| — | short-notes-gvc-brain-circulation-bangla-qr.md | 85 | confirmed | ব্যবহারকারীর টেক্সট অনুলিপি থেকে, ONEX কনফার্ম করেছেন |
-| — | self-reliance-and-social-security.md | 86-87 | confirmed | ব্যবহারকারীর টেক্সট অনুলিপি থেকে, ONEX কনফার্ম করেছেন |
-| — | abiskar-porbo-18-ac.md | 84 | confirmed | 'সিটি বার্স'→'সিটি বাস' সংশোধন ONEX কনফার্ম করেছেন |
-| — | bisshobiddaloy-o-ucchoshikkha.md | 82-83 | confirmed | 'রোডেসিয়া' ও 'UCAS' সংশোধন ONEX কনফার্ম করেছেন |
-| — | porishonkhan-o-hisabbiggan-proshnottor.md | 79 | confirmed | √০-ভেদমান-০ গাণিতিকভাবে স্ব-সঙ্গত (পরিমিত ব্যবধান² = ভেদমান) যাচাই করে ONEX কনফার্ম করেছেন |
-| — | krishi-porishonkhan-2025.md | 32 | confirmed | ফুটার ট্রিভিয়া বাদ দেওয়া হয়েছে, ONEX কনফার্ম করেছেন |
+| — | short-notes-gvc-brain-circulation-bangla-qr.md | 85 | confirmed | ব্যবহারকারীর টেক্সট অনুলিপি থেকে, ONEX কনফার্ম করেছেন। **প্রসেস সম্পন্ন** — `docs/topics/short-notes-gvc-brain-circulation-bangla-qr.md` |
+| — | self-reliance-and-social-security.md | 86-87 | confirmed | ব্যবহারকারীর টেক্সট অনুলিপি থেকে, ONEX কনফার্ম করেছেন। **প্রসেস সম্পন্ন** — `docs/topics/self-reliance-and-social-security.md` |
+| — | abiskar-porbo-18-ac.md | 84 | confirmed | 'সিটি বার্স'→'সিটি বাস' সংশোধন ONEX কনফার্ম করেছেন। **প্রসেস সম্পন্ন** — `docs/topics/abiskar-ac.md` |
+| — | bisshobiddaloy-o-ucchoshikkha.md | 82-83 | confirmed | 'রোডেসিয়া' ও 'UCAS' সংশোধন ONEX কনফার্ম করেছেন। **প্রসেস সম্পন্ন** — `docs/topics/bishwobiddaloy-o-ucchoshikkha.md` |
+| — | porishonkhan-o-hisabbiggan-proshnottor.md | 79 | confirmed | √০-ভেদমান-০ গাণিতিকভাবে স্ব-সঙ্গত (পরিমিত ব্যবধান² = ভেদমান) যাচাই করে ONEX কনফার্ম করেছেন। **প্রসেস সম্পন্ন** — `docs/topics/porishonkhan-hisabbiggan-o-butterfly-effect.md` |
+| — | krishi-porishonkhan-2025.md | 32 | confirmed | ফুটার ট্রিভিয়া বাদ দেওয়া হয়েছে, ONEX কনফার্ম করেছেন। **প্রসেস সম্পন্ন** — `docs/topics/krishi-porishonkhan-2025.md` |
 
-**পরবর্তী ধাপ:** সব পেজ `confirmed` হলে প্রসেসিং সেশন শুরু করা যাবে।
+**পরবর্তী ধাপ:** ২০২৬-০৮ সংখ্যার সব confirmed পেজ প্রসেস সম্পন্ন (পেজ ৬-১৭, ২৬ আগেই existing টপিকে merge হয়েছিল; বাকি ৬টা আইটেম এখন নতুন টপিক হিসেবে যুক্ত হলো)। এই সংখ্যার জন্য নতুন কোনো প্রসেসিং বাকি নেই।
