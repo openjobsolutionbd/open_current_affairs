@@ -1,8 +1,8 @@
 ---
 issue: standalone-2026-08
 source: "ব্যবহারকারীর সরাসরি টেক্সট (ম্যাগাজিন স্ক্যান না)"
-status: pending
-notes: ""
+status: confirmed
+notes: "docs/topics/gorom-o-bojropat.md এ নতুন টপিক হিসেবে প্রসেস হয়েছে"
 ---
 
 # গরম ও বজ্রপাত নীরব ঘাতক
