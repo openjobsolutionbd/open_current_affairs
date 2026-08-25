@@ -24,7 +24,7 @@ import re, ast, subprocess
 src = open('scripts/pr_checks.py', encoding='utf-8').read()
 m = re.search(r'GENERATED_PREFIXES\s*=\s*(\[[^\]]*\])', src, re.S)
 GENERATED_PREFIXES = ast.literal_eval(re.sub(r'#.*', '', m.group(1)))
-staged = subprocess.run(['git','diff','--cached','--name-only'], capture_output=True, text=True).stdout.splitlines()
+staged = subprocess.run(['git','diff','--cached','--no-renames','--name-only'], capture_output=True, text=True).stdout.splitlines()
 excluded = [f for f in staged if any(f.startswith(p) for p in GENERATED_PREFIXES)]
 print('\n'.join(excluded))
 ")
