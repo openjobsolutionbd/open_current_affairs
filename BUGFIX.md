@@ -411,3 +411,15 @@ text = re.sub(r"^\s*\|?(?:\s*:?-{3,}:?\s*\|)+...$", "", text, ...) # space → e
 **যাচাই:** token ছাড়া (unauthenticated, rate-limited অবস্থা reproduce করে) ও token-সহ — দুই অবস্থাতেই চালিয়ে যাচাই করা হয়েছে: token ছাড়া স্পষ্ট বাংলা এরর-বার্তা দেখায় (আগে যেটা cryptic exception দেখাত), token-সহ স্বাভাবিক branch/PR তালিকা ঠিকভাবে দেখায়। কোনো automated regression test যোগ করা হয়নি — এই স্ক্রিপ্ট লাইভ GitHub API-এর উপর নির্ভরশীল, deterministic mock ছাড়া automated test তৈরি করা এই মুহূর্তে অপ্রয়োজনীয় জটিলতা যোগ করত; ভবিষ্যতে কেউ এই ৪টা ব্লক থেকে error-handling সরিয়ে ফেললে ম্যানুয়ালি token ছাড়া চালিয়ে পুনরায় যাচাই করা যাবে।
 
 ---
+
+### BUG-19 🟡 — `preflight.sh`/`build_index.py` চালানোর পর `git add -A` করলে auto-generated ফাইল বারবার ভুলবশত স্টেজড হওয়ার ঝুঁকি
+
+**সমস্যা:**
+`preflight.sh` (বা সরাসরি `build_index.py`) চালালে `docs/topics-index.json`, `docs/sitemap.xml`, `docs/topic/*/index.html` ইত্যাদি auto-generated ফাইল working tree-তে পরিবর্তিত/নতুন হয়ে যায় (এটা প্রত্যাশিত — build script-এর স্বাভাবিক আউটপুট)। কিন্তু এরপর `git add -A` করলে এই ফাইলগুলো ভুলবশত স্টেজড হয়ে যায়, যা `pr_checks.py`-এর `GENERATED_PREFIXES` নীতি লঙ্ঘন করে (এই ফাইল কোনো session PR-এ থাকার কথা না)। একটা সেশনে বারবার (৫+ বার) হাতে `git reset`/`git checkout --`/`rm -rf` দিয়ে এগুলো বাদ দিতে হয়েছে — কোনোবার ভুলে commit হয়ে যায়নি, কিন্তু এটা একটা repetitive, মানুষের-মনোযোগ-নির্ভর ঝুঁকি ছিল যেটা ভবিষ্যতে যেকোনো সময় ভুলে commit হয়ে যেতে পারত।
+
+**সমাধান:**
+`scripts/safe_add.sh` — `git add -A`-এর বদলে ব্যবহারের জন্য নতুন script। `pr_checks.py`-এর `GENERATED_PREFIXES` তালিকা (import না করে, শুধু regex+`ast.literal_eval` দিয়ে টেক্সট থেকে parse করে — কারণ `pr_checks.py` import করলে module-level-এ `GITHUB_TOKEN` env var পড়ার চেষ্টা করে ক্র্যাশ করে) ব্যবহার করে স্টেজড ফাইল থেকে এই প্যাটার্নের সাথে মিলে যাওয়া সব বাদ দেয়: আগে থেকে ট্র্যাকড ফাইল হলে `git checkout --` দিয়ে HEAD-এর অবস্থায় ফেরায়, নতুন (untracked) ফাইল হলে ডিস্ক থেকে মুছে দেয়। একটামাত্র উৎস (`GENERATED_PREFIXES`) থেকে তালিকা নেওয়ায় দুই জায়গায় ড্রিফটের ঝুঁকি নেই। `PR_GUIDE.md`-এর ধাপ ১-এ `git add -A`-এর জায়গায় এই script ব্যবহারের নির্দেশনা দেওয়া হয়েছে।
+
+**যাচাই:** কৃত্রিমভাবে `docs/sitemap.xml` পরিবর্তন করে, একটা fake `docs/topic/test-fake-slug/index.html` ও একটা আসল `docs/topics/test-real-file.md` তৈরি করে script চালানো হয়েছে — ফলাফল: `sitemap.xml` HEAD-এর অবস্থায় ফিরে গেছে, fake generated ফোল্ডার মুছে গেছে, কিন্তু আসল সোর্স ফাইল ঠিকই স্টেজড থেকেছে। কোনো automated regression test যোগ করা হয়নি (git working-tree state manipulation-নির্ভর, মূল build/content test-স্যুটের বাইরে) — future পরিবর্তনে হাতে একই টেস্ট-দৃশ্য পুনরায় চালিয়ে যাচাই করা যাবে।
+
+---
