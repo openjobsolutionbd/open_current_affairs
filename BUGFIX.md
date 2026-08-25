@@ -423,3 +423,15 @@ text = re.sub(r"^\s*\|?(?:\s*:?-{3,}:?\s*\|)+...$", "", text, ...) # space → e
 **যাচাই:** কৃত্রিমভাবে `docs/sitemap.xml` পরিবর্তন করে, একটা fake `docs/topic/test-fake-slug/index.html` ও একটা আসল `docs/topics/test-real-file.md` তৈরি করে script চালানো হয়েছে — ফলাফল: `sitemap.xml` HEAD-এর অবস্থায় ফিরে গেছে, fake generated ফোল্ডার মুছে গেছে, কিন্তু আসল সোর্স ফাইল ঠিকই স্টেজড থেকেছে। কোনো automated regression test যোগ করা হয়নি (git working-tree state manipulation-নির্ভর, মূল build/content test-স্যুটের বাইরে) — future পরিবর্তনে হাতে একই টেস্ট-দৃশ্য পুনরায় চালিয়ে যাচাই করা যাবে।
 
 ---
+
+### BUG-20 🟠 — `safe_add.sh`-এই (BUG-19-এর fix) rename-detection gap: generated ফাইল rename হলে পুরনো পাথ বাদ পড়ত না
+
+**সমস্যা:**
+BUG-19-এর ফিক্স মার্জ হওয়ার পরপরই নিজে থেকে আরও কঠিন দৃশ্য দিয়ে টেস্ট করার সময় ধরা পড়ে — `git diff --cached --name-only` কোনো rename-কে (git স্বয়ংক্রিয়ভাবে সাদৃশ্যপূর্ণ কনটেন্ট rename হিসেবে ধরে) শুধু **নতুন পাথ** হিসেবে দেখায়, পুরনো পাথ আলাদাভাবে দেখায় না (যদিও index-এ পুরনো পাথ deleted হিসেবে staged-ই থাকে)। ফলে generated ফোল্ডার rename/পুনর্বিন্যাস হলে (যেমন `docs/topic/<old-slug>/` থেকে `docs/topic/<new-slug>/`) নতুন পাথ ঠিকভাবে বাদ পড়ত, কিন্তু পুরনো পাথ script-এর exclusion-তালিকায় ধরা পড়ত না — `git status`-এ `D docs/topic/<old-slug>/index.html` staged অবস্থায় থেকে যেত, যা commit হয়ে গেলে generated ফাইল ভুলবশত delete-সহ commit হয়ে যেত (ঠিক যে সমস্যাটা BUG-19 সমাধান করার কথা ছিল)।
+
+**সমাধান:**
+`git diff --cached --name-only` কমান্ডে `--no-renames` ফ্ল্যাগ যোগ করা হলো — এতে git rename-detection সম্পূর্ণ বন্ধ থাকে, প্রতিটা rename সবসময় আলাদা delete+add লাইন হিসেবে দেখায়, দুটো পাথই independently প্রিফিক্স-ম্যাচ করে exclusion-তালিকায় ধরা পড়ে।
+
+**যাচাই:** `docs/topic/abiskar-ac/` কপি করে `docs/topic/abiskar-ac-renamed/`-এ রেখে মূলটা মুছে rename simulate করা হয়েছে (git-ই স্বয়ংক্রিয়ভাবে এটাকে R100 rename ধরেছিল, নিশ্চিত করে)। ফিক্সের আগে: পুরনো পাথ `D` হিসেবে staged থেকে যেত। ফিক্সের পরে: দুটো পাথই (পুরনো ও নতুন) বাদ পড়ে, `git checkout -- docs/topic/abiskar-ac/index.html`-এর কনটেন্ট HEAD-এর সাথে বাইট-বাই-বাইট মিলিয়ে নিশ্চিত করা হয়েছে।
+
+---
