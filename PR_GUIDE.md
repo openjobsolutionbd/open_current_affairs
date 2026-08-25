@@ -25,7 +25,8 @@
 git checkout -b work/2026-08-11-short-topic-slug   # তারিখ + সংক্ষিপ্ত-বিষয়
 # ... এডিট ...
 bash scripts/preflight.sh   # build+verify পাস কিনা লোকালি নিশ্চিত করুন
-git add -A && git commit -m "বাংলায় স্পষ্ট বার্তা"
+bash scripts/safe_add.sh    # git add -A + auto-generated ফাইল (GENERATED_PREFIXES) স্বয়ংক্রিয়ভাবে বাদ — খালি "git add -A" ব্যবহার করবেন না
+git commit -m "বাংলায় স্পষ্ট বার্তা"
 ```
 
 **২. branch পুশ করা (main না, নিজের branch) — Basic auth ব্যবহার করুন, Bearer token দিয়ে push কাজ করে না**
