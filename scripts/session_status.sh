@@ -81,6 +81,11 @@ curl -s "${AUTH_HEADER[@]}" -H "Accept: application/vnd.github+json" \
 import json, sys
 try:
     data = json.load(sys.stdin)
+    if isinstance(data, dict) and 'message' in data:
+        print(f\"  ✗ GitHub API এরর: {data['message']}\")
+        if 'rate limit' in data['message'].lower():
+            print('  (GH_TOKEN env var এই শেলে সেট নেই বা ভুল/মেয়াদোত্তীর্ণ — নতুন করে চালানোর সময় ওই কমান্ডেই টোকেন দিন, ~/.bashrc-এর export non-interactive shell-এ কাজ করে না)')
+        raise SystemExit(0)
     branches = [b['name'] for b in data if b.get('name') != 'main']
     if not branches:
         print('  (main ছাড়া কোনো branch নেই)')
@@ -99,6 +104,11 @@ import json, sys
 from datetime import datetime, timezone
 try:
     data = json.load(sys.stdin)
+    if isinstance(data, dict) and 'message' in data:
+        print(f\"  ✗ GitHub API এরর: {data['message']}\")
+        if 'rate limit' in data['message'].lower():
+            print('  (GH_TOKEN env var এই শেলে সেট নেই বা ভুল/মেয়াদোত্তীর্ণ — নতুন করে চালানোর সময় ওই কমান্ডেই টোকেন দিন, ~/.bashrc-এর export non-interactive shell-এ কাজ করে না)')
+        raise SystemExit(0)
     if not data:
         print('  (কোনো খোলা PR নেই)')
     now = datetime.now(timezone.utc)
@@ -134,6 +144,11 @@ curl -s "${AUTH_HEADER[@]}" -H "Accept: application/vnd.github+json" \
 import json, sys
 try:
     data = json.load(sys.stdin)
+    if isinstance(data, dict) and 'message' in data:
+        print(f\"  ✗ GitHub API এরর: {data['message']}\")
+        if 'rate limit' in data['message'].lower():
+            print('  (GH_TOKEN env var এই শেলে সেট নেই বা ভুল/মেয়াদোত্তীর্ণ — নতুন করে চালানোর সময় ওই কমান্ডেই টোকেন দিন, ~/.bashrc-এর export non-interactive shell-এ কাজ করে না)')
+        raise SystemExit(0)
     merged = [pr for pr in data if pr.get('merged_at')][:10]
     if not merged:
         print('  (তথ্য নেই)')
@@ -151,6 +166,11 @@ curl -s "${AUTH_HEADER[@]}" -H "Accept: application/vnd.github+json" \
 import json, sys
 try:
     data = json.load(sys.stdin)
+    if isinstance(data, dict) and 'message' in data:
+        print(f\"  ✗ GitHub API এরর: {data['message']}\")
+        if 'rate limit' in data['message'].lower():
+            print('  (GH_TOKEN env var এই শেলে সেট নেই বা ভুল/মেয়াদোত্তীর্ণ — নতুন করে চালানোর সময় ওই কমান্ডেই টোকেন দিন, ~/.bashrc-এর export non-interactive shell-এ কাজ করে না)')
+        raise SystemExit(0)
     closed_unmerged = [pr for pr in data if not pr.get('merged_at')][:5]
     if not closed_unmerged:
         print('  (কোনো abandoned PR নেই)')

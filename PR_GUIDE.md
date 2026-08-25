@@ -63,13 +63,24 @@ curl -s -H "Authorization: Bearer $PAT" -H "Accept: application/vnd.github+json"
 diff নিজে পড়ে ব্যবহারকারীকে সহজ বাংলায় জানান (কোন টপিকে কী যোগ/বদল হলো) — raw diff/JSON কখনো সরাসরি দেখাবেন না।
 
 **৬. auto-merge শর্ত (preflight ক্লিন + PR-চেক ক্লিন + mergeable) পূরণ হলে সরাসরি merge**
+
+merge করার ঠিক আগে `mergeable_state` চেক করুন। `behind` দেখালে (main এগিয়ে গেছে, যেমন এই ফাঁকে অন্য একটা PR merge হয়েছে) — নিজে `git merge origin/main` করে আবার push করার বদলে GitHub-এর নিজস্ব API ব্যবহার করুন (এটাই `sync-to-job-solution.yml`-এ ব্যবহৃত, ব্যাটল-টেস্টেড পদ্ধতি — কম ধাপে, কম ভুলের সুযোগ):
+
+```bash
+curl -s -X PUT \
+  -H "Authorization: Bearer $PAT" -H "Accept: application/vnd.github+json" \
+  "https://api.github.com/repos/openjobsolutionbd/open_current_affairs/pulls/<PR_NUMBER>/update-branch"
+# কয়েক সেকেন্ড পর আবার mergeable_state চেক করুন, 'clean' না হওয়া পর্যন্ত দরকার হলে পুনরাবৃত্তি করুন
+```
+
+`clean` হলে তবেই merge করুন:
 ```bash
 curl -s -X PUT \
   -H "Authorization: Bearer $PAT" -H "Accept: application/vnd.github+json" \
   https://api.github.com/repos/openjobsolutionbd/open_current_affairs/pulls/<PR_NUMBER>/merge \
   -d '{"merge_method":"squash"}'
 ```
-merge ব্যর্থ হলে (checks এখনো শেষ হয়নি, বা conflict) response-এর `"message"` পড়ে ব্যবহারকারীকে সহজ ভাষায় জানান, নিজে থেকে force করার চেষ্টা করবেন না।
+merge ব্যর্থ হলে (checks এখনো শেষ হয়নি, বা conflict) response-এর `"message"` পড়ে ব্যবহারকারীকে সহজ ভাষায় জানান, নিজে থেকে force করার চেষ্টা করবেন না। **সত্যিকারের git conflict** (`update-branch` ব্যর্থ হয়ে "merge conflict" জাতীয় বার্তা দিলে) — সেক্ষেত্রেই শুধু নিজে `git fetch`+`git merge origin/main` করে conflict resolve করতে হবে, নিচের নিয়ম অনুযায়ী।
 
 **৭. merge সফল হলে branch মুছে ফেলুন (পরিষ্কার রাখতে)**
 ```bash

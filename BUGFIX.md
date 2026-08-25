@@ -397,3 +397,17 @@ text = re.sub(r"^\s*\|?(?:\s*:?-{3,}:?\s*\|)+...$", "", text, ...) # space → e
 **যাচাই:** বাস্তব ডেটায় (`docs/mcq/2026-07.md`) ফিক্সের আগে ও পরে `python3 scripts/build_index.py` চালিয়ে `docs/mcq-index.json`-এর SHA-256 hash হুবহু মিলিয়ে দেখা হয়েছে (`2e34b5d8...923328ef`) — অর্থাৎ বর্তমান কোনো ডেটায় এই ফিক্সের কোনো প্রভাব নেই, শুধু ভবিষ্যতের ঝুঁকি ঠেকাচ্ছে। `scripts/test_build_index.py` — একই নাম্বারিং-এ দুটো বিভাগ + ফাইলের শেষে দুটো consolidated উত্তর-কী ব্লক দিয়ে টেস্ট করে যাচাই করা হয়েছে যে দুটো বিভাগই টিকে থাকে ও সঠিক উত্তর পায়। ফিক্স উল্টালে টেস্ট সত্যিই ব্যর্থ হয় (প্রথম বিভাগ হারিয়ে যায়), ফিরিয়ে আনলে পাস করে — নিশ্চিত করা হয়েছে।
 
 ---
+
+### BUG-18 🟡 — `session_status.sh` GitHub API rate-limit/এরর হলে cryptic Python exception দেখাত, প্রকৃত কারণ বোঝা যেত না
+
+**ফাইল:** `scripts/session_status.sh` — branch/PR তালিকার ৪টা python ব্লক
+
+**সমস্যা:**
+`GH_TOKEN` env var সেট না থাকলে (বা মেয়াদোত্তীর্ণ/rate-limited) GitHub API একটা dict রেসপন্স দেয় (`{"message": "API rate limit exceeded..."}`), লিস্ট না। স্ক্রিপ্টের python কোড ধরেই নিত রেসপন্স সবসময় একটা list — dict পেলে `for b in data` dict-এর key (string)-এর উপর iterate করত, তারপর `b.get(...)` কল করলে `'str' object has no attribute 'get'` (বা অনুরূপ `TypeError`) — যেটা আসল কারণ (rate limit/auth সমস্যা) সম্পূর্ণ আড়াল করে ফেলত। এতে মনে হতো স্ক্রিপ্টে বাগ আছে, অথচ আসল সমস্যা ছিল token না থাকা। এছাড়া, `~/.bashrc`-এ `export GH_TOKEN=...` করে রাখলেও এই sandbox-এ **non-interactive shell প্রতিটা `bash_tool` কল আলাদা প্রসেস, `.bashrc` auto-source হয় না** — তাই "সেশন জুড়ে টোকেন ব্যবহার করুন" নির্দেশনা মানতে গেলে প্রতিটা কমান্ডেই টোকেন ইনলাইন দিতে হয়, নাহলে এই সমস্যাটা বারবার ঘটবে।
+
+**সমাধান:**
+প্রতিটা python ব্লকে `json.load()`-এর পরপরই চেক যোগ করা হয়েছে — `isinstance(data, dict) and 'message' in data` হলে (অর্থাৎ API সফল list-এর বদলে error dict দিয়েছে) স্পষ্ট বাংলা বার্তা দেখানো হয় (`GitHub API এরর: <আসল বার্তা>`), rate-limit-জাতীয় এরর হলে অতিরিক্ত হিন্ট দেয় (টোকেন এই শেলে সেট নেই/মেয়াদোত্তীর্ণ, `.bashrc`-নির্ভরতার সীমাবদ্ধতা মনে করিয়ে দেয়), তারপর `SystemExit(0)` দিয়ে পরিষ্কারভাবে থামে (bash-এর বাকি অংশ চলতে থাকে)।
+
+**যাচাই:** token ছাড়া (unauthenticated, rate-limited অবস্থা reproduce করে) ও token-সহ — দুই অবস্থাতেই চালিয়ে যাচাই করা হয়েছে: token ছাড়া স্পষ্ট বাংলা এরর-বার্তা দেখায় (আগে যেটা cryptic exception দেখাত), token-সহ স্বাভাবিক branch/PR তালিকা ঠিকভাবে দেখায়। কোনো automated regression test যোগ করা হয়নি — এই স্ক্রিপ্ট লাইভ GitHub API-এর উপর নির্ভরশীল, deterministic mock ছাড়া automated test তৈরি করা এই মুহূর্তে অপ্রয়োজনীয় জটিলতা যোগ করত; ভবিষ্যতে কেউ এই ৪টা ব্লক থেকে error-handling সরিয়ে ফেললে ম্যানুয়ালি token ছাড়া চালিয়ে পুনরায় যাচাই করা যাবে।
+
+---
