@@ -22,7 +22,7 @@ cd open_current_affairs && bash scripts/session_status.sh
 |---|---|
 | `PR_GUIDE.md` | branch → push → PR → merge → cleanup-এর exact কমান্ড |
 | `MCQ_GUIDE.md` | ম্যাগাজিন সোর্সে MCQ সেকশন পেলে |
-| `STAGING_GUIDE.md` | নতুন স্ক্যান করা সংখ্যা (zip/pdf/ছবি) থেকে কনটেন্ট যোগ করতে বললে — ৫-ধাপ ওয়ার্কফ্লো |
+| `STAGING_GUIDE.md` | নতুন স্ক্যান করা সংখ্যা (zip/pdf/ছবি) থেকে কনটেন্ট যোগ করতে বললে — ৫-ধাপ ওয়ার্কফ্লো। ম্যাগাজিন-নির্ভর না এমন সরাসরি-দেওয়া প্রবন্ধের জন্যও (`archive-staging/standalone/`) নিয়ম এখানেই আছে |
 | `EDITORIAL_MEMORY.md` | কনটেন্ট আপডেটের সময়কার স্থায়ী সম্পাদকীয় সিদ্ধান্ত — **প্রতি কনটেন্ট-সেশনে পড়া বাধ্যতামূলক** |
 
 ## প্রজেক্ট সংক্ষেপে
