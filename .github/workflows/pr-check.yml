@@ -77,6 +77,10 @@ jobs:
         continue-on-error: true
         run: python3 scripts/test_build_index.py
 
+      - name: বাংলা বানান-চেক (advisory, open_job_solution থেকে পোর্ট করা)
+        continue-on-error: true
+        run: npm run spellcheck
+
       - name: চূড়ান্ত ফলাফল
         if: steps.prechecks.outcome != 'success' || steps.build.outcome != 'success' || steps.verify.outcome != 'success' || steps.integration_guard.outcome != 'success' || steps.js_tests.outcome != 'success' || steps.py_build_tests.outcome != 'success'
         run: |

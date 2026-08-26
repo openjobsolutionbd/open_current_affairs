@@ -5,9 +5,12 @@
   "description": "শুধু dev-time regression testing-এর জন্য (docs/index.html-এর app-shell JS)। লাইভ সাইট runtime-এ কোনো npm dependency ব্যবহার হয় না — docs/ পুরোপুরি static, vendor/ ফোল্ডারে ম্যানুয়ালি রাখা marked.js ও purify.js দিয়ে চলে।",
   "type": "module",
   "scripts": {
-    "test:js": "node scripts/js_tests/run.mjs"
+    "test:js": "node scripts/js_tests/run.mjs",
+    "spellcheck": "cspell --config scripts/cspell.json --no-progress --no-summary --no-color \"docs/topics/**/*.md\" \"docs/ghotonaprobaho/**/*.md\" \"docs/top-news/**/*.md\""
   },
   "devDependencies": {
-    "jsdom": "^25.0.1"
+    "jsdom": "^25.0.1",
+    "cspell": "^10.0.1",
+    "@cspell/dict-bn": "^1.0.4"
   }
 }

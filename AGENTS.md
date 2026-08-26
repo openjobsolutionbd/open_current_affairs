@@ -45,7 +45,8 @@ cd open_current_affairs && bash scripts/session_status.sh
 | `scripts/check_topic.sh "কীওয়ার্ড"` | নতুন টপিকের আগে দ্রুত ডুপ্লিকেট-চেক (`topics-index.json` গ্রেপ করে) |
 | `scripts/test_build_index.py` | `build_index.py`-র regression টেস্ট (BUGFIX.md-এর bug লক করে) — `preflight.sh` সবসময় চালায় |
 | `scripts/js_tests/` | app-shell JS-এর jsdom regression suite — code ফাইল বদলালে `preflight.sh` চালায় (`npm run test:js`) |
-| `package.json` | শুধু dev-time JS টেস্ট (`jsdom`) — live site-এ npm dependency লাগে না |
+| `package.json` | dev-time JS টেস্ট (`jsdom`) + বানান-চেক (`cspell`) — live site-এ npm dependency লাগে না |
+| `scripts/check_spelling.js` বা `npm run spellcheck` | `docs/topics`, `docs/ghotonaprobaho`, `docs/top-news`-এর বাংলা টেক্সট cspell (bn ডিকশনারি + `scripts/known-words.txt` + `scripts/prothomalo-words.txt`) দিয়ে চেক করে — **advisory**, PR আটকায় না, শুধু লগে দেখায়। open_job_solution-এর একই প্যাটার্ন থেকে পোর্ট করা (২০২৬-০৮-২৫); `prothomalo-words.txt` (বাংলা সংবাদ-শব্দভাণ্ডার) ওখান থেকেই কপি করা |
 | `.github/workflows/update-wiki.yml` | main-push হলে build+verify চালিয়ে `auto/rebuild-output` branch-এ PR (branch protection-এর কারণে bot সরাসরি push পারে না)। preflight+PR-চেক ক্লিন হলে auto-merge, নাহলে output stale থাকবে। `secrets.BOT_PAT` ব্যবহার করে; মেয়াদ ফুরোলে Settings-এ আপডেট |
 | `.github/workflows/pr-check.yml` | PR খুললে/আপডেট হলে: generated-ফাইল guard + অন্য PR-এর সাথে সংঘর্ষ চেক + build+verify |
 | `scripts/pr_checks.py` | `pr-check.yml`-এর ভেতরে চলে, হাতে চালানোর দরকার নেই |
