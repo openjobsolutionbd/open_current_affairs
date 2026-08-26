@@ -17,6 +17,12 @@
 set -e
 cd "$(git rev-parse --show-toplevel)"
 
+# নিরাপত্তা-জাল: এই স্ক্রিপ্টের যেকোনো ধাপ ব্যর্থ হলে (যেমন pr_checks.py-এর
+# ফরম্যাট বদলে গিয়ে regex-parsing ভেঙে গেলে) — git add -A দিয়ে ততক্ষণে
+# staged হয়ে যাওয়া সব পরিবর্তন (generated ফাইল-সহ) স্বয়ংক্রিয়ভাবে unstage
+# হয়ে যাবে, যাতে ভুলবশত commit না হয়ে যায়। সফল হলে ট্র্যাপ নিষ্ক্রিয় করা হয়।
+trap 'echo "✗ safe_add.sh ব্যর্থ হয়েছে — নিরাপত্তার জন্য সব স্টেজড পরিবর্তন unstage করা হলো। উপরের এরর দেখে সমস্যা ঠিক করে আবার চালান।" >&2; git reset >/dev/null 2>&1 || true' ERR
+
 git add -A
 
 EXCLUDED=$(python3 -c "
@@ -50,3 +56,5 @@ fi
 echo ""
 echo "=== এখন staged আছে ==="
 git status --porcelain | grep '^[MARCD]' || echo "  (কিছুই স্টেজড নেই)"
+
+trap - ERR
