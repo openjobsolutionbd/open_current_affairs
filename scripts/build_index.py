@@ -615,12 +615,23 @@ def generate_sitemap_and_robots(entries):
     হোমপেজ এবং প্রতিটা টপিক-পাতা খুঁজে পায়।"""
     today = datetime.date.today().isoformat()
 
-    urls = [f"{SITE_BASE_URL}/"]
-    urls.extend(f"{SITE_BASE_URL}/topic/{e['slug']}/" for e in entries)
+    # BUG-23 fix: আগে প্রতিটা URL-এর lastmod সবসময় "আজকের তারিখ" বসত, সেই
+    # নির্দিষ্ট টপিকের কনটেন্ট আসলেই বদলেছে কিনা তা বিবেচনা না করেই — ফলে প্রতি
+    # build/preflight রানেই সব টপিকের lastmod রিফ্রেশ হয়ে যেত ও সিগন্যালটা
+    # সার্চ ইঞ্জিনের কাছে অর্থহীন হয়ে যেত। এখন প্রতিটা টপিক-পাতা তার নিজের
+    # frontmatter-এর last_updated (validate_topic()-এ আগেই YYYY-MM/YYYY-MM-DD
+    # নিশ্চিত করা) ব্যবহার করে। হোমপেজের lastmod আজকের তারিখেই থাকছে — এটা কোনো
+    # একক টপিকের না, পুরো সাইট-শেলের প্রতিনিধি, তাই একে কোনো একটা টপিকের
+    # last_updated-এর সাথে বাঁধার কোনো স্বাভাবিক ভিত্তি নেই।
+    urls = [(f"{SITE_BASE_URL}/", today)]
+    urls.extend(
+        (f"{SITE_BASE_URL}/topic/{e['slug']}/", e.get("last_updated") or today)
+        for e in entries
+    )
 
     url_entries = "\n".join(
-        f"  <url>\n    <loc>{html.escape(u)}</loc>\n    <lastmod>{today}</lastmod>\n  </url>"
-        for u in urls
+        f"  <url>\n    <loc>{html.escape(u)}</loc>\n    <lastmod>{html.escape(lastmod)}</lastmod>\n  </url>"
+        for u, lastmod in urls
     )
     sitemap = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'

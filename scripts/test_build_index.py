@@ -95,6 +95,32 @@ def _():
     )
 
 
+@test("generate_sitemap_and_robots — প্রতিটা টপিকের lastmod তার নিজের last_updated হওয়া উচিত, সবসময় আজকের তারিখ না (BUG-23)")
+def _():
+    import build_index
+    import tempfile
+    import datetime as _dt
+
+    tmp_dir = Path(tempfile.mkdtemp())
+    orig_sitemap, orig_robots = build_index.SITEMAP_OUTPUT, build_index.ROBOTS_OUTPUT
+    build_index.SITEMAP_OUTPUT = tmp_dir / "sitemap.xml"
+    build_index.ROBOTS_OUTPUT = tmp_dir / "robots.txt"
+    try:
+        build_index.generate_sitemap_and_robots([{"slug": "purono-topic", "last_updated": "2020-01"}])
+        content = build_index.SITEMAP_OUTPUT.read_text(encoding="utf-8")
+        today = _dt.date.today().isoformat()
+
+        assert "2020-01" in content, (
+            f"টপিকের lastmod তার নিজের last_updated (2020-01) ব্যবহার করছে না: {content!r} (BUGFIX.md BUG-23)"
+        )
+        block = content[content.index("purono-topic"): content.index("purono-topic") + 200]
+        assert today not in block, (
+            f"টপিকের lastmod-এ আজকের তারিখ বসে গেছে, নিজের last_updated না — bug ফিরে এসেছে: {block!r} (BUGFIX.md BUG-23)"
+        )
+    finally:
+        build_index.SITEMAP_OUTPUT, build_index.ROBOTS_OUTPUT = orig_sitemap, orig_robots
+
+
 def main():
     passed, failed = 0, []
     for name, fn in tests:
