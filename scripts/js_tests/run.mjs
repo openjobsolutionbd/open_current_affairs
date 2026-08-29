@@ -429,6 +429,64 @@ test("renderMcqView — MCQ মোড থেকে বেরিয়ে আব�
   );
 });
 
+// ── BUG-22 ক্লাস: study timer — hidden/বন্ধ ট্যাবের সময় study-time হিসেবে গোনা ──
+function setDocumentHidden(dom, hidden) {
+  const doc = dom.window.document;
+  Object.defineProperty(doc, "hidden", { value: hidden, configurable: true });
+  Object.defineProperty(doc, "visibilityState", { value: hidden ? "hidden" : "visible", configurable: true });
+  doc.dispatchEvent(new dom.window.Event("visibilitychange"));
+}
+
+test("study timer — ট্যাব hidden থাকা সময়টুকু 'পড়ার সময়' হিসেবে গোনা উচিত না", async () => {
+  const dom = await createTestWindow({});
+  const { window } = dom;
+  const { document } = window;
+
+  const toggleBtn = document.getElementById("study-timer-toggle");
+  assert(toggleBtn, "study-timer-toggle বাটন DOM-এ পাওয়া যায়নি — টেস্ট-সেটআপেই সমস্যা।");
+
+  toggleBtn.click(); // টাইমার চালু
+  let saved = JSON.parse(window.localStorage.getItem("oca_study_timer"));
+  assert(saved && saved.running === true, "টাইমার চালু করার পরও localStorage-এ running:true সেভ হয়নি — টেস্ট-সেটআপেই সমস্যা।");
+
+  // ট্যাব hidden হলো — এই মুহূর্তে elapsed ফ্রিজ হয়ে যাওয়া উচিত (startedAt=null)
+  setDocumentHidden(dom, true);
+  saved = JSON.parse(window.localStorage.getItem("oca_study_timer"));
+  assert(
+    saved.running === true && saved.startedAt === null,
+    "ট্যাব hidden হওয়ার পরও startedAt null হয়নি (elapsed ফ্রিজ হয়নি)। (BUGFIX.md BUG-22)"
+  );
+  const frozenElapsed = saved.elapsedMs;
+
+  // hidden অবস্থায় ৩০০ms অপেক্ষা — এই সময়টুকু গোনা উচিত না
+  await new Promise((resolve) => window.setTimeout(resolve, 300));
+  saved = JSON.parse(window.localStorage.getItem("oca_study_timer"));
+  assert(
+    saved.elapsedMs === frozenElapsed,
+    "hidden অবস্থায় অপেক্ষার সময় elapsedMs বদলে গেছে — ফ্রিজ কাজ করছে না। (BUGFIX.md BUG-22)"
+  );
+
+  // আবার visible — এখান থেকেই ফের গোনা শুরু হওয়া উচিত
+  setDocumentHidden(dom, false);
+  saved = JSON.parse(window.localStorage.getItem("oca_study_timer"));
+  assert(
+    saved.running === true && typeof saved.startedAt === "number",
+    "ট্যাব আবার visible হওয়ার পরও startedAt রিসেট হয়ে ফের গোনা শুরু হয়নি। (BUGFIX.md BUG-22)"
+  );
+
+  // visible অবস্থায় মাত্র ৩০ms পার হয়ে থামানো — আগের ৩০০ms hidden-সময়ের কোনো
+  // অংশ যোগ হওয়া উচিত না, শুধু এই ৩০ms-ই।
+  await new Promise((resolve) => window.setTimeout(resolve, 30));
+  toggleBtn.click(); // থামানো
+  saved = JSON.parse(window.localStorage.getItem("oca_study_timer"));
+  const addedAfterResume = saved.elapsedMs - frozenElapsed;
+  assert(
+    addedAfterResume >= 0 && addedAfterResume < 200,
+    `hidden-সময়ের (৩০০ms) একাংশও গণনায় যোগ হয়ে গেছে বলে মনে হচ্ছে — visible হওয়ার পর মাত্র ~৩০ms পার ` +
+      `হয়েছিল, কিন্তু elapsedMs ${addedAfterResume}ms বেড়েছে। (BUGFIX.md BUG-22)`
+  );
+});
+
 // ── রানার ─────────────────────────────────────────────────────────────────
 async function main() {
   let passed = 0;
