@@ -2352,7 +2352,15 @@ function renderMcqView(){
     set.sections.forEach(section => {
       html += `<div class="mcq-section-heading">${escapeHtml(section.name)}</div>`;
       section.questions.forEach(q => {
-        const mcqKey = `${set.label}||${q.number}`; // Bug 14: MCQ_ANSWERED-এ লুকআপের জন্য ইউনিক key
+        // BUG-24 fix: আগে mcqKey-তে শুধু set.label + q.number থাকত, section
+        // বাদ ছিল। বর্তমান ডেটায় প্রশ্ন-নম্বর পুরো সেট জুড়ে ধারাবাহিক থাকায়
+        // এখনো সংঘর্ষ হয়নি, কিন্তু ম্যাগাজিনে সেকশন-ভিত্তিক নম্বরিং (প্রতি
+        // বিভাগে আবার ১ থেকে শুরু) এলে দুটো ভিন্ন প্রশ্ন একই key পেয়ে যেত —
+        // একটাতে উত্তর দিলে অন্যটা না-ছুঁয়েই ভুল ইনডেক্স নিয়ে "answered"
+        // দেখাত (MCQ_ANSWERED cross-contamination)। section.name যোগ করায়
+        // (ensure_section()-এর কারণে একটা সেটের ভেতর এমনিতেই ইউনিক) key
+        // এখন সবসময় ইউনিক নিশ্চিত।
+        const mcqKey = `${set.label}||${section.name}||${q.number}`;
         html += `<div class="mcq-question" data-answered="0" data-correct-idx="${q.answer_index}" data-mcq-key="${escapeHtml(mcqKey)}">`;
         html += `<div class="mcq-question-text"><span class="mcq-question-number">${escapeHtml(q.number)}.</span>${escapeHtml(q.text)}</div>`;
         html += `<div class="mcq-options">`;

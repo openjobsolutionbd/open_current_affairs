@@ -429,6 +429,44 @@ test("renderMcqView — MCQ মোড থেকে বেরিয়ে আব�
   );
 });
 
+test("renderMcqView — একই সেটের দুই ভিন্ন সেকশনে একই প্রশ্ন-নম্বর (সেকশন-রিস্টার্ট) হলে state ওভারল্যাপ করা উচিত না", async () => {
+  const dom = await createTestWindow({});
+  const { window } = dom;
+  const { document } = window;
+
+  // দুটো সেকশনই একই সেটে, দুটোতেই প্রশ্ন-নম্বর "১" (ম্যাগাজিনের সেকশন-ভিত্তিক
+  // নম্বরিং কনভেনশন সিমুলেট করা) — কিন্তু আলাদা প্রশ্ন, আলাদা সঠিক উত্তর।
+  setGlobal(dom, "MCQ_SETS", [
+    {
+      label: "টেস্ট সেট",
+      question_count: 2,
+      sections: [
+        { name: "সেকশন-এ", questions: [{ number: "১", text: "A-প্রশ্ন?", options: ["ক", "খ", "গ", "ঘ"], answer_index: 0 }] },
+        { name: "সেকশন-বি", questions: [{ number: "১", text: "B-প্রশ্ন?", options: ["ক", "খ", "গ", "ঘ"], answer_index: 2 }] },
+      ],
+    },
+  ]);
+
+  window.renderMcqView();
+  const questions = document.querySelectorAll(".mcq-question");
+  assert(questions.length === 2, "দুটো প্রশ্ন রেন্ডার হওয়ার কথা ছিল — টেস্ট-সেটআপেই সমস্যা।");
+  const [qA, qB] = questions;
+
+  qA.querySelector(".mcq-option").click(); // সেকশন-এ-র প্রশ্ন ১-এ উত্তর দেওয়া হলো (idx 0, সঠিক)
+
+  window.renderMcqView(); // MCQ ট্যাব ছেড়ে আবার ফেরা (আগের টেস্টের মতোই re-render ট্রিগার)
+  const qBAfter = document.querySelectorAll(".mcq-question")[1];
+  assert(
+    qBAfter.dataset.answered === "0",
+    "সেকশন-এ-র প্রশ্ন ১-এ উত্তর দেওয়ার পর সেকশন-বি-র (ভিন্ন) প্রশ্ন ১-ও না-ছুঁয়েই 'answered' দেখাচ্ছে — " +
+      "mcqKey-তে সেকশনের নাম বাদ পড়ায় state ওভারল্যাপ করছে। (BUGFIX.md BUG-24)"
+  );
+  assert(
+    Array.from(qBAfter.querySelectorAll(".mcq-option")).every((b) => !b.disabled),
+    "সেকশন-বি-র প্রশ্ন ১-এর বাটন না-ছুঁয়েই disabled হয়ে গেছে। (BUGFIX.md BUG-24)"
+  );
+});
+
 // ── BUG-22 ক্লাস: study timer — hidden/বন্ধ ট্যাবের সময় study-time হিসেবে গোনা ──
 function setDocumentHidden(dom, hidden) {
   const doc = dom.window.document;
