@@ -235,6 +235,13 @@ def main():
     # ৯. print CSS: মোবাইলে কোনো article না খুলেও প্রিন্ট করলে যেন ফাঁকা
     #    পেজ না আসে — @media print-এ .card অবশ্যই display:block !important
     #    হতে হবে (BUGFIX.md BUG-01)
+    # BUG-25 fix: print_block আগে শুধু নিচের if-ব্লকের ভেতরেই সংজ্ঞায়িত হতো,
+    # তাই INDEX_HTML না থাকলে (check ৮-এ যা গ্রেসফুলভাবে "পাওয়া যায়নি" এরর
+    # যোগ করে) check ১০-এ print_block রেফারেন্স করতে গিয়ে
+    # UnboundLocalError দিয়ে পুরো স্ক্রিপ্টই ক্র্যাশ করত — এই স্ক্রিপ্টের
+    # নিজের লক্ষ্যই (কখনো ক্র্যাশ না করে সবসময় স্পষ্ট বাংলা এরর দেখানো) ভেঙে
+    # যেত ঠিক সেই দৃশ্যেই যেটা ধরার জন্য check ৮ বানানো হয়েছিল।
+    print_block = None
     if INDEX_HTML.exists():
         html_text = html_text if "html_text" in dir() else INDEX_HTML.read_text(encoding="utf-8")
         print_block = extract_braced_block(html_text, "@media print")
