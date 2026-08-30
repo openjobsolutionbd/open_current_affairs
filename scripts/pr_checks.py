@@ -37,7 +37,6 @@ SOURCE_PREFIXES = [
     "docs/top-news/",
     "docs/mcq/",  # আগে এখানে বাদ পড়েছিল — MCQ ফাইলে সমান্তরাল-সেশন সংঘর্ষ ধরা পড়ত না
     "docs/proshnottor/",  # সাইটে wire করা না হলেও এটা আসল সোর্স/আর্কাইভ কনটেন্ট, তাই একই কারণে দরকার
-    "archive-staging/",  # স্টেজিং সেশনে দুইটা প্যারালাল সেশন একই STATUS.md-এ হাত দিলেও আগে ধরা পড়ত না
 ]
 
 TOKEN = os.environ["GITHUB_TOKEN"]
