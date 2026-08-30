@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """
-build_index.py-এর ফাংশনগুলোর জন্য ছোট, নির্দিষ্ট regression টেস্ট —
-আগে ধরা পড়া bug (দেখুন BUGFIX.md) যেন চুপচাপ আবার ফিরে না আসে।
+build_index.py ও verify_site.py-এর ফাংশনগুলোর জন্য ছোট, নির্দিষ্ট regression
+টেস্ট — আগে ধরা পড়া bug (দেখুন BUGFIX.md) যেন চুপচাপ আবার ফিরে না আসে।
+এই একটা ফাইলই preflight.sh-এ হার্ডকোড করা প্রজেক্টের একমাত্র Python
+regression-টেস্ট এন্ট্রি পয়েন্ট, তাই scripts/-এর অন্য কোনো .py স্ক্রিপ্টে
+নতুন bug ধরা পড়লেও (শুধু build_index.py না) তার regression test এখানেই
+যোগ হয়।
 
-নিয়ম (AGENTS.md-এও লেখা আছে): ভবিষ্যতে build_index.py-তে নতুন কোনো bug
+নিয়ম (AGENTS.md-এও লেখা আছে): ভবিষ্যতে এই স্ক্রিপ্টগুলোতে নতুন কোনো bug
 পাওয়া/ঠিক করা হলে, BUGFIX.md-এ এন্ট্রি লেখার পাশাপাশি এখানে একটা
 matching test যোগ করতে হবে।
 
@@ -119,6 +123,38 @@ def _():
         )
     finally:
         build_index.SITEMAP_OUTPUT, build_index.ROBOTS_OUTPUT = orig_sitemap, orig_robots
+
+
+@test("verify_site.main() — docs/index.html অনুপস্থিত থাকলে ক্র্যাশ না করে স্পষ্ট বাংলা এরর দিয়ে থামা উচিত (BUG-25)")
+def _():
+    import io
+    import contextlib
+    import verify_site  # noqa: E402  (scripts/ ইতিমধ্যে sys.path-এ আছে)
+
+    index_html = verify_site.DOCS_DIR / "index.html"
+    tmp_path = index_html.with_name("index.html.bug25-test-moved")
+    assert index_html.exists(), f"{index_html} আগে থেকেই নেই — টেস্ট-সেটআপেই সমস্যা।"
+    index_html.rename(tmp_path)
+    try:
+        buf = io.StringIO()
+        raised_ok = False
+        try:
+            with contextlib.redirect_stdout(buf):
+                verify_site.main()
+        except SystemExit as e:
+            raised_ok = e.code == 1
+        except Exception as e:  # UnboundLocalError-সহ অন্য যেকোনো ক্র্যাশ এখানে ধরা পড়বে
+            assert False, (
+                f"docs/index.html অনুপস্থিত থাকলে verify_site.main() ক্র্যাশ করছে "
+                f"({type(e).__name__}: {e}) — স্পষ্ট এরর দেখানোর বদলে। (BUGFIX.md BUG-25)"
+            )
+        assert raised_ok, "verify_site.main() প্রত্যাশিতভাবে exit code 1 দিয়ে থামেনি। (BUGFIX.md BUG-25)"
+        assert "index.html" in buf.getvalue() and "পাওয়া যায়নি" in buf.getvalue(), (
+            f"docs/index.html অনুপস্থিত থাকার স্পষ্ট বার্তা প্রিন্ট হয়নি: {buf.getvalue()[-300:]!r} (BUGFIX.md BUG-25)"
+        )
+    finally:
+        if tmp_path.exists():
+            tmp_path.rename(index_html)
 
 
 def main():
