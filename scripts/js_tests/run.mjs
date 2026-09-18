@@ -370,14 +370,17 @@ test("renderTopicContent — মূল কার্ড ও মডালে এ�
   await window.renderTopicContent(topic, card, { backBtnId: "mobile-back-btn" });
   await window.openTopicInModal("dup");
 
-  const modalBtn = modalBody.querySelector("#mark-read-btn-dup");
-  assert(modalBtn, "মডালে 'পড়া হয়েছে' বাটন খুঁজে পাওয়া যায়নি — টেস্ট সেটআপ ভুল হতে পারে।");
+  // মার্ক-রিড বাটন সরিয়ে ফেলা হয়েছে (fix-topic-buttons.patch) — এখন বুকমার্ক
+  // বাটন দিয়ে একই duplicate-id নিরাপত্তা যাচাই করা হচ্ছে (BUG-15 এখনও প্রযোজ্য,
+  // যেকোনো একশন-বাটনের জন্য)।
+  const modalBtn = modalBody.querySelector("#bookmark-btn-dup");
+  assert(modalBtn, "মডালে 'প্রিয়' (বুকমার্ক) বাটন খুঁজে পাওয়া যায়নি — টেস্ট সেটআপ ভুল হতে পারে।");
   modalBtn.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
 
   assert(
-    window.isRead("dup") === true,
-    "মূল কার্ড ও মডালে একই টপিক (duplicate id `mark-read-btn-dup`) থাকা অবস্থায় মডালের 'পড়া " +
-      "হয়েছে' বাটনে ক্লিক করলে কিছু হচ্ছে না — document.getElementById() ডকুমেন্টে প্রথম মিলে যাওয়া " +
+    window.isBookmarked("dup") === true,
+    "মূল কার্ড ও মডালে একই টপিক (duplicate id `bookmark-btn-dup`) থাকা অবস্থায় মডালের 'প্রিয়' " +
+      "বাটনে ক্লিক করলে কিছু হচ্ছে না — document.getElementById() ডকুমেন্টে প্রথম মিলে যাওয়া " +
       "(card-এর) এলিমেন্টে listener বেঁধে দিচ্ছে, container-scoped querySelector ব্যবহার হচ্ছে না। (BUGFIX.md BUG-15)"
   );
 });
