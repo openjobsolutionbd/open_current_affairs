@@ -127,9 +127,15 @@ try:
     if stuck_bot_prs:
         print('')
         print('  🚨 সতর্কতা — নিচের bot/auto PR ২৪ ঘণ্টার বেশি খোলা আছে, সম্ভবত check')
-        print('     ট্রিগার হচ্ছে না (BOT_PAT/JOB_SOLUTION_SYNC_TOKEN-জাতীয় টোকেনের')
-        print('     পুরনো পরিচিত সমস্যা) — ম্যানুয়ালি নিজের টোকেন দিয়ে ওই branch-এ')
-        print('     একটা push করে check ট্রিগার করে merge করা দরকার:')
+        print('     ট্রিগার হচ্ছে না বা "action_required"-এ আটকে আছে। এটা')
+        print('     WORKFLOW_PAT/JOB_SOLUTION_SYNC_TOKEN-জাতীয় secret-এর পুরনো')
+        print('     পরিচিত সমস্যা — মনে রাখবেন push/PR-create ধাপ "success" দেখালেও')
+        print('     secret-এর ভ্যালু আসলে বৈধ real-user token কিনা তা আলাদাভাবে')
+        print('     যাচাই দরকার (PR #137, ২০২৬-০৯-১৯ দেখুন — তখন push সফল দেখালেও')
+        print('     actor বট হয়ে যাচ্ছিল)। প্রথমে GitHub Settings→Actions→Runs-এ ওই')
+        print('     PR-এর run "action_required" কিনা দেখুন (approve করলেই অনেক সময়')
+        print('     চলে), না হলে ম্যানুয়ালি নিজের টোকেন দিয়ে ওই branch-এ পুশ করে')
+        print('     check ট্রিগার করে merge করা দরকার:')
         for num, ref, days in stuck_bot_prs:
             print(f'     - PR #{num} [{ref}] — {days} দিন ধরে আটকে')
 except Exception as e:
