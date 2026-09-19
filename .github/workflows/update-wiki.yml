@@ -76,23 +76,39 @@ jobs:
       # workflow (pr-check.yml) ট্রিগার করে না — এটা GitHub-এর ইচ্ছাকৃত
       # recursive-loop-প্রতিরোধ নিয়ম, branch নতুন না পুরনো তাতে কিছু যায়-আসে
       # না (পরীক্ষায় প্রমাণিত — "fresh branch" পদ্ধতিও কাজ করেনি, PR #37)।
-      # তাই এখানে repo secret BOT_PAT (একটা সাধারণ personal access token)
-      # ব্যবহার করা হয় — human-token-চালিত push/PR ইভেন্ট নির্ভরযোগ্যভাবে
-      # check ট্রিগার করে, তাই আবার সরল force-push+reuse পদ্ধতিতে ফেরা গেছে।
+      # তাই এখানে একটা real personal access token (repo secret) ব্যবহার
+      # করা হয় — human-token-চালিত push/PR ইভেন্ট নির্ভরযোগ্যভাবে check
+      # ট্রিগার করে।
       #
       # ⚠️ সতর্কতা (রুট-কজ, ২০২৬-০৮-২১-এ ধরা পড়েছে, PR #64 ৬ দিন আটকে ছিল):
       # commit message-এ "[skip ci]" (বা যেকোনো skip-ci ভ্যারিয়েন্ট) কখনো
       # যোগ করবেন না — এতে শুধু push-ট্রিগার্ড এই workflow না, একই commit-এর
       # pull_request (synchronize) ইভেন্টও স্কিপ হয়ে যায়, ফলে pr-check.yml
       # কখনো চলে না আর auto/rebuild-output PR চিরস্থায়ীভাবে
-      # mergeable_state: blocked থেকে যায় (BOT_PAT-এর দোষ না, এটা GitHub-এর
-      # নিজস্ব skip-ci আচরণ, যা push ও pull_request উভয় ইভেন্টেই প্রযোজ্য)।
-      # recursion-guard-এর জন্য [skip ci] দরকারও নেই — নিচের diff-check
-      # (changed==false পরের রানে) নিজেই infinite-loop ঠেকায়।
+      # mergeable_state: blocked থেকে যায় (এটা GitHub-এর নিজস্ব skip-ci
+      # আচরণ, যা push ও pull_request উভয় ইভেন্টেই প্রযোজ্য)। recursion-guard-এর
+      # জন্য [skip ci] দরকারও নেই — নিচের diff-check (changed==false পরের
+      # রানে) নিজেই infinite-loop ঠেকায়।
+      #
+      # ⚠️ দ্বিতীয় রুট-কজ (২০২৬-০৯-১৯-এ ধরা পড়েছে, PR #137 আটকে ছিল):
+      # secret-এর নাম আর তার ভেতরের ভ্যালু আসল personal token কিনা — দুইটা
+      # আলাদা জিনিস। তখনকার BOT_PAT secret দিয়ে push/PR-create ধাপ প্রতিবারই
+      # "success" দেখাচ্ছিল, কিন্তু resulting pull_request ইভেন্টের actor
+      # তারপরও "github-actions[bot]" (Bot) হয়ে যাচ্ছিল, ফলে downstream
+      # pr-check.yml "action_required"-এ আটকে থাকছিল — অর্থাৎ BOT_PAT-এ
+      # তখন যা ছিল তা transport-level auth-এ পাস করলেও identity-resolution-এ
+      # আসল ইউজার-টোকেন হিসেবে গণ্য হচ্ছিল না (সম্ভবত টোকেনটা কোনোভাবে
+      # GITHUB_TOKEN-এর সমতুল্য হয়ে গিয়েছিল বা রিভোক/মিসকনফিগার হয়েছিল)।
+      # WORKFLOW_PAT (নতুন fine-grained PAT, ২০২৬-০৯-১৯) দিয়ে সরাসরি টেস্ট
+      # করে actor সঠিকভাবে real user account দেখানো নিশ্চিত করা হয়েছে,
+      # তারপর এটাতে সুইচ করা হলো। ভবিষ্যতে যদি আবার "action_required" ফিরে
+      # আসে, প্রথমেই সন্দেহ করুন যে এই secret-এর ভ্যালুটা আসলেই এখনো একটা
+      # বৈধ, non-expired, real-user PAT আছে কিনা — শুধু push "success" দেখানো
+      # যথেষ্ট প্রমাণ না (উপরের ঘটনায় এটাও বিভ্রান্তিকরভাবে সফল দেখাচ্ছিল)।
       - name: Rebuild branch push + PR তৈরি/আপডেট
         if: steps.changes.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ secrets.BOT_PAT }}
+          GH_TOKEN: ${{ secrets.WORKFLOW_PAT }}
         run: |
           BRANCH="auto/rebuild-output"
           git checkout -B "$BRANCH"
@@ -116,5 +132,5 @@ jobs:
               "https://api.github.com/repos/${{ github.repository }}/pulls" \
               -d '{"title":"chore: generated site output re-sync (auto)","head":"'"$BRANCH"'","base":"main","body":"main-এ push হওয়া সোর্স পরিবর্তনের সাথে generated output (topics-index.json, per-topic HTML, sitemap ইত্যাদি) sync করতে স্বয়ংক্রিয়ভাবে তৈরি হয়েছে। branch protection-এর কারণে bot সরাসরি main-এ push করতে পারে না, তাই এই PR — merge করার আগে চেক পাস করা নিশ্চিত করুন।"}'
           else
-            echo "ইতিমধ্যে PR #$EXISTING খোলা আছে — নতুন commit push হয়ে গেছে (BOT_PAT দিয়ে, তাই synchronize check ঠিকমতো ট্রিগার হবে)।"
+            echo "ইতিমধ্যে PR #$EXISTING খোলা আছে — নতুন commit push হয়ে গেছে (WORKFLOW_PAT দিয়ে, তাই synchronize check ঠিকমতো ট্রিগার হবে)।"
           fi
