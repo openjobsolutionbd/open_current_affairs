@@ -182,7 +182,7 @@
   .masthead h1{
     font-family:'Kalpurush', sans-serif;
     font-weight:700;
-    font-size:clamp(24px,3.84vw,33.6px);
+    font-size:clamp(19.2px,3.072vw,26.88px);
     margin:0;
   }
   .masthead .sub{
@@ -750,7 +750,7 @@
     #browse-layout:not(.showing-article) .card{ display:none; }
     .mobile-back-btn{ display:inline-block; }
     .card{ padding:20px 16px 24px; }
-    .card h2{ margin-left:66px; font-size:25.2px; }
+    .card h2{ margin-left:66px; font-size:20.16px; }
     .card .tags-row{ margin-left:66px; }
     .seal{ width:48px; height:48px; font-size:10.8px; top:18px; left:16px; }
     .search-bar-wrap{ justify-content:center; }
@@ -947,7 +947,7 @@
     font-family:'Hind Siliguri',sans-serif;
     font-weight:600;
     color:var(--heading);
-    font-size:31.2px;
+    font-size:24.96px;
     margin:0 0 4px 90px;
     border-bottom:2px solid var(--heading-border);
     padding-bottom:10px;
@@ -981,7 +981,7 @@
   .card-body h2{
     font-family:'Hind Siliguri',sans-serif;
     font-weight:600;
-    font-size:20.5px;
+    font-size:16.4px;
     color:var(--heading);
     margin:22px 0 10px;
     padding-bottom:6px;
@@ -1034,7 +1034,7 @@
   .card-body h2.history-heading{
     font-family:'Kalpurush',sans-serif !important;
     color:var(--heading);
-    font-size:19.4px;
+    font-size:15.52px;
     border-top:2px solid var(--line);
     padding-top:18px;
     margin-top:26px !important;
@@ -1173,7 +1173,7 @@
   }
   .ghotonaprobaho-month-heading{
     font-family:'Kalpurush',sans-serif;
-    font-size:22.8px;
+    font-size:18.24px;
     font-weight:700;
     color:var(--heading);
   }
@@ -1300,7 +1300,7 @@
      একবার উত্তর দিলে সেই প্রশ্নের বাটনগুলো আর ক্লিকযোগ্য থাকে না। */
   .mcq-section-heading{
     font-family:'Kalpurush',sans-serif;
-    font-size:20px;
+    font-size:16px;
     font-weight:700;
     color:var(--accent);
     margin:28px 0 14px;
@@ -1448,7 +1448,7 @@
   }
   .topic-preview-header h3{
     font-family:'Kalpurush',sans-serif;
-    font-size:19.2px; font-weight:700;
+    font-size:15.36px; font-weight:700;
     color:var(--heading);
     margin:0;
     line-height:1.4;
@@ -2348,7 +2348,7 @@ function renderMcqView(){
 
   let html = `<h2 style="margin-left:0;">📝 সাম্প্রতিক বিষয়ের MCQ</h2>`;
   MCQ_SETS.forEach(set => {
-    html += `<div class="mcq-set-heading"><span style="font-family:'Kalpurush',sans-serif;font-weight:700;font-size:16px;">${escapeHtml(set.label)}</span><span class="mcq-set-progress">${set.question_count} টা প্রশ্ন</span></div>`;
+    html += `<div class="mcq-set-heading"><span style="font-family:'Kalpurush',sans-serif;font-weight:700;font-size:12.8px;">${escapeHtml(set.label)}</span><span class="mcq-set-progress">${set.question_count} টা প্রশ্ন</span></div>`;
     set.sections.forEach(section => {
       html += `<div class="mcq-section-heading">${escapeHtml(section.name)}</div>`;
       section.questions.forEach(q => {
